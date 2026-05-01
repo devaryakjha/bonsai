@@ -117,6 +117,16 @@ struct GitClient {
     return output.combinedOutput
   }
 
+  func stageHunk(_ hunk: DiffHunk, in repository: GitRepository) async throws -> String {
+    let output = try await git(["apply", "--cached"], in: repository.url, standardInput: hunk.patch)
+    return output.combinedOutput
+  }
+
+  func unstageHunk(_ hunk: DiffHunk, in repository: GitRepository) async throws -> String {
+    let output = try await git(["apply", "--cached", "--reverse"], in: repository.url, standardInput: hunk.patch)
+    return output.combinedOutput
+  }
+
   func commit(message: String, amend: Bool, sign: Bool, in repository: GitRepository) async throws -> String {
     var args = ["commit", "-m", message]
     if amend { args.append("--amend") }
@@ -213,8 +223,8 @@ struct GitClient {
     return output.stdout
   }
 
-  func git(_ arguments: [String], in directory: URL?) async throws -> ProcessOutput {
-    try await runner.run(gitExecutable, arguments: ["git"] + arguments, currentDirectory: directory)
+  func git(_ arguments: [String], in directory: URL?, standardInput: String? = nil) async throws -> ProcessOutput {
+    try await runner.run(gitExecutable, arguments: ["git"] + arguments, currentDirectory: directory, standardInput: standardInput)
   }
 }
 

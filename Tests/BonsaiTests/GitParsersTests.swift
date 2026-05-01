@@ -48,4 +48,28 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(remotes.first { $0.name == "origin" }?.fetchURL, "git@github.com:example/bonsai.git")
     XCTAssertEqual(remotes.first { $0.name == "origin" }?.pushURL, "git@github.com:example/bonsai.git")
   }
+
+  func testParseDiffHunksReconstructsPatchPerHunk() {
+    let hunks = GitParsers.parseDiffHunks("""
+    diff --git a/file.txt b/file.txt
+    index 1111111..2222222 100644
+    --- a/file.txt
+    +++ b/file.txt
+    @@ -1,3 +1,3 @@
+     one
+    -two
+    +deux
+     three
+    @@ -10,2 +10,3 @@
+     ten
+    +eleven
+    """)
+
+    XCTAssertEqual(hunks.count, 2)
+    XCTAssertTrue(hunks[0].patch.contains("diff --git a/file.txt b/file.txt"))
+    XCTAssertTrue(hunks[0].patch.contains("@@ -1,3 +1,3 @@"))
+    XCTAssertFalse(hunks[0].patch.contains("@@ -10,2 +10,3 @@"))
+    XCTAssertTrue(hunks[1].patch.contains("@@ -10,2 +10,3 @@"))
+    XCTAssertTrue(hunks[1].patch.hasSuffix("\n"))
+  }
 }

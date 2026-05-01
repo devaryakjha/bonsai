@@ -7,7 +7,7 @@ struct DetailView: View {
     VStack(spacing: 0) {
       DetailHeaderView(store: store)
       Divider()
-      DiffView(diffText: store.diffText)
+      DiffView(store: store)
       if let result = store.commandResult {
         Divider()
         CommandResultView(result: result)
@@ -57,17 +57,33 @@ private struct DetailHeaderView: View {
 }
 
 private struct DiffView: View {
-  var diffText: String
+  let store: RepositoryStore
 
   var body: some View {
     ScrollView([.vertical, .horizontal]) {
       LazyVStack(alignment: .leading, spacing: 0) {
-        if diffText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if store.diffText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
           Text("No diff selected")
             .foregroundStyle(.secondary)
             .padding()
+        } else if shouldShowHunks {
+          ForEach(store.diffHunks) { hunk in
+            DiffHunkView(
+              hunk: hunk,
+              isStaged: store.selectedStatusEntry?.isStaged == true,
+              onStage: {
+                Task {
+                  if store.selectedStatusEntry?.isStaged == true {
+                    await store.unstageHunk(hunk)
+                  } else {
+                    await store.stageHunk(hunk)
+                  }
+                }
+              }
+            )
+          }
         } else {
-          ForEach(Array(diffText.split(separator: "\n", omittingEmptySubsequences: false).enumerated()), id: \.offset) { index, line in
+          ForEach(Array(store.diffText.split(separator: "\n", omittingEmptySubsequences: false).enumerated()), id: \.offset) { index, line in
             DiffLineView(number: index + 1, text: String(line))
           }
         }
@@ -76,6 +92,42 @@ private struct DiffView: View {
     }
     .font(.system(.caption, design: .monospaced))
     .textSelection(.enabled)
+  }
+
+  private var shouldShowHunks: Bool {
+    store.selectedStatusEntry != nil && !store.diffHunks.isEmpty
+  }
+}
+
+private struct DiffHunkView: View {
+  var hunk: DiffHunk
+  var isStaged: Bool
+  var onStage: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 0) {
+      HStack {
+        Text(hunk.header)
+          .foregroundStyle(.blue)
+          .lineLimit(1)
+        Spacer()
+        Button {
+          onStage()
+        } label: {
+          Label(isStaged ? "Unstage Hunk" : "Stage Hunk", systemImage: isStaged ? "minus.circle" : "plus.circle")
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+      }
+      .padding(.horizontal, 10)
+      .padding(.vertical, 6)
+      .background(.quaternary)
+
+      ForEach(Array(hunk.lines.enumerated()), id: \.offset) { index, line in
+        DiffLineView(number: index + 1, text: line)
+      }
+    }
+    .padding(.bottom, 10)
   }
 }
 

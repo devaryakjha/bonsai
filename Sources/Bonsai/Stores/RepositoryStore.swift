@@ -29,6 +29,10 @@ final class RepositoryStore {
   var amendCommit = false
   var signCommit = false
 
+  var diffHunks: [DiffHunk] {
+    GitParsers.parseDiffHunks(diffText)
+  }
+
   var stagedChanges: [GitStatusEntry] {
     snapshot.status.filter(\.isStaged)
   }
@@ -226,6 +230,18 @@ final class RepositoryStore {
   func unstage(_ entry: GitStatusEntry) async {
     await runMutation(title: "Unstage \(entry.path)") {
       try await gitClient.unstage(entry, in: requiredRepository())
+    }
+  }
+
+  func stageHunk(_ hunk: DiffHunk) async {
+    await runMutation(title: "Stage Hunk") {
+      try await gitClient.stageHunk(hunk, in: requiredRepository())
+    }
+  }
+
+  func unstageHunk(_ hunk: DiffHunk) async {
+    await runMutation(title: "Unstage Hunk") {
+      try await gitClient.unstageHunk(hunk, in: requiredRepository())
     }
   }
 

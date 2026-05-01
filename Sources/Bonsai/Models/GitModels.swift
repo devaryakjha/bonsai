@@ -112,6 +112,17 @@ struct CommandResult: Identifiable, Hashable {
   var isError: Bool
 }
 
+struct DiffHunk: Identifiable, Hashable {
+  var id: Int
+  var fileHeader: [String]
+  var header: String
+  var lines: [String]
+
+  var patch: String {
+    (fileHeader + [header] + lines).joined(separator: "\n") + "\n"
+  }
+}
+
 enum RepositoryAction: String {
   case fetch = "Fetch"
   case pull = "Pull"

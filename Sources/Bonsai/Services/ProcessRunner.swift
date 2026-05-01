@@ -18,7 +18,7 @@ enum ProcessRunnerError: LocalizedError {
 }
 
 struct ProcessRunner {
-  func run(_ executable: String, arguments: [String], currentDirectory: URL?) async throws -> ProcessOutput {
+  func run(_ executable: String, arguments: [String], currentDirectory: URL?, standardInput: String? = nil) async throws -> ProcessOutput {
     try await Task.detached(priority: .userInitiated) {
       let process = Process()
       process.executableURL = URL(filePath: executable)
@@ -30,7 +30,16 @@ struct ProcessRunner {
       process.standardOutput = stdout
       process.standardError = stderr
 
+      let stdin = Pipe()
+      if standardInput != nil {
+        process.standardInput = stdin
+      }
+
       try process.run()
+      if let standardInput {
+        stdin.fileHandleForWriting.write(Data(standardInput.utf8))
+        try? stdin.fileHandleForWriting.close()
+      }
       process.waitUntilExit()
 
       let stdoutData = stdout.fileHandleForReading.readDataToEndOfFile()
