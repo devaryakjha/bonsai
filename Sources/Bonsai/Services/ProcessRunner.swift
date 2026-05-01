@@ -6,6 +6,12 @@ struct ProcessOutput {
   var exitCode: Int32
 }
 
+struct ProcessDataOutput {
+  var stdout: Data
+  var stderr: String
+  var exitCode: Int32
+}
+
 enum ProcessRunnerError: LocalizedError {
   case failed(command: String, stderr: String, exitCode: Int32)
 
@@ -25,6 +31,27 @@ struct ProcessRunner {
     standardInput: String? = nil,
     environment: [String: String]? = nil
   ) async throws -> ProcessOutput {
+    let output = try await runData(
+      executable,
+      arguments: arguments,
+      currentDirectory: currentDirectory,
+      standardInput: standardInput,
+      environment: environment
+    )
+    return ProcessOutput(
+      stdout: String(data: output.stdout, encoding: .utf8) ?? "",
+      stderr: output.stderr,
+      exitCode: output.exitCode
+    )
+  }
+
+  func runData(
+    _ executable: String,
+    arguments: [String],
+    currentDirectory: URL?,
+    standardInput: String? = nil,
+    environment: [String: String]? = nil
+  ) async throws -> ProcessDataOutput {
     try await Task.detached(priority: .userInitiated) {
       let process = Process()
       process.executableURL = URL(filePath: executable)
@@ -53,8 +80,8 @@ struct ProcessRunner {
 
       let stdoutData = stdout.fileHandleForReading.readDataToEndOfFile()
       let stderrData = stderr.fileHandleForReading.readDataToEndOfFile()
-      let output = ProcessOutput(
-        stdout: String(data: stdoutData, encoding: .utf8) ?? "",
+      let output = ProcessDataOutput(
+        stdout: stdoutData,
         stderr: String(data: stderrData, encoding: .utf8) ?? "",
         exitCode: process.terminationStatus
       )

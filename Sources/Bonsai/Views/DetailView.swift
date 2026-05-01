@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct DetailView: View {
@@ -157,12 +158,12 @@ private struct BinaryPreviewView: View {
 
   var body: some View {
     VStack(spacing: 16) {
-      if let image = workingTreeImage {
-        Image(nsImage: image)
-          .resizable()
-          .scaledToFit()
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
-          .padding()
+      if let snapshot = store.imageDiffSnapshot {
+        HStack(spacing: 0) {
+          ImageDiffPane(title: "Before", data: snapshot.oldData)
+          Divider()
+          ImageDiffPane(title: "After", data: snapshot.newData)
+        }
       } else {
         Image(systemName: store.selectedPreviewIsImage ? "photo" : "doc")
           .font(.system(size: 48))
@@ -190,9 +191,41 @@ private struct BinaryPreviewView: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 
-  private var workingTreeImage: NSImage? {
-    guard let url = store.selectedWorkingTreeImageURL else { return nil }
-    return NSImage(contentsOf: url)
+}
+
+private struct ImageDiffPane: View {
+  var title: String
+  var data: Data?
+
+  var body: some View {
+    VStack(spacing: 10) {
+      Text(title)
+        .font(.headline)
+      if let data, let image = NSImage(data: data) {
+        Image(nsImage: image)
+          .resizable()
+          .scaledToFit()
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .padding()
+        Text(Self.metadata(for: image, data: data))
+          .font(.caption.monospacedDigit())
+          .foregroundStyle(.secondary)
+      } else {
+        ContentUnavailableView(
+          "No Image",
+          systemImage: "photo",
+          description: Text("This side is not available for the selected change.")
+        )
+      }
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+  }
+
+  private static func metadata(for image: NSImage, data: Data) -> String {
+    let size = image.size
+    let formatter = ByteCountFormatter()
+    formatter.countStyle = .file
+    return "\(Int(size.width)) x \(Int(size.height)) - \(formatter.string(fromByteCount: Int64(data.count)))"
   }
 }
 

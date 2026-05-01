@@ -16,6 +16,8 @@ using native macOS text rendering for large-file performance.
 - Bonsai does not hand-roll the core diff algorithm in v0.
 - Bonsai passes explicit diff options to Git so behavior is stable across
   repositories and user config.
+- Bonsai disables external diff hooks and color escape output for its internal
+  renderer so the parsed patch text is deterministic.
 
 Git's official diff algorithm option documents `myers`, `minimal`, `patience`,
 and `histogram`. `histogram` extends patience-style matching to support

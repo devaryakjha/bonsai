@@ -256,6 +256,12 @@ struct SplitDiff: Hashable {
   var newText: String
 }
 
+struct ImageDiffSnapshot: Hashable {
+  var path: String
+  var oldData: Data?
+  var newData: Data?
+}
+
 enum RebaseTodoAction: String, CaseIterable, Identifiable {
   case pick
   case reword

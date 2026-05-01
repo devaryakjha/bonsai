@@ -27,6 +27,7 @@ final class RepositoryStore {
   }
   var historySearchText = ""
   var diffText = ""
+  var imageDiffSnapshot: ImageDiffSnapshot?
   var commandResult: CommandResult?
   var gitHubNotifications: [GitHubNotification] = []
   var operationRequest: GitOperationRequest?
@@ -84,15 +85,6 @@ final class RepositoryStore {
 
   var selectedDiffIsBinary: Bool {
     FilePreviewSupport.isBinaryDiff(diffText)
-  }
-
-  var selectedWorkingTreeImageURL: URL? {
-    guard let selectedRepository,
-          let path = selectedStatusEntry?.path,
-          FilePreviewSupport.isImagePath(path) else {
-      return nil
-    }
-    return URL(filePath: selectedRepository.path, directoryHint: .isDirectory).appending(path: path)
   }
 
   var stagedChanges: [GitStatusEntry] {
@@ -763,6 +755,8 @@ final class RepositoryStore {
   }
 
   private func refreshDiff() async {
+    imageDiffSnapshot = nil
+
     guard let repository = selectedRepository else {
       diffText = ""
       return
@@ -771,8 +765,14 @@ final class RepositoryStore {
     do {
       if let entry = selectedStatusEntry {
         diffText = try await gitClient.diffForWorkingTreeFile(entry, staged: entry.isStaged, algorithm: diffAlgorithm, in: repository)
+        if FilePreviewSupport.isImagePath(entry.path) {
+          imageDiffSnapshot = await gitClient.imageDiffForWorkingTreeFile(entry, in: repository)
+        }
       } else if let file = selectedChangedFile, let commit = selectedCommit {
         diffText = try await gitClient.diffForCommitFile(file, commit: commit, algorithm: diffAlgorithm, in: repository)
+        if FilePreviewSupport.isImagePath(file.path) {
+          imageDiffSnapshot = await gitClient.imageDiffForCommitFile(file, commit: commit, in: repository)
+        }
       } else {
         diffText = ""
       }

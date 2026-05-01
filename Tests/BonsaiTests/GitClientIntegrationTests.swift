@@ -102,6 +102,43 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(fileHistory.contains("Update file"))
   }
 
+  func testImageDiffSnapshotsReadWorkingTreeIndexAndCommitBlobs() async throws {
+    let repo = try await makeRepository()
+    let image = repo.appending(path: "image.png")
+    let firstImage = try XCTUnwrap(Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="))
+    let secondImage = try XCTUnwrap(Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR42mNk+M8AAwUBAZsJTYQAAAAASUVORK5CYII="))
+
+    try write(firstImage, to: image)
+    try await commitAll(in: repo, message: "Initial image")
+
+    try write(secondImage, to: image)
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    var status = try await client.status(in: repository)
+    let unstagedEntry = try XCTUnwrap(status.first { $0.path == "image.png" && !$0.isStaged })
+
+    var snapshot = await client.imageDiffForWorkingTreeFile(unstagedEntry, in: repository)
+    XCTAssertEqual(snapshot.oldData, firstImage)
+    XCTAssertEqual(snapshot.newData, secondImage)
+
+    _ = try await client.stage(unstagedEntry, in: repository)
+    status = try await client.status(in: repository)
+    let stagedEntry = try XCTUnwrap(status.first { $0.path == "image.png" && $0.isStaged })
+
+    snapshot = await client.imageDiffForWorkingTreeFile(stagedEntry, in: repository)
+    XCTAssertEqual(snapshot.oldData, firstImage)
+    XCTAssertEqual(snapshot.newData, secondImage)
+
+    _ = try await client.commit(message: "Update image", amend: false, sign: false, in: repository)
+    let commits = try await client.commits(in: repository)
+    let commit = try XCTUnwrap(commits.first)
+    let changedFiles = try await client.changedFiles(in: repository, commit: commit)
+    let changedFile = try XCTUnwrap(changedFiles.first { $0.path == "image.png" })
+
+    snapshot = await client.imageDiffForCommitFile(changedFile, commit: commit, in: repository)
+    XCTAssertEqual(snapshot.oldData, firstImage)
+    XCTAssertEqual(snapshot.newData, secondImage)
+  }
+
   func testDiscardTrackedAndUntrackedChanges() async throws {
     let repo = try await makeRepository()
     let file = repo.appending(path: "file.txt")
@@ -235,6 +272,11 @@ final class GitClientIntegrationTests: XCTestCase {
   private func write(_ text: String, to url: URL) throws {
     try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
     try text.write(to: url, atomically: true, encoding: .utf8)
+  }
+
+  private func write(_ data: Data, to url: URL) throws {
+    try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try data.write(to: url, options: .atomic)
   }
 
   private func temporaryDirectory() -> URL {

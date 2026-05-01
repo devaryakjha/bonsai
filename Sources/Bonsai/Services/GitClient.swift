@@ -143,6 +143,8 @@ struct GitClient {
     let output = try await git([
       "show",
       "--format=",
+      "--no-ext-diff",
+      "--no-color",
       "--find-renames",
       "--find-copies",
       "--diff-algorithm=\(algorithm.rawValue)",
@@ -152,6 +154,27 @@ struct GitClient {
       file.path
     ], in: repository.url)
     return output.stdout
+  }
+
+  func imageDiffForWorkingTreeFile(_ entry: GitStatusEntry, in repository: GitRepository) async -> ImageDiffSnapshot {
+    let oldPath = entry.originalPath ?? entry.path
+    let oldData = entry.isUntracked ? nil : try? await gitData(["show", "HEAD:\(oldPath)"], in: repository.url).stdout
+    let newData: Data?
+    if entry.isStaged {
+      newData = try? await gitData(["show", ":\(entry.path)"], in: repository.url).stdout
+    } else if entry.kind == .deleted {
+      newData = nil
+    } else {
+      newData = try? Data(contentsOf: repository.url.appending(path: entry.path))
+    }
+    return ImageDiffSnapshot(path: entry.path, oldData: oldData, newData: newData)
+  }
+
+  func imageDiffForCommitFile(_ file: GitChangedFile, commit: GitCommit, in repository: GitRepository) async -> ImageDiffSnapshot {
+    let oldPath = file.oldPath ?? file.path
+    let oldData = try? await gitData(["show", "\(commit.hash)^:\(oldPath)"], in: repository.url).stdout
+    let newData = file.status.hasPrefix("D") ? nil : try? await gitData(["show", "\(commit.hash):\(file.path)"], in: repository.url).stdout
+    return ImageDiffSnapshot(path: file.path, oldData: oldData, newData: newData)
   }
 
   func stage(_ entry: GitStatusEntry, in repository: GitRepository) async throws -> String {
@@ -387,9 +410,15 @@ struct GitClient {
     try await runner.run(gitExecutable, arguments: ["git"] + arguments, currentDirectory: directory, standardInput: standardInput, environment: environment)
   }
 
+  func gitData(_ arguments: [String], in directory: URL?) async throws -> ProcessDataOutput {
+    try await runner.runData(gitExecutable, arguments: ["git"] + arguments, currentDirectory: directory)
+  }
+
   private func diffArguments(_ suffix: [String], algorithm: DiffAlgorithm) -> [String] {
     [
       "diff",
+      "--no-ext-diff",
+      "--no-color",
       "--find-renames",
       "--find-copies",
       "--submodule=diff",
