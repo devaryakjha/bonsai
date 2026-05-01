@@ -1,0 +1,29 @@
+import AppKit
+import SwiftUI
+
+@main
+struct BonsaiApp: App {
+  @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+  @State private var repositoryStore = RepositoryStore()
+
+  var body: some Scene {
+    WindowGroup("Bonsai", id: "main") {
+      ContentView(store: repositoryStore)
+        .frame(minWidth: 1120, minHeight: 720)
+    }
+    .commands {
+      BonsaiCommands(store: repositoryStore)
+    }
+
+    Settings {
+      SettingsView()
+    }
+  }
+}
+
+final class AppDelegate: NSObject, NSApplicationDelegate {
+  func applicationDidFinishLaunching(_ notification: Notification) {
+    NSApp.setActivationPolicy(.regular)
+    NSApp.activate(ignoringOtherApps: true)
+  }
+}
