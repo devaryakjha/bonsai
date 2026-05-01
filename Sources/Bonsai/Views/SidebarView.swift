@@ -106,6 +106,14 @@ struct SidebarView: View {
           systemImage: "bell",
           isEnabled: !store.gitHubNotifications.isEmpty
         )
+        if !store.gitHubNotifications.isEmpty {
+          Button {
+            Task { await store.markGitHubNotificationsRead() }
+          } label: {
+            Label("Mark read", systemImage: "checkmark.circle")
+          }
+          .buttonStyle(.plain)
+        }
       }
 
       if !store.localBranches.isEmpty {

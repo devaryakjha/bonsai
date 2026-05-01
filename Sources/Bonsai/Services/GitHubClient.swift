@@ -28,6 +28,30 @@ struct GitHubClient {
 
     return try JSONDecoder().decode([GitHubNotification].self, from: data)
   }
+
+  func markNotificationsRead(token: String, lastReadAt: Date = Date()) async throws {
+    guard let url = URL(string: "https://api.github.com/notifications") else {
+      throw GitHubClientError.invalidURL
+    }
+
+    var request = URLRequest(url: url)
+    request.httpMethod = "PUT"
+    request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+    request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
+    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.httpBody = try JSONEncoder().encode([
+      "last_read_at": ISO8601DateFormatter().string(from: lastReadAt)
+    ])
+
+    let (_, response) = try await URLSession.shared.data(for: request)
+    guard let http = response as? HTTPURLResponse else {
+      throw GitHubClientError.invalidResponse
+    }
+    guard (200..<300).contains(http.statusCode) else {
+      throw GitHubClientError.httpStatus(http.statusCode)
+    }
+  }
 }
 
 enum GitHubClientError: LocalizedError {

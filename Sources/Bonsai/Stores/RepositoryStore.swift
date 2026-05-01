@@ -580,11 +580,7 @@ final class RepositoryStore {
   }
 
   func fetchGitHubNotifications() async {
-    let token = UserDefaults.standard.string(forKey: "bonsai.githubToken")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-    guard !token.isEmpty else {
-      errorMessage = "Add a GitHub personal access token in Settings first."
-      return
-    }
+    guard let token = githubToken() else { return }
 
     do {
       gitHubNotifications = try await gitHubClient.notifications(token: token)
@@ -596,6 +592,19 @@ final class RepositoryStore {
         output: summary.isEmpty ? "No unread notifications." : summary,
         isError: false
       )
+    } catch {
+      commandResult = CommandResult(title: "GitHub Notifications", output: error.localizedDescription, isError: true)
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  func markGitHubNotificationsRead() async {
+    guard let token = githubToken() else { return }
+
+    do {
+      try await gitHubClient.markNotificationsRead(token: token)
+      gitHubNotifications = []
+      commandResult = CommandResult(title: "GitHub Notifications", output: "Marked notifications as read.", isError: false)
     } catch {
       commandResult = CommandResult(title: "GitHub Notifications", output: error.localizedDescription, isError: true)
       errorMessage = error.localizedDescription
@@ -733,6 +742,15 @@ final class RepositoryStore {
   private func refreshProjectRepositories() {
     projectRepositories = ProjectRepositoryScanner.scanDefaultProjectsDirectory()
     projectWorkspaceGroups = ProjectRepositoryScanner.scanDefaultWorkspaceGroups()
+  }
+
+  private func githubToken() -> String? {
+    let token = UserDefaults.standard.string(forKey: "bonsai.githubToken")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    guard !token.isEmpty else {
+      errorMessage = "Add a GitHub personal access token in Settings first."
+      return nil
+    }
+    return token
   }
 
   private func setSelectedRepository(_ repository: GitRepository) {

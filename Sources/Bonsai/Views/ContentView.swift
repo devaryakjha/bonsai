@@ -177,6 +177,10 @@ struct ContentView: View {
           Button("Fetch GitHub Notifications") {
             Task { await store.fetchGitHubNotifications() }
           }
+          Button("Mark GitHub Notifications Read") {
+            Task { await store.markGitHubNotificationsRead() }
+          }
+          .disabled(store.gitHubNotifications.isEmpty)
         } label: {
           Label("Tools", systemImage: "wrench.and.screwdriver")
         }
