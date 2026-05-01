@@ -209,6 +209,10 @@ struct GitClient {
     try await runRaw(["checkout", ref], in: repository)
   }
 
+  func reset(to commit: GitCommit, mode: ResetMode, in repository: GitRepository) async throws -> String {
+    try await runRaw(["reset", mode.flag, commit.hash], in: repository)
+  }
+
   func deleteBranch(_ name: String, force: Bool, in repository: GitRepository) async throws -> String {
     try await runRaw(["branch", force ? "-D" : "-d", name], in: repository)
   }

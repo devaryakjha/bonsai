@@ -176,6 +176,19 @@ private struct CommitComposerView: View {
         }
 
       HStack {
+        if !store.recentCommitMessages.isEmpty {
+          Menu {
+            ForEach(store.recentCommitMessages, id: \.self) { message in
+              Button(message) {
+                store.commitMessage = message
+              }
+            }
+          } label: {
+            Label("Recent", systemImage: "clock")
+          }
+          .menuStyle(.borderlessButton)
+        }
+
         Toggle("Amend", isOn: $store.amendCommit)
         Toggle("Sign", isOn: $store.signCommit)
         Spacer()

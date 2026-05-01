@@ -99,6 +99,10 @@ struct ContentView: View {
             Task { await store.runRevisionCommand("rebase") }
           }
           .disabled(store.selectedCommit == nil)
+          Button("Reset to Selected Commit...") {
+            store.presentResetToSelectedCommit()
+          }
+          .disabled(store.selectedCommit == nil)
           Divider()
           Button("Interactive Rebase...") {
             Task { await store.presentInteractiveRebase() }
@@ -231,6 +235,17 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.resetRequest) { request in
+      ResetSheet(
+        request: request,
+        onCancel: {
+          store.resetRequest = nil
+        },
+        onConfirm: { mode in
+          Task { await store.resetToSelectedCommit(mode: mode) }
+        }
+      )
+    }
     .task {
       await store.refreshAll()
     }
@@ -244,6 +259,42 @@ struct ContentView: View {
     } message: {
       Text(store.errorMessage ?? "")
     }
+  }
+}
+
+private struct ResetSheet: View {
+  var request: ResetRequest
+  var onCancel: () -> Void
+  var onConfirm: (ResetMode) -> Void
+  @State private var mode: ResetMode = .mixed
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text("Reset Branch")
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      Text("Reset the current branch to \(request.commit.shortHash). Hard reset discards working tree changes.")
+        .foregroundStyle(.secondary)
+
+      Picker("Mode", selection: $mode) {
+        ForEach(ResetMode.allCases) { mode in
+          Text(mode.title).tag(mode)
+        }
+      }
+      .pickerStyle(.segmented)
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button("Reset") {
+          onConfirm(mode)
+        }
+        .buttonStyle(.borderedProminent)
+      }
+    }
+    .padding(20)
+    .frame(width: 460)
   }
 }
 

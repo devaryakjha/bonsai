@@ -8,6 +8,7 @@ final class RepositoryStore {
   private let gitClient = GitClient()
   private let gitHubClient = GitHubClient()
   private let recentsKey = "bonsai.recentRepositories"
+  private let recentCommitMessagesKey = "bonsai.recentCommitMessages"
 
   var selectedRepository: GitRepository?
   var recentRepositories: [GitRepository] = []
@@ -24,12 +25,14 @@ final class RepositoryStore {
   var operationInput = ""
   var conflictResolutionRequest: ConflictResolutionRequest?
   var interactiveRebasePlan: InteractiveRebasePlan?
+  var resetRequest: ResetRequest?
   var repositorySetupMode: RepositorySetupMode?
   var repositorySetupRemoteURL = ""
   var repositorySetupDestinationPath = ""
   var isRefreshing = false
   var errorMessage: String?
   var commitMessage = ""
+  var recentCommitMessages: [String] = []
   var amendCommit = false
   var signCommit = false
   var diffAlgorithm: DiffAlgorithm = DiffAlgorithm(
@@ -103,6 +106,7 @@ final class RepositoryStore {
 
   init() {
     recentRepositories = Self.loadRecents(key: recentsKey)
+    recentCommitMessages = Self.loadStringList(key: recentCommitMessagesKey)
     projectRepositories = ProjectRepositoryScanner.scanDefaultProjectsDirectory()
     selectedRepository = recentRepositories.first
   }
@@ -319,6 +323,7 @@ final class RepositoryStore {
     }
     commitMessage = ""
     amendCommit = false
+    rememberCommitMessage(message)
   }
 
   func runRepositoryAction(_ action: RepositoryAction) async {
@@ -426,6 +431,19 @@ final class RepositoryStore {
     guard let selectedCommit else { return }
     await runMutation(title: "Checkout \(selectedCommit.shortHash)") {
       try await gitClient.checkout(selectedCommit.hash, in: requiredRepository())
+    }
+  }
+
+  func presentResetToSelectedCommit() {
+    guard let selectedCommit else { return }
+    resetRequest = ResetRequest(commit: selectedCommit)
+  }
+
+  func resetToSelectedCommit(mode: ResetMode) async {
+    guard let request = resetRequest else { return }
+    resetRequest = nil
+    await runMutation(title: "Reset \(request.commit.shortHash)") {
+      try await gitClient.reset(to: request.commit, mode: mode, in: requiredRepository())
     }
   }
 
@@ -663,12 +681,29 @@ final class RepositoryStore {
     }
   }
 
+  private func rememberCommitMessage(_ message: String) {
+    recentCommitMessages.removeAll { $0 == message }
+    recentCommitMessages.insert(message, at: 0)
+    recentCommitMessages = Array(recentCommitMessages.prefix(20))
+    if let data = try? JSONEncoder().encode(recentCommitMessages) {
+      UserDefaults.standard.set(data, forKey: recentCommitMessagesKey)
+    }
+  }
+
   private static func loadRecents(key: String) -> [GitRepository] {
     guard let data = UserDefaults.standard.data(forKey: key),
           let repositories = try? JSONDecoder().decode([GitRepository].self, from: data) else {
       return []
     }
     return repositories
+  }
+
+  private static func loadStringList(key: String) -> [String] {
+    guard let data = UserDefaults.standard.data(forKey: key),
+          let values = try? JSONDecoder().decode([String].self, from: data) else {
+      return []
+    }
+    return values
   }
 
   static func defaultProjectsDirectory() -> URL {

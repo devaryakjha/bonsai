@@ -244,6 +244,23 @@ struct InteractiveRebasePlan: Identifiable, Hashable {
   }
 }
 
+enum ResetMode: String, CaseIterable, Identifiable {
+  case soft
+  case mixed
+  case hard
+
+  var id: String { rawValue }
+  var title: String { rawValue.capitalized }
+  var flag: String { "--\(rawValue)" }
+}
+
+struct ResetRequest: Identifiable, Hashable {
+  var commit: GitCommit
+  var mode: ResetMode = .mixed
+
+  var id: String { commit.hash }
+}
+
 enum GitFlowStartKind: String, CaseIterable, Identifiable {
   case feature
   case release

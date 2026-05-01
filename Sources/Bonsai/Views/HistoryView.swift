@@ -31,6 +31,10 @@ struct HistoryView: View {
                 store.selectCommit(commit)
                 Task { await store.runRevisionCommand("rebase") }
               }
+              Button("Reset Here...") {
+                store.selectCommit(commit)
+                store.presentResetToSelectedCommit()
+              }
               Button("Create Branch Here") {
                 store.selectCommit(commit)
                 store.presentCreateBranch()

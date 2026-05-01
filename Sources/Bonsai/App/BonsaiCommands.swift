@@ -71,6 +71,11 @@ struct BonsaiCommands: Commands {
       }
       .disabled(store.selectedRepository == nil)
 
+      Button("Reset to Selected Commit...") {
+        store.presentResetToSelectedCommit()
+      }
+      .disabled(store.selectedRepository == nil || store.selectedCommit == nil)
+
       Divider()
 
       Button("Interactive Rebase...") {
