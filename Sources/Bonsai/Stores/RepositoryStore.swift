@@ -20,6 +20,7 @@ final class RepositoryStore {
   var commandResult: CommandResult?
   var operationRequest: GitOperationRequest?
   var operationInput = ""
+  var conflictResolutionRequest: ConflictResolutionRequest?
   var repositorySetupMode: RepositorySetupMode?
   var repositorySetupRemoteURL = ""
   var repositorySetupDestinationPath = ""
@@ -28,6 +29,14 @@ final class RepositoryStore {
   var commitMessage = ""
   var amendCommit = false
   var signCommit = false
+  var diffAlgorithm: DiffAlgorithm = DiffAlgorithm(
+    rawValue: UserDefaults.standard.string(forKey: "bonsai.diffAlgorithm") ?? ""
+  ) ?? .histogram {
+    didSet {
+      UserDefaults.standard.set(diffAlgorithm.rawValue, forKey: "bonsai.diffAlgorithm")
+      Task { await refreshDiff() }
+    }
+  }
 
   var diffHunks: [DiffHunk] {
     GitParsers.parseDiffHunks(diffText)
@@ -218,6 +227,24 @@ final class RepositoryStore {
     selectedChangedFile = nil
     Task {
       await refreshDiff()
+    }
+  }
+
+  func presentConflictResolver(for entry: GitStatusEntry) {
+    selectedStatusEntry = entry
+    selectedChangedFile = nil
+    let preview = conflictPreview(for: entry)
+    conflictResolutionRequest = ConflictResolutionRequest(entry: entry, preview: preview)
+    Task {
+      await refreshDiff()
+    }
+  }
+
+  func resolveConflict(_ choice: ConflictResolutionChoice) async {
+    guard let request = conflictResolutionRequest else { return }
+    conflictResolutionRequest = nil
+    await runMutation(title: "\(choice.rawValue) \(request.entry.path)") {
+      try await gitClient.resolveConflict(request.entry, choice: choice, in: requiredRepository())
     }
   }
 
@@ -417,9 +444,9 @@ final class RepositoryStore {
 
     do {
       if let entry = selectedStatusEntry {
-        diffText = try await gitClient.diffForWorkingTreeFile(entry, staged: entry.isStaged, in: repository)
+        diffText = try await gitClient.diffForWorkingTreeFile(entry, staged: entry.isStaged, algorithm: diffAlgorithm, in: repository)
       } else if let file = selectedChangedFile, let commit = selectedCommit {
-        diffText = try await gitClient.diffForCommitFile(file, commit: commit, in: repository)
+        diffText = try await gitClient.diffForCommitFile(file, commit: commit, algorithm: diffAlgorithm, in: repository)
       } else {
         diffText = ""
       }
@@ -455,6 +482,19 @@ final class RepositoryStore {
       throw RepositoryStoreError.noRepository
     }
     return selectedRepository
+  }
+
+  private func conflictPreview(for entry: GitStatusEntry) -> String {
+    guard let selectedRepository else { return "" }
+    let fileURL = URL(filePath: selectedRepository.path, directoryHint: .isDirectory).appending(path: entry.path)
+    guard let content = try? String(contentsOf: fileURL, encoding: .utf8) else {
+      return "Bonsai could not preview this file as UTF-8 text."
+    }
+    let limit = 80_000
+    if content.count > limit {
+      return String(content.prefix(limit)) + "\n\n[Preview truncated]"
+    }
+    return content
   }
 
   private func remember(_ repository: GitRepository) {

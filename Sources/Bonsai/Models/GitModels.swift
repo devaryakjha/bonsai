@@ -123,6 +123,29 @@ struct DiffHunk: Identifiable, Hashable {
   }
 }
 
+enum ConflictResolutionChoice: String {
+  case ours = "Accept Ours"
+  case theirs = "Accept Theirs"
+  case markResolved = "Mark Resolved"
+}
+
+struct ConflictResolutionRequest: Identifiable, Hashable {
+  var entry: GitStatusEntry
+  var preview: String
+
+  var id: String { entry.id }
+}
+
+enum DiffAlgorithm: String, CaseIterable, Identifiable {
+  case histogram
+  case patience
+  case myers
+  case minimal
+
+  var id: String { rawValue }
+  var title: String { rawValue.capitalized }
+}
+
 enum RepositoryAction: String {
   case fetch = "Fetch"
   case pull = "Pull"

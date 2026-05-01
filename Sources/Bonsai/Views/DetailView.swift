@@ -50,6 +50,17 @@ private struct DetailHeaderView: View {
           .font(.caption)
           .foregroundStyle(.secondary)
       }
+
+      Picker("Algorithm", selection: Binding(
+        get: { store.diffAlgorithm },
+        set: { store.diffAlgorithm = $0 }
+      )) {
+        ForEach(DiffAlgorithm.allCases) { algorithm in
+          Text(algorithm.title).tag(algorithm)
+        }
+      }
+      .pickerStyle(.segmented)
+      .controlSize(.small)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(12)
@@ -60,38 +71,32 @@ private struct DiffView: View {
   let store: RepositoryStore
 
   var body: some View {
-    ScrollView([.vertical, .horizontal]) {
-      LazyVStack(alignment: .leading, spacing: 0) {
-        if store.diffText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-          Text("No diff selected")
-            .foregroundStyle(.secondary)
-            .padding()
-        } else if shouldShowHunks {
-          ForEach(store.diffHunks) { hunk in
-            DiffHunkView(
-              hunk: hunk,
-              isStaged: store.selectedStatusEntry?.isStaged == true,
-              onStage: {
-                Task {
-                  if store.selectedStatusEntry?.isStaged == true {
-                    await store.unstageHunk(hunk)
-                  } else {
-                    await store.stageHunk(hunk)
-                  }
+    VStack(spacing: 0) {
+      if store.diffText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        Text("No diff selected")
+          .foregroundStyle(.secondary)
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+      } else {
+        if shouldShowHunks {
+          HunkActionStrip(
+            hunks: store.diffHunks,
+            isStaged: store.selectedStatusEntry?.isStaged == true,
+            onSelect: { hunk in
+              Task {
+                if store.selectedStatusEntry?.isStaged == true {
+                  await store.unstageHunk(hunk)
+                } else {
+                  await store.stageHunk(hunk)
                 }
               }
-            )
-          }
-        } else {
-          ForEach(Array(store.diffText.split(separator: "\n", omittingEmptySubsequences: false).enumerated()), id: \.offset) { index, line in
-            DiffLineView(number: index + 1, text: String(line))
-          }
+            }
+          )
+          Divider()
         }
+
+        RichDiffTextView(text: store.diffText)
       }
-      .padding(.vertical, 8)
     }
-    .font(.system(.caption, design: .monospaced))
-    .textSelection(.enabled)
   }
 
   private var shouldShowHunks: Bool {
@@ -99,81 +104,28 @@ private struct DiffView: View {
   }
 }
 
-private struct DiffHunkView: View {
-  var hunk: DiffHunk
+private struct HunkActionStrip: View {
+  var hunks: [DiffHunk]
   var isStaged: Bool
-  var onStage: () -> Void
+  var onSelect: (DiffHunk) -> Void
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 0) {
-      HStack {
-        Text(hunk.header)
-          .foregroundStyle(.blue)
-          .lineLimit(1)
-        Spacer()
-        Button {
-          onStage()
-        } label: {
-          Label(isStaged ? "Unstage Hunk" : "Stage Hunk", systemImage: isStaged ? "minus.circle" : "plus.circle")
+    ScrollView(.horizontal) {
+      HStack(spacing: 8) {
+        ForEach(hunks) { hunk in
+          Button {
+            onSelect(hunk)
+          } label: {
+            Label(isStaged ? "Unstage Hunk \(hunk.id + 1)" : "Stage Hunk \(hunk.id + 1)", systemImage: isStaged ? "minus.circle" : "plus.circle")
+          }
+          .buttonStyle(.bordered)
+          .controlSize(.small)
+          .help(hunk.header)
         }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
       }
       .padding(.horizontal, 10)
-      .padding(.vertical, 6)
-      .background(.quaternary)
-
-      ForEach(Array(hunk.lines.enumerated()), id: \.offset) { index, line in
-        DiffLineView(number: index + 1, text: line)
-      }
+      .padding(.vertical, 7)
     }
-    .padding(.bottom, 10)
-  }
-}
-
-private struct DiffLineView: View {
-  var number: Int
-  var text: String
-
-  var body: some View {
-    HStack(spacing: 10) {
-      Text(number.formatted())
-        .foregroundStyle(.tertiary)
-        .frame(width: 48, alignment: .trailing)
-        .textSelection(.disabled)
-      Text(text.isEmpty ? " " : text)
-        .foregroundStyle(foregroundStyle)
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-    .padding(.horizontal, 8)
-    .padding(.vertical, 1)
-    .background(backgroundStyle)
-  }
-
-  private var foregroundStyle: Color {
-    if text.hasPrefix("+") && !text.hasPrefix("+++") {
-      return .green
-    }
-    if text.hasPrefix("-") && !text.hasPrefix("---") {
-      return .red
-    }
-    if text.hasPrefix("@@") {
-      return .blue
-    }
-    return .primary
-  }
-
-  private var backgroundStyle: Color {
-    if text.hasPrefix("+") && !text.hasPrefix("+++") {
-      return Color.green.opacity(0.10)
-    }
-    if text.hasPrefix("-") && !text.hasPrefix("---") {
-      return Color.red.opacity(0.10)
-    }
-    if text.hasPrefix("@@") {
-      return Color.blue.opacity(0.08)
-    }
-    return Color.clear
   }
 }
 

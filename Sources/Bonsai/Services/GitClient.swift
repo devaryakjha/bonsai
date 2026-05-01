@@ -94,16 +94,26 @@ struct GitClient {
     return GitParsers.parseChangedFiles(output.stdout)
   }
 
-  func diffForWorkingTreeFile(_ entry: GitStatusEntry, staged: Bool, in repository: GitRepository) async throws -> String {
+  func diffForWorkingTreeFile(_ entry: GitStatusEntry, staged: Bool, algorithm: DiffAlgorithm, in repository: GitRepository) async throws -> String {
     let args = staged
-      ? ["diff", "--cached", "--", entry.path]
-      : ["diff", "--", entry.path]
+      ? diffArguments(["--cached", "--", entry.path], algorithm: algorithm)
+      : diffArguments(["--", entry.path], algorithm: algorithm)
     let output = try await git(args, in: repository.url)
     return output.stdout
   }
 
-  func diffForCommitFile(_ file: GitChangedFile, commit: GitCommit, in repository: GitRepository) async throws -> String {
-    let output = try await git(["show", "--format=", "--find-renames", "\(commit.hash)", "--", file.path], in: repository.url)
+  func diffForCommitFile(_ file: GitChangedFile, commit: GitCommit, algorithm: DiffAlgorithm, in repository: GitRepository) async throws -> String {
+    let output = try await git([
+      "show",
+      "--format=",
+      "--find-renames",
+      "--find-copies",
+      "--diff-algorithm=\(algorithm.rawValue)",
+      "--indent-heuristic",
+      "\(commit.hash)",
+      "--",
+      file.path
+    ], in: repository.url)
     return output.stdout
   }
 
@@ -202,6 +212,21 @@ struct GitClient {
     try await runRaw(["submodule", "update", "--init", "--recursive"], in: repository)
   }
 
+  func resolveConflict(_ entry: GitStatusEntry, choice: ConflictResolutionChoice, in repository: GitRepository) async throws -> String {
+    switch choice {
+    case .ours:
+      let checkout = try await git(["checkout", "--ours", "--", entry.path], in: repository.url)
+      let add = try await git(["add", "--", entry.path], in: repository.url)
+      return [checkout.combinedOutput, add.combinedOutput].filter { !$0.isEmpty }.joined(separator: "\n")
+    case .theirs:
+      let checkout = try await git(["checkout", "--theirs", "--", entry.path], in: repository.url)
+      let add = try await git(["add", "--", entry.path], in: repository.url)
+      return [checkout.combinedOutput, add.combinedOutput].filter { !$0.isEmpty }.joined(separator: "\n")
+    case .markResolved:
+      return try await runRaw(["add", "--", entry.path], in: repository)
+    }
+  }
+
   func reflog(in repository: GitRepository) async throws -> String {
     try await runRaw(["reflog", "--date=iso"], in: repository)
   }
@@ -225,6 +250,17 @@ struct GitClient {
 
   func git(_ arguments: [String], in directory: URL?, standardInput: String? = nil) async throws -> ProcessOutput {
     try await runner.run(gitExecutable, arguments: ["git"] + arguments, currentDirectory: directory, standardInput: standardInput)
+  }
+
+  private func diffArguments(_ suffix: [String], algorithm: DiffAlgorithm) -> [String] {
+    [
+      "diff",
+      "--find-renames",
+      "--find-copies",
+      "--submodule=diff",
+      "--indent-heuristic",
+      "--diff-algorithm=\(algorithm.rawValue)"
+    ] + suffix
   }
 }
 

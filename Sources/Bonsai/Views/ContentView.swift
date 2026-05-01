@@ -179,6 +179,17 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.conflictResolutionRequest) { request in
+      ConflictResolutionSheet(
+        request: request,
+        onCancel: {
+          store.conflictResolutionRequest = nil
+        },
+        onResolve: { choice in
+          Task { await store.resolveConflict(choice) }
+        }
+      )
+    }
     .task {
       await store.refreshAll()
     }
@@ -192,6 +203,48 @@ struct ContentView: View {
     } message: {
       Text(store.errorMessage ?? "")
     }
+  }
+}
+
+private struct ConflictResolutionSheet: View {
+  var request: ConflictResolutionRequest
+  var onCancel: () -> Void
+  var onResolve: (ConflictResolutionChoice) -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Text("Resolve Conflict")
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      Text(request.entry.path)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+
+      RichDiffTextView(text: request.preview)
+        .frame(minWidth: 720, minHeight: 420)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay {
+          RoundedRectangle(cornerRadius: 8)
+            .stroke(.quaternary)
+        }
+
+      HStack {
+        Button("Cancel", action: onCancel)
+        Spacer()
+        Button(ConflictResolutionChoice.ours.rawValue) {
+          onResolve(.ours)
+        }
+        Button(ConflictResolutionChoice.theirs.rawValue) {
+          onResolve(.theirs)
+        }
+        Button(ConflictResolutionChoice.markResolved.rawValue) {
+          onResolve(.markResolved)
+        }
+        .buttonStyle(.borderedProminent)
+      }
+    }
+    .padding(20)
   }
 }
 

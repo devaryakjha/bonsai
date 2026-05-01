@@ -63,6 +63,16 @@ private struct StatusRow: View {
 
       Spacer()
 
+      if entry.isConflicted {
+        Button {
+          store.presentConflictResolver(for: entry)
+        } label: {
+          Image(systemName: "wrench.and.screwdriver")
+        }
+        .buttonStyle(.borderless)
+        .help("Resolve conflict")
+      }
+
       Button {
         Task {
           if entry.isStaged {
@@ -98,6 +108,11 @@ private struct StatusRow: View {
       Button("File History") {
         store.selectStatusEntry(entry)
         Task { await store.showFileHistoryForSelection() }
+      }
+      if entry.isConflicted {
+        Button("Resolve Conflict") {
+          store.presentConflictResolver(for: entry)
+        }
       }
       Button("Reveal in Finder") {
         if let repository = store.selectedRepository {
