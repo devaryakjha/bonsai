@@ -27,6 +27,7 @@ struct GitClient {
     async let remotes = remotes(in: repository)
     async let stashes = stashes(in: repository)
     async let submodules = submodules(in: repository)
+    async let integrations = integrations(in: repository)
 
     let resolvedCommits = try await commits
     let commitForFiles = selectedCommit ?? resolvedCommits.first
@@ -39,7 +40,8 @@ struct GitClient {
       refs: refs,
       remotes: remotes,
       stashes: stashes,
-      submodules: submodules
+      submodules: submodules,
+      integrations: integrations
     )
   }
 
@@ -86,6 +88,29 @@ struct GitClient {
   func submodules(in repository: GitRepository) async throws -> [GitSubmodule] {
     let output = try? await git(["submodule", "status", "--recursive"], in: repository.url)
     return GitParsers.parseSubmodules(output?.stdout ?? "")
+  }
+
+  func integrations(in repository: GitRepository) async -> GitIntegrationStatus {
+    async let lfsAvailable = commandSucceeds(["lfs", "version"], in: repository)
+    async let gitFlowAvailable = commandSucceeds(["flow", "version"], in: repository)
+    async let lfsFiles = lfsFiles(in: repository)
+    async let gpgSigning = configValue("commit.gpgsign", in: repository)
+    async let signingKey = configValue("user.signingkey", in: repository)
+    async let flowMain = configValue("gitflow.branch.master", in: repository)
+    async let flowDevelop = configValue("gitflow.branch.develop", in: repository)
+
+    let mainBranch = await flowMain
+    let developBranch = await flowDevelop
+    return await GitIntegrationStatus(
+      lfsAvailable: lfsAvailable,
+      lfsFiles: lfsFiles,
+      gpgSigningEnabled: ["true", "yes", "on", "1"].contains((gpgSigning ?? "").lowercased()),
+      signingKey: signingKey,
+      gitFlowAvailable: gitFlowAvailable,
+      gitFlowInitialized: mainBranch != nil && developBranch != nil,
+      gitFlowMainBranch: mainBranch,
+      gitFlowDevelopBranch: developBranch
+    )
   }
 
   func changedFiles(in repository: GitRepository, commit: GitCommit?) async throws -> [GitChangedFile] {
@@ -212,6 +237,22 @@ struct GitClient {
     try await runRaw(["submodule", "update", "--init", "--recursive"], in: repository)
   }
 
+  func lfsPull(in repository: GitRepository) async throws -> String {
+    try await runRaw(["lfs", "pull"], in: repository)
+  }
+
+  func setCommitSigning(_ enabled: Bool, in repository: GitRepository) async throws -> String {
+    try await runRaw(["config", "commit.gpgsign", enabled ? "true" : "false"], in: repository)
+  }
+
+  func initializeGitFlow(in repository: GitRepository) async throws -> String {
+    try await runRaw(["flow", "init", "-d"], in: repository)
+  }
+
+  func startGitFlow(kind: GitFlowStartKind, name: String, in repository: GitRepository) async throws -> String {
+    try await runRaw(["flow", kind.rawValue, "start", name], in: repository)
+  }
+
   func resolveConflict(_ entry: GitStatusEntry, choice: ConflictResolutionChoice, in repository: GitRepository) async throws -> String {
     switch choice {
     case .ours:
@@ -312,6 +353,21 @@ struct GitClient {
       "--indent-heuristic",
       "--diff-algorithm=\(algorithm.rawValue)"
     ] + suffix
+  }
+
+  private func commandSucceeds(_ arguments: [String], in repository: GitRepository) async -> Bool {
+    (try? await git(arguments, in: repository.url)) != nil
+  }
+
+  private func configValue(_ key: String, in repository: GitRepository) async -> String? {
+    guard let output = try? await git(["config", "--get", key], in: repository.url) else { return nil }
+    let value = output.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+    return value.isEmpty ? nil : value
+  }
+
+  private func lfsFiles(in repository: GitRepository) async -> [GitLFSFile] {
+    guard let output = try? await git(["lfs", "ls-files"], in: repository.url) else { return [] }
+    return GitParsers.parseLFSFiles(output.stdout)
   }
 }
 

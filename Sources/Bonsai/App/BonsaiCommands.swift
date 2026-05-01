@@ -77,6 +77,32 @@ struct BonsaiCommands: Commands {
         Task { await store.presentInteractiveRebase() }
       }
       .disabled(store.selectedRepository == nil)
+
+      Divider()
+
+      Button("Git LFS Pull") {
+        Task { await store.lfsPull() }
+      }
+      .disabled(store.selectedRepository == nil || !store.snapshot.integrations.lfsAvailable)
+
+      Button(store.snapshot.integrations.gpgSigningEnabled ? "Disable GPG Signing" : "Enable GPG Signing") {
+        Task { await store.setCommitSigning(!store.snapshot.integrations.gpgSigningEnabled) }
+      }
+      .disabled(store.selectedRepository == nil)
+
+      Divider()
+
+      Button("Initialize Git-flow") {
+        Task { await store.initializeGitFlow() }
+      }
+      .disabled(store.selectedRepository == nil || !store.snapshot.integrations.gitFlowAvailable)
+
+      ForEach(GitFlowStartKind.allCases) { kind in
+        Button("Start Git-flow \(kind.title)...") {
+          store.presentGitFlowStart(kind)
+        }
+        .disabled(store.selectedRepository == nil || !store.snapshot.integrations.gitFlowInitialized)
+      }
     }
   }
 }

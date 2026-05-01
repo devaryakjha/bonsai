@@ -68,6 +68,27 @@ struct SidebarView: View {
         SidebarMetricRow(title: "Submodules", value: store.snapshot.submodules.count, systemImage: "shippingbox")
       }
 
+      Section("Integrations") {
+        IntegrationRow(
+          title: "Git LFS",
+          detail: store.snapshot.integrations.lfsAvailable ? "\(store.snapshot.integrations.lfsFiles.count) files" : "Unavailable",
+          systemImage: "externaldrive.connected.to.line.below",
+          isEnabled: store.snapshot.integrations.lfsAvailable
+        )
+        IntegrationRow(
+          title: "GPG",
+          detail: store.snapshot.integrations.gpgSigningEnabled ? (store.snapshot.integrations.signingKey ?? "Signing on") : "Signing off",
+          systemImage: "signature",
+          isEnabled: store.snapshot.integrations.gpgSigningEnabled
+        )
+        IntegrationRow(
+          title: "Git-flow",
+          detail: gitFlowDetail,
+          systemImage: "arrow.triangle.branch",
+          isEnabled: store.snapshot.integrations.gitFlowInitialized
+        )
+      }
+
       if !store.localBranches.isEmpty {
         Section("Local Branches") {
           ForEach(store.localBranches) { branch in
@@ -139,6 +160,19 @@ struct SidebarView: View {
       }
     }
   }
+
+  private var gitFlowDetail: String {
+    let integrations = store.snapshot.integrations
+    if !integrations.gitFlowAvailable {
+      return "Unavailable"
+    }
+    if integrations.gitFlowInitialized {
+      return [integrations.gitFlowMainBranch, integrations.gitFlowDevelopBranch]
+        .compactMap { $0 }
+        .joined(separator: " / ")
+    }
+    return "Not initialized"
+  }
 }
 
 private struct SidebarMetricRow: View {
@@ -153,6 +187,28 @@ private struct SidebarMetricRow: View {
       Text(value.formatted())
         .foregroundStyle(.secondary)
         .monospacedDigit()
+    }
+  }
+}
+
+private struct IntegrationRow: View {
+  var title: String
+  var detail: String
+  var systemImage: String
+  var isEnabled: Bool
+
+  var body: some View {
+    HStack(spacing: 10) {
+      Image(systemName: systemImage)
+        .foregroundStyle(isEnabled ? .green : .secondary)
+        .frame(width: 16)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(title)
+        Text(detail)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .lineLimit(1)
+      }
     }
   }
 }

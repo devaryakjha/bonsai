@@ -172,7 +172,7 @@ final class RepositoryStore {
   }
 
   func openRecent(_ repository: GitRepository) {
-    selectedRepository = repository
+    setSelectedRepository(repository)
     remember(repository)
     Task {
       await refreshAll()
@@ -187,7 +187,7 @@ final class RepositoryStore {
     do {
       try await gitClient.validateRepository(at: url)
       let repository = GitRepository(path: url.path(percentEncoded: false))
-      selectedRepository = repository
+      setSelectedRepository(repository)
       remember(repository)
       await refreshAll()
     } catch {
@@ -340,6 +340,27 @@ final class RepositoryStore {
     )
   }
 
+  func presentGitFlowStart(_ kind: GitFlowStartKind) {
+    operationInput = ""
+    let operationKind: GitOperationKind
+    switch kind {
+    case .feature:
+      operationKind = .gitFlowFeatureStart
+    case .release:
+      operationKind = .gitFlowReleaseStart
+    case .hotfix:
+      operationKind = .gitFlowHotfixStart
+    }
+    operationRequest = GitOperationRequest(
+      kind: operationKind,
+      title: "Start Git-flow \(kind.title)",
+      message: "Create a new \(kind.rawValue) branch using git-flow.",
+      placeholder: kind == .release ? "0.1.0" : "name",
+      defaultValue: "",
+      primaryActionTitle: "Start"
+    )
+  }
+
   func confirmOperation() async {
     guard let request = operationRequest else { return }
     let value = operationInput.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -360,6 +381,15 @@ final class RepositoryStore {
       await runMutation(title: "Create Stash") {
         try await gitClient.stashPush(message: value.isEmpty ? nil : value, in: requiredRepository())
       }
+    case .gitFlowFeatureStart:
+      guard !value.isEmpty else { return }
+      await startGitFlow(kind: .feature, name: value)
+    case .gitFlowReleaseStart:
+      guard !value.isEmpty else { return }
+      await startGitFlow(kind: .release, name: value)
+    case .gitFlowHotfixStart:
+      guard !value.isEmpty else { return }
+      await startGitFlow(kind: .hotfix, name: value)
     }
   }
 
@@ -414,6 +444,30 @@ final class RepositoryStore {
   func updateSubmodules() async {
     await runMutation(title: "Update Submodules") {
       try await gitClient.updateSubmodules(in: requiredRepository())
+    }
+  }
+
+  func lfsPull() async {
+    await runMutation(title: "Git LFS Pull") {
+      try await gitClient.lfsPull(in: requiredRepository())
+    }
+  }
+
+  func setCommitSigning(_ enabled: Bool) async {
+    await runMutation(title: enabled ? "Enable GPG Signing" : "Disable GPG Signing") {
+      try await gitClient.setCommitSigning(enabled, in: requiredRepository())
+    }
+  }
+
+  func initializeGitFlow() async {
+    await runMutation(title: "Initialize Git-flow") {
+      try await gitClient.initializeGitFlow(in: requiredRepository())
+    }
+  }
+
+  func startGitFlow(kind: GitFlowStartKind, name: String) async {
+    await runMutation(title: "Start Git-flow \(kind.title)") {
+      try await gitClient.startGitFlow(kind: kind, name: name, in: requiredRepository())
     }
   }
 
@@ -545,6 +599,16 @@ final class RepositoryStore {
     recentRepositories.insert(repository, at: 0)
     recentRepositories = Array(recentRepositories.prefix(20))
     saveRecents()
+  }
+
+  private func setSelectedRepository(_ repository: GitRepository) {
+    selectedRepository = repository
+    snapshot = RepositorySnapshot()
+    selectedCommit = nil
+    selectedStatusEntry = nil
+    selectedChangedFile = nil
+    diffText = ""
+    commandResult = nil
   }
 
   private func saveRecents() {

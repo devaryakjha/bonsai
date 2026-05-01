@@ -128,6 +128,16 @@ enum GitParsers {
       }
   }
 
+  static func parseLFSFiles(_ output: String) -> [GitLFSFile] {
+    output
+      .split(separator: "\n", omittingEmptySubsequences: true)
+      .compactMap { line -> GitLFSFile? in
+        let parts = line.split(separator: " ", maxSplits: 2, omittingEmptySubsequences: true).map(String.init)
+        guard parts.count >= 3 else { return nil }
+        return GitLFSFile(oid: parts[0], path: parts[2])
+      }
+  }
+
   static func parseChangedFiles(_ output: String) -> [GitChangedFile] {
     output
       .split(separator: "\n", omittingEmptySubsequences: true)

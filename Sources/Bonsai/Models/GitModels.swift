@@ -95,6 +95,24 @@ struct GitSubmodule: Identifiable, Hashable {
   var id: String { path }
 }
 
+struct GitLFSFile: Identifiable, Hashable {
+  var oid: String
+  var path: String
+
+  var id: String { path }
+}
+
+struct GitIntegrationStatus: Hashable {
+  var lfsAvailable = false
+  var lfsFiles: [GitLFSFile] = []
+  var gpgSigningEnabled = false
+  var signingKey: String?
+  var gitFlowAvailable = false
+  var gitFlowInitialized = false
+  var gitFlowMainBranch: String?
+  var gitFlowDevelopBranch: String?
+}
+
 struct RepositorySnapshot {
   var status: [GitStatusEntry] = []
   var commits: [GitCommit] = []
@@ -103,6 +121,7 @@ struct RepositorySnapshot {
   var remotes: [GitRemote] = []
   var stashes: [GitStash] = []
   var submodules: [GitSubmodule] = []
+  var integrations = GitIntegrationStatus()
 }
 
 struct CommandResult: Identifiable, Hashable {
@@ -193,6 +212,15 @@ struct InteractiveRebasePlan: Identifiable, Hashable {
   }
 }
 
+enum GitFlowStartKind: String, CaseIterable, Identifiable {
+  case feature
+  case release
+  case hotfix
+
+  var id: String { rawValue }
+  var title: String { rawValue.capitalized }
+}
+
 enum RepositoryAction: String {
   case fetch = "Fetch"
   case pull = "Pull"
@@ -203,6 +231,9 @@ enum GitOperationKind: String, Identifiable {
   case createBranch
   case createTag
   case stashPush
+  case gitFlowFeatureStart
+  case gitFlowReleaseStart
+  case gitFlowHotfixStart
 
   var id: String { rawValue }
 }
