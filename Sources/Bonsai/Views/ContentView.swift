@@ -165,6 +165,10 @@ struct ContentView: View {
             }
             .disabled(!store.snapshot.integrations.gitFlowInitialized)
           }
+          Divider()
+          Button("Fetch GitHub Notifications") {
+            Task { await store.fetchGitHubNotifications() }
+          }
         } label: {
           Label("Tools", systemImage: "wrench.and.screwdriver")
         }

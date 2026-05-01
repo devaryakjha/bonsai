@@ -87,6 +87,12 @@ struct SidebarView: View {
           systemImage: "arrow.triangle.branch",
           isEnabled: store.snapshot.integrations.gitFlowInitialized
         )
+        IntegrationRow(
+          title: "GitHub",
+          detail: store.gitHubNotifications.isEmpty ? "No unread notifications" : "\(store.gitHubNotifications.count) unread",
+          systemImage: "bell",
+          isEnabled: !store.gitHubNotifications.isEmpty
+        )
       }
 
       if !store.localBranches.isEmpty {

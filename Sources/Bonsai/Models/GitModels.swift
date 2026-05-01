@@ -113,6 +113,38 @@ struct GitIntegrationStatus: Hashable {
   var gitFlowDevelopBranch: String?
 }
 
+struct GitHubNotification: Identifiable, Hashable, Decodable {
+  struct Subject: Hashable, Decodable {
+    var title: String
+    var type: String
+    var url: String?
+  }
+
+  struct Repository: Hashable, Decodable {
+    var fullName: String
+
+    enum CodingKeys: String, CodingKey {
+      case fullName = "full_name"
+    }
+  }
+
+  var id: String
+  var unread: Bool
+  var reason: String
+  var updatedAt: String
+  var subject: Subject
+  var repository: Repository
+
+  enum CodingKeys: String, CodingKey {
+    case id
+    case unread
+    case reason
+    case updatedAt = "updated_at"
+    case subject
+    case repository
+  }
+}
+
 struct RepositorySnapshot {
   var status: [GitStatusEntry] = []
   var commits: [GitCommit] = []

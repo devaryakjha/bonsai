@@ -103,6 +103,12 @@ struct BonsaiCommands: Commands {
         }
         .disabled(store.selectedRepository == nil || !store.snapshot.integrations.gitFlowInitialized)
       }
+
+      Divider()
+
+      Button("Fetch GitHub Notifications") {
+        Task { await store.fetchGitHubNotifications() }
+      }
     }
   }
 }

@@ -6,6 +6,7 @@ import Observation
 @Observable
 final class RepositoryStore {
   private let gitClient = GitClient()
+  private let gitHubClient = GitHubClient()
   private let recentsKey = "bonsai.recentRepositories"
 
   var selectedRepository: GitRepository?
@@ -18,6 +19,7 @@ final class RepositoryStore {
   var mainMode: MainMode = .history
   var diffText = ""
   var commandResult: CommandResult?
+  var gitHubNotifications: [GitHubNotification] = []
   var operationRequest: GitOperationRequest?
   var operationInput = ""
   var conflictResolutionRequest: ConflictResolutionRequest?
@@ -509,6 +511,29 @@ final class RepositoryStore {
     guard let path = selectedChangedFile?.path ?? selectedStatusEntry?.path else { return }
     await runReadOnlyCommand(title: "File History \(path)") {
       try await gitClient.fileHistory(path: path, in: requiredRepository())
+    }
+  }
+
+  func fetchGitHubNotifications() async {
+    let token = UserDefaults.standard.string(forKey: "bonsai.githubToken")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    guard !token.isEmpty else {
+      errorMessage = "Add a GitHub personal access token in Settings first."
+      return
+    }
+
+    do {
+      gitHubNotifications = try await gitHubClient.notifications(token: token)
+      let summary = gitHubNotifications.prefix(8)
+        .map { "\($0.repository.fullName): \($0.subject.title)" }
+        .joined(separator: "\n")
+      commandResult = CommandResult(
+        title: "GitHub Notifications",
+        output: summary.isEmpty ? "No unread notifications." : summary,
+        isError: false
+      )
+    } catch {
+      commandResult = CommandResult(title: "GitHub Notifications", output: error.localizedDescription, isError: true)
+      errorMessage = error.localizedDescription
     }
   }
 

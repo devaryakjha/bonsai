@@ -5,6 +5,7 @@ struct SettingsView: View {
   @AppStorage("bonsai.autoRefresh") private var autoRefresh = true
   @AppStorage("bonsai.diffAlgorithm") private var diffAlgorithm = DiffAlgorithm.histogram.rawValue
   @AppStorage("bonsai.diffDisplayMode") private var diffDisplayMode = DiffDisplayMode.unified.rawValue
+  @AppStorage("bonsai.githubToken") private var githubToken = ""
 
   var body: some View {
     Form {
@@ -20,6 +21,7 @@ struct SettingsView: View {
           Text(mode.title).tag(mode.rawValue)
         }
       }
+      SecureField("GitHub token", text: $githubToken)
     }
     .formStyle(.grouped)
     .padding()
