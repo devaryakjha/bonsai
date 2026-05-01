@@ -244,6 +244,17 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.discardChangeRequest) { request in
+      DiscardChangeSheet(
+        request: request,
+        onCancel: {
+          store.discardChangeRequest = nil
+        },
+        onDiscard: {
+          Task { await store.discardChange() }
+        }
+      )
+    }
     .sheet(isPresented: Binding(
       get: { store.interactiveRebasePlan != nil },
       set: { if !$0 { store.interactiveRebasePlan = nil } }
@@ -304,6 +315,36 @@ struct ContentView: View {
     } message: {
       Text(store.errorMessage ?? "")
     }
+  }
+}
+
+private struct DiscardChangeSheet: View {
+  var request: DiscardChangeRequest
+  var onCancel: () -> Void
+  var onDiscard: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text("Discard Change")
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      Text(request.entry.path)
+        .font(.body.monospaced())
+        .lineLimit(2)
+
+      Text(request.entry.isUntracked ? "This will remove the untracked file." : "This will restore the file from Git and discard local edits.")
+        .foregroundStyle(.secondary)
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button("Discard", role: .destructive, action: onDiscard)
+          .buttonStyle(.borderedProminent)
+      }
+    }
+    .padding(20)
+    .frame(width: 460)
   }
 }
 

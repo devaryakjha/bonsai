@@ -102,6 +102,31 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(fileHistory.contains("Update file"))
   }
 
+  func testDiscardTrackedAndUntrackedChanges() async throws {
+    let repo = try await makeRepository()
+    let file = repo.appending(path: "file.txt")
+    let scratch = repo.appending(path: "scratch.txt")
+    try write("original\n", to: file)
+    try await commitAll(in: repo, message: "Initial file")
+
+    try write("changed\n", to: file)
+    try write("scratch\n", to: scratch)
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    var status = try await client.status(in: repository)
+    let tracked = try XCTUnwrap(status.first { $0.path == "file.txt" })
+    let untracked = try XCTUnwrap(status.first { $0.path == "scratch.txt" })
+
+    _ = try await client.discard(tracked, in: repository)
+    XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), "original\n")
+
+    _ = try await client.discard(untracked, in: repository)
+    XCTAssertFalse(FileManager.default.fileExists(atPath: scratch.path(percentEncoded: false)))
+
+    status = try await client.status(in: repository)
+    XCTAssertTrue(status.isEmpty)
+  }
+
   func testRefsStashesRemotesAndRepositoryActions() async throws {
     let remote = try await makeBareRepository()
     let repo = try await makeRepository()

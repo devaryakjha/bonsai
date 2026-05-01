@@ -164,6 +164,19 @@ struct GitClient {
     return output.combinedOutput
   }
 
+  func discard(_ entry: GitStatusEntry, in repository: GitRepository) async throws -> String {
+    if entry.isUntracked {
+      return try await runRaw(["clean", "-f", "--", entry.path], in: repository)
+    }
+
+    var outputs: [String] = []
+    if entry.isStaged {
+      outputs.append(try await unstage(entry, in: repository))
+    }
+    outputs.append(try await runRaw(["restore", "--worktree", "--", entry.path], in: repository))
+    return outputs.filter { !$0.isEmpty }.joined(separator: "\n")
+  }
+
   func stageHunk(_ hunk: DiffHunk, in repository: GitRepository) async throws -> String {
     let output = try await git(["apply", "--cached"], in: repository.url, standardInput: hunk.patch)
     return output.combinedOutput

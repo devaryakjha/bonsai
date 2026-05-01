@@ -74,6 +74,14 @@ private struct StatusRow: View {
       }
 
       Button {
+        store.presentDiscardChange(entry)
+      } label: {
+        Image(systemName: "trash")
+      }
+      .buttonStyle(.borderless)
+      .help("Discard change")
+
+      Button {
         Task {
           if entry.isStaged {
             await store.unstage(entry)
@@ -118,6 +126,10 @@ private struct StatusRow: View {
           store.selectStatusEntry(entry)
           Task { await store.lfsUnlockSelectedFile() }
         }
+      }
+      Divider()
+      Button("Discard Change", role: .destructive) {
+        store.presentDiscardChange(entry)
       }
       if entry.isConflicted {
         Button("Resolve Conflict") {

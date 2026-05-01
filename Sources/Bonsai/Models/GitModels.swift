@@ -307,6 +307,12 @@ struct ResetRequest: Identifiable, Hashable {
   var id: String { commit.hash }
 }
 
+struct DiscardChangeRequest: Identifiable, Hashable {
+  var entry: GitStatusEntry
+
+  var id: String { entry.id }
+}
+
 enum RemoteEditorMode: String, Identifiable {
   case add
   case edit

@@ -31,6 +31,7 @@ final class RepositoryStore {
   var operationRequest: GitOperationRequest?
   var operationInput = ""
   var conflictResolutionRequest: ConflictResolutionRequest?
+  var discardChangeRequest: DiscardChangeRequest?
   var interactiveRebasePlan: InteractiveRebasePlan?
   var resetRequest: ResetRequest?
   var remoteEditorRequest: RemoteEditorRequest?
@@ -309,6 +310,18 @@ final class RepositoryStore {
   func unstage(_ entry: GitStatusEntry) async {
     await runMutation(title: "Unstage \(entry.path)") {
       try await gitClient.unstage(entry, in: requiredRepository())
+    }
+  }
+
+  func presentDiscardChange(_ entry: GitStatusEntry) {
+    discardChangeRequest = DiscardChangeRequest(entry: entry)
+  }
+
+  func discardChange() async {
+    guard let request = discardChangeRequest else { return }
+    discardChangeRequest = nil
+    await runMutation(title: "Discard \(request.entry.path)") {
+      try await gitClient.discard(request.entry, in: requiredRepository())
     }
   }
 
