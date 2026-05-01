@@ -257,6 +257,19 @@ struct GitClient {
     try await runRaw(["lfs", "pull"], in: repository)
   }
 
+  func lfsLock(path: String, in repository: GitRepository) async throws -> String {
+    try await runRaw(["lfs", "lock", path], in: repository)
+  }
+
+  func lfsUnlock(path: String, force: Bool, in repository: GitRepository) async throws -> String {
+    var args = ["lfs", "unlock"]
+    if force {
+      args.append("--force")
+    }
+    args.append(path)
+    return try await runRaw(args, in: repository)
+  }
+
   func setCommitSigning(_ enabled: Bool, in repository: GitRepository) async throws -> String {
     try await runRaw(["config", "commit.gpgsign", enabled ? "true" : "false"], in: repository)
   }

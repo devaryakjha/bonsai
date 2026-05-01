@@ -72,6 +72,10 @@ final class RepositoryStore {
     selectedStatusEntry?.path ?? selectedChangedFile?.path
   }
 
+  var canRunSelectedFileLFSAction: Bool {
+    snapshot.integrations.lfsAvailable && selectedPreviewPath != nil
+  }
+
   var selectedPreviewIsImage: Bool {
     selectedPreviewPath.map(FilePreviewSupport.isImagePath) ?? false
   }
@@ -539,6 +543,20 @@ final class RepositoryStore {
   func lfsPull() async {
     await runMutation(title: "Git LFS Pull") {
       try await gitClient.lfsPull(in: requiredRepository())
+    }
+  }
+
+  func lfsLockSelectedFile() async {
+    guard let path = selectedPreviewPath else { return }
+    await runMutation(title: "Git LFS Lock \(path)") {
+      try await gitClient.lfsLock(path: path, in: requiredRepository())
+    }
+  }
+
+  func lfsUnlockSelectedFile(force: Bool = false) async {
+    guard let path = selectedPreviewPath else { return }
+    await runMutation(title: "Git LFS Unlock \(path)") {
+      try await gitClient.lfsUnlock(path: path, force: force, in: requiredRepository())
     }
   }
 

@@ -90,6 +90,16 @@ struct BonsaiCommands: Commands {
       }
       .disabled(store.selectedRepository == nil || !store.snapshot.integrations.lfsAvailable)
 
+      Button("Git LFS Lock Selected File") {
+        Task { await store.lfsLockSelectedFile() }
+      }
+      .disabled(!store.canRunSelectedFileLFSAction)
+
+      Button("Git LFS Unlock Selected File") {
+        Task { await store.lfsUnlockSelectedFile() }
+      }
+      .disabled(!store.canRunSelectedFileLFSAction)
+
       Button(store.snapshot.integrations.gpgSigningEnabled ? "Disable GPG Signing" : "Enable GPG Signing") {
         Task { await store.setCommitSigning(!store.snapshot.integrations.gpgSigningEnabled) }
       }

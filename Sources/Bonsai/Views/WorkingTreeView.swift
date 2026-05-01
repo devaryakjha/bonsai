@@ -109,6 +109,16 @@ private struct StatusRow: View {
         store.selectStatusEntry(entry)
         Task { await store.showFileHistoryForSelection() }
       }
+      if store.snapshot.integrations.lfsAvailable {
+        Button("Git LFS Lock") {
+          store.selectStatusEntry(entry)
+          Task { await store.lfsLockSelectedFile() }
+        }
+        Button("Git LFS Unlock") {
+          store.selectStatusEntry(entry)
+          Task { await store.lfsUnlockSelectedFile() }
+        }
+      }
       if entry.isConflicted {
         Button("Resolve Conflict") {
           store.presentConflictResolver(for: entry)
