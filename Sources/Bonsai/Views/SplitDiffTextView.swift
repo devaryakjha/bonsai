@@ -29,6 +29,7 @@ struct SplitDiffTextView: NSViewRepresentable {
   }
 
   func updateNSView(_ splitView: NSSplitView, context: Context) {
+    context.coordinator.setInitialDividerPositionIfNeeded(in: splitView)
     guard context.coordinator.lastDiff != splitDiff else { return }
     context.coordinator.lastDiff = splitDiff
     context.coordinator.oldTextView?.textStorage?.setAttributedString(Self.attributedDiff(splitDiff.oldText))
@@ -41,7 +42,22 @@ struct SplitDiffTextView: NSViewRepresentable {
     weak var oldScrollView: NSScrollView?
     weak var newScrollView: NSScrollView?
     var lastDiff: SplitDiff?
+    private var didSetInitialDividerPosition = false
     private var isSyncing = false
+
+    func setInitialDividerPositionIfNeeded(in splitView: NSSplitView) {
+      guard !didSetInitialDividerPosition else { return }
+      let width = splitView.bounds.width
+      guard width > 0 else {
+        DispatchQueue.main.async { [weak self, weak splitView] in
+          guard let self, let splitView else { return }
+          self.setInitialDividerPositionIfNeeded(in: splitView)
+        }
+        return
+      }
+      splitView.setPosition(width / 2, ofDividerAt: 0)
+      didSetInitialDividerPosition = true
+    }
 
     func installScrollSync() {
       if let oldClip = oldScrollView?.contentView {
@@ -82,7 +98,8 @@ struct SplitDiffTextView: NSViewRepresentable {
     scrollView.hasHorizontalScroller = true
     scrollView.autohidesScrollers = true
     scrollView.borderType = .noBorder
-    scrollView.drawsBackground = false
+    scrollView.drawsBackground = true
+    scrollView.backgroundColor = .windowBackgroundColor
     scrollView.contentView.postsBoundsChangedNotifications = true
 
     let textView = NSTextView()
@@ -91,8 +108,8 @@ struct SplitDiffTextView: NSViewRepresentable {
     textView.isRichText = false
     textView.usesFindBar = true
     textView.drawsBackground = true
-    textView.backgroundColor = .textBackgroundColor
-    textView.textContainerInset = NSSize(width: 12, height: 10)
+    textView.backgroundColor = .windowBackgroundColor
+    textView.textContainerInset = NSSize(width: 18, height: 16)
     textView.textContainer?.widthTracksTextView = false
     textView.textContainer?.containerSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
     textView.minSize = NSSize(width: 0, height: 0)
@@ -107,9 +124,10 @@ struct SplitDiffTextView: NSViewRepresentable {
 
   private static func attributedDiff(_ text: String) -> NSAttributedString {
     let result = NSMutableAttributedString()
-    let baseFont = NSFont.monospacedSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
+    let baseFont = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
     let paragraph = NSMutableParagraphStyle()
     paragraph.lineBreakMode = .byClipping
+    paragraph.lineSpacing = 1
 
     for line in text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init) {
       var attributes: [NSAttributedString.Key: Any] = [

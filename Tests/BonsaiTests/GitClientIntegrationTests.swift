@@ -29,6 +29,29 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertNil(errorMessage)
   }
 
+  func testModeSwitchSelectsMatchingDiffSurface() async throws {
+    let repo = try await makeRepository()
+    let file = repo.appending(path: "tracked.txt")
+    try write("before\n", to: file)
+    try await commitAll(in: repo, message: "Initial")
+    try write("after\n", to: file)
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    await MainActor.run {
+      store.mainMode = .changes
+    }
+    try await Task.sleep(nanoseconds: 200_000_000)
+
+    let selectedStatusEntry = await store.selectedStatusEntry
+    let selectedChangedFile = await store.selectedChangedFile
+    let diffText = await store.diffText
+    XCTAssertEqual(selectedStatusEntry?.path, "tracked.txt")
+    XCTAssertNil(selectedChangedFile)
+    XCTAssertTrue(diffText.contains("+after"))
+    XCTAssertFalse(diffText.contains("Initial"))
+  }
+
   func testWorkingTreeHunkCommitAndReadOnlyActions() async throws {
     let repo = try await makeRepository()
     let file = repo.appending(path: "file.txt")

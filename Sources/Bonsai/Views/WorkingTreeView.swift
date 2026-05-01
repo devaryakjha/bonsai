@@ -169,7 +169,7 @@ private struct CommitComposerView: View {
     VStack(alignment: .leading, spacing: 10) {
       TextEditor(text: $store.commitMessage)
         .font(.body.monospaced())
-        .frame(minHeight: 72)
+        .frame(height: 92)
         .overlay {
           RoundedRectangle(cornerRadius: 6)
             .stroke(.quaternary)
