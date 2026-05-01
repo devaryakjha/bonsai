@@ -22,6 +22,17 @@ struct ContentView: View {
           Label("Open", systemImage: "folder")
         }
 
+        Menu {
+          Button("Clone Repository...") {
+            store.presentCloneRepository()
+          }
+          Button("Create Repository...") {
+            store.presentCreateRepository()
+          }
+        } label: {
+          Label("New", systemImage: "plus")
+        }
+
         Button {
           Task { await store.refreshAll() }
         } label: {
@@ -149,6 +160,25 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.repositorySetupMode) { mode in
+      RepositorySetupSheet(
+        mode: mode,
+        remoteURL: $store.repositorySetupRemoteURL,
+        destinationPath: $store.repositorySetupDestinationPath,
+        onRemoteChanged: {
+          store.updateCloneDestinationFromRemote()
+        },
+        onChooseDestination: {
+          store.chooseRepositorySetupDestination()
+        },
+        onCancel: {
+          store.repositorySetupMode = nil
+        },
+        onConfirm: {
+          Task { await store.confirmRepositorySetup() }
+        }
+      )
+    }
     .task {
       await store.refreshAll()
     }
@@ -162,6 +192,70 @@ struct ContentView: View {
     } message: {
       Text(store.errorMessage ?? "")
     }
+  }
+}
+
+private struct RepositorySetupSheet: View {
+  var mode: RepositorySetupMode
+  @Binding var remoteURL: String
+  @Binding var destinationPath: String
+  var onRemoteChanged: () -> Void
+  var onChooseDestination: () -> Void
+  var onCancel: () -> Void
+  var onConfirm: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text(mode.title)
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      if mode == .clone {
+        VStack(alignment: .leading, spacing: 6) {
+          Text("Remote URL")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+          TextField("git@github.com:owner/repository.git", text: $remoteURL)
+            .textFieldStyle(.roundedBorder)
+            .onSubmit(onRemoteChanged)
+            .onChange(of: remoteURL) { _, _ in onRemoteChanged() }
+        }
+      }
+
+      VStack(alignment: .leading, spacing: 6) {
+        Text(mode == .clone ? "Destination" : "Repository Folder")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+        HStack {
+          TextField("~/projects/repository", text: $destinationPath)
+            .textFieldStyle(.roundedBorder)
+          Button {
+            onChooseDestination()
+          } label: {
+            Image(systemName: "folder")
+          }
+          .help("Choose folder")
+        }
+      }
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button(mode.primaryActionTitle, action: onConfirm)
+          .buttonStyle(.borderedProminent)
+          .disabled(!canConfirm)
+      }
+    }
+    .padding(20)
+    .frame(width: 520)
+  }
+
+  private var canConfirm: Bool {
+    let hasDestination = !destinationPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    if mode == .clone {
+      return hasDestination && !remoteURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+    return hasDestination
   }
 }
 

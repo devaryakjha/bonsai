@@ -136,6 +136,15 @@ struct GitOperationRequest: Identifiable {
   var primaryActionTitle: String
 }
 
+enum RepositorySetupMode: String, Identifiable {
+  case clone
+  case create
+
+  var id: String { rawValue }
+  var title: String { self == .clone ? "Clone Repository" : "Create Repository" }
+  var primaryActionTitle: String { self == .clone ? "Clone" : "Create" }
+}
+
 enum MainMode: String, CaseIterable, Identifiable {
   case history = "History"
   case changes = "Changes"

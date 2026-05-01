@@ -3,6 +3,13 @@ import XCTest
 @testable import Bonsai
 
 final class ProjectRepositoryScannerTests: XCTestCase {
+  @MainActor
+  func testRepositoryNameIsDerivedFromCommonRemoteURLFormats() {
+    XCTAssertEqual(RepositoryStore.repositoryName(fromRemoteURL: "https://github.com/example/bonsai.git"), "bonsai")
+    XCTAssertEqual(RepositoryStore.repositoryName(fromRemoteURL: "git@github.com:example/bonsai.git"), "bonsai")
+    XCTAssertEqual(RepositoryStore.repositoryName(fromRemoteURL: "ssh://git@example.com/example/bonsai"), "bonsai")
+  }
+
   func testScannerFindsGitRepositoriesWithoutDescendingIntoRepositoryChildren() throws {
     let root = FileManager.default.temporaryDirectory
       .appending(path: "bonsai-scanner-\(UUID().uuidString)", directoryHint: .isDirectory)

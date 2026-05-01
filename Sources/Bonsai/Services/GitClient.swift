@@ -8,6 +8,18 @@ struct GitClient {
     _ = try await git(["rev-parse", "--show-toplevel"], in: url)
   }
 
+  func cloneRepository(from remoteURL: String, to destination: URL) async throws -> String {
+    let parent = destination.deletingLastPathComponent()
+    let output = try await git(["clone", remoteURL, destination.path(percentEncoded: false)], in: parent)
+    return output.combinedOutput
+  }
+
+  func initializeRepository(at destination: URL) async throws -> String {
+    try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+    let output = try await git(["init"], in: destination)
+    return output.combinedOutput
+  }
+
   func snapshot(for repository: GitRepository, selectedCommit: GitCommit?) async throws -> RepositorySnapshot {
     async let status = status(in: repository)
     async let commits = commits(in: repository)

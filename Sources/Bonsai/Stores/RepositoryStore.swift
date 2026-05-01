@@ -20,6 +20,9 @@ final class RepositoryStore {
   var commandResult: CommandResult?
   var operationRequest: GitOperationRequest?
   var operationInput = ""
+  var repositorySetupMode: RepositorySetupMode?
+  var repositorySetupRemoteURL = ""
+  var repositorySetupDestinationPath = ""
   var isRefreshing = false
   var errorMessage: String?
   var commitMessage = ""
@@ -67,6 +70,79 @@ final class RepositoryStore {
     guard panel.runModal() == .OK, let url = panel.url else { return }
     Task {
       await openRepository(at: url)
+    }
+  }
+
+  func presentCloneRepository() {
+    repositorySetupRemoteURL = ""
+    repositorySetupDestinationPath = Self.defaultProjectsDirectory()
+      .appending(path: "Repository", directoryHint: .isDirectory)
+      .path(percentEncoded: false)
+    repositorySetupMode = .clone
+  }
+
+  func presentCreateRepository() {
+    repositorySetupRemoteURL = ""
+    repositorySetupDestinationPath = Self.defaultProjectsDirectory()
+      .appending(path: "NewRepository", directoryHint: .isDirectory)
+      .path(percentEncoded: false)
+    repositorySetupMode = .create
+  }
+
+  func chooseRepositorySetupDestination() {
+    let panel = NSOpenPanel()
+    panel.title = repositorySetupMode == .clone ? "Choose Clone Parent Folder" : "Choose Repository Folder"
+    panel.prompt = "Choose"
+    panel.canChooseFiles = false
+    panel.canChooseDirectories = true
+    panel.canCreateDirectories = true
+    panel.allowsMultipleSelection = false
+
+    guard panel.runModal() == .OK, let url = panel.url else { return }
+    if repositorySetupMode == .clone, !repositorySetupRemoteURL.isEmpty {
+      repositorySetupDestinationPath = url
+        .appending(path: Self.repositoryName(fromRemoteURL: repositorySetupRemoteURL), directoryHint: .isDirectory)
+        .path(percentEncoded: false)
+    } else {
+      repositorySetupDestinationPath = url.path(percentEncoded: false)
+    }
+  }
+
+  func updateCloneDestinationFromRemote() {
+    guard repositorySetupMode == .clone else { return }
+    let parent = URL(filePath: repositorySetupDestinationPath, directoryHint: .isDirectory).deletingLastPathComponent()
+    let repositoryName = Self.repositoryName(fromRemoteURL: repositorySetupRemoteURL)
+    guard !repositoryName.isEmpty else { return }
+    repositorySetupDestinationPath = parent
+      .appending(path: repositoryName, directoryHint: .isDirectory)
+      .path(percentEncoded: false)
+  }
+
+  func confirmRepositorySetup() async {
+    guard let mode = repositorySetupMode else { return }
+    let destination = URL(filePath: repositorySetupDestinationPath, directoryHint: .isDirectory)
+    repositorySetupMode = nil
+
+    do {
+      let output: String
+      switch mode {
+      case .clone:
+        let remote = repositorySetupRemoteURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !remote.isEmpty else {
+          errorMessage = "Remote URL is required."
+          return
+        }
+        output = try await gitClient.cloneRepository(from: remote, to: destination)
+      case .create:
+        output = try await gitClient.initializeRepository(at: destination)
+      }
+
+      commandResult = CommandResult(title: mode.title, output: output.isEmpty ? "Completed." : output, isError: false)
+      await openRepository(at: destination)
+      rescanProjectsDirectory()
+    } catch {
+      commandResult = CommandResult(title: mode.title, output: error.localizedDescription, isError: true)
+      errorMessage = error.localizedDescription
     }
   }
 
@@ -384,6 +460,27 @@ final class RepositoryStore {
       return []
     }
     return repositories
+  }
+
+  static func defaultProjectsDirectory() -> URL {
+    URL(filePath: NSHomeDirectory()).appending(path: "projects", directoryHint: .isDirectory)
+  }
+
+  static func repositoryName(fromRemoteURL remoteURL: String) -> String {
+    let trimmed = remoteURL.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return "Repository" }
+    let withoutTrailingSlash = trimmed.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+    let lastComponent: String
+    if let url = URL(string: withoutTrailingSlash), let component = url.pathComponents.last, component != "/" {
+      lastComponent = component
+    } else {
+      lastComponent = withoutTrailingSlash
+        .split(separator: "/")
+        .last
+        .map(String.init) ?? withoutTrailingSlash
+    }
+    let withoutGit = lastComponent.hasSuffix(".git") ? String(lastComponent.dropLast(4)) : lastComponent
+    return withoutGit.isEmpty ? "Repository" : withoutGit
   }
 }
 

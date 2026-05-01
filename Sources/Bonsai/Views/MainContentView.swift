@@ -46,6 +46,20 @@ private struct EmptyRepositoryView: View {
         Label("Open Repository", systemImage: "folder")
       }
       .buttonStyle(.borderedProminent)
+
+      HStack {
+        Button {
+          store.presentCloneRepository()
+        } label: {
+          Label("Clone", systemImage: "square.and.arrow.down")
+        }
+
+        Button {
+          store.presentCreateRepository()
+        } label: {
+          Label("Create", systemImage: "plus.square")
+        }
+      }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
   }

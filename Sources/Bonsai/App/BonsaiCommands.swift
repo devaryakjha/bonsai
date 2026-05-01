@@ -10,6 +10,15 @@ struct BonsaiCommands: Commands {
       }
       .keyboardShortcut("o", modifiers: [.command])
 
+      Button("Clone Repository...") {
+        store.presentCloneRepository()
+      }
+      .keyboardShortcut("o", modifiers: [.command, .shift])
+
+      Button("Create Repository...") {
+        store.presentCreateRepository()
+      }
+
       Divider()
 
       Button("Fetch") {
