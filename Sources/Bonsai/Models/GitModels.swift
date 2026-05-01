@@ -268,6 +268,24 @@ struct ResetRequest: Identifiable, Hashable {
   var id: String { commit.hash }
 }
 
+enum RemoteEditorMode: String, Identifiable {
+  case add
+  case edit
+
+  var id: String { rawValue }
+  var title: String { self == .add ? "Add Remote" : "Edit Remote" }
+  var primaryActionTitle: String { self == .add ? "Add" : "Save" }
+}
+
+struct RemoteEditorRequest: Identifiable, Hashable {
+  var mode: RemoteEditorMode
+  var originalName: String?
+  var name: String
+  var url: String
+
+  var id: String { "\(mode.rawValue):\(originalName ?? name)" }
+}
+
 enum GitFlowStartKind: String, CaseIterable, Identifiable {
   case feature
   case release

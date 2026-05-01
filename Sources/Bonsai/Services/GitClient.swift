@@ -80,6 +80,18 @@ struct GitClient {
     return GitParsers.parseRemotes(output.stdout)
   }
 
+  func addRemote(name: String, url: String, in repository: GitRepository) async throws -> String {
+    try await runRaw(["remote", "add", name, url], in: repository)
+  }
+
+  func setRemoteURL(name: String, url: String, in repository: GitRepository) async throws -> String {
+    try await runRaw(["remote", "set-url", name, url], in: repository)
+  }
+
+  func removeRemote(name: String, in repository: GitRepository) async throws -> String {
+    try await runRaw(["remote", "remove", name], in: repository)
+  }
+
   func stashes(in repository: GitRepository) async throws -> [GitStash] {
     let output = try? await git(["stash", "list"], in: repository.url)
     return GitParsers.parseStashes(output?.stdout ?? "")

@@ -151,6 +151,10 @@ struct ContentView: View {
             Task { await store.updateSubmodules() }
           }
           Divider()
+          Button("Add Remote...") {
+            store.presentAddRemote()
+          }
+          Divider()
           Button("Git LFS Pull") {
             Task { await store.lfsPull() }
           }
@@ -246,6 +250,17 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.remoteEditorRequest) { request in
+      RemoteEditorSheet(
+        request: request,
+        onCancel: {
+          store.remoteEditorRequest = nil
+        },
+        onSave: { name, url in
+          Task { await store.saveRemote(name: name, url: url) }
+        }
+      )
+    }
     .task {
       await store.refreshAll()
     }
@@ -259,6 +274,49 @@ struct ContentView: View {
     } message: {
       Text(store.errorMessage ?? "")
     }
+  }
+}
+
+private struct RemoteEditorSheet: View {
+  var request: RemoteEditorRequest
+  var onCancel: () -> Void
+  var onSave: (String, String) -> Void
+  @State private var name: String
+  @State private var url: String
+
+  init(request: RemoteEditorRequest, onCancel: @escaping () -> Void, onSave: @escaping (String, String) -> Void) {
+    self.request = request
+    self.onCancel = onCancel
+    self.onSave = onSave
+    _name = State(initialValue: request.name)
+    _url = State(initialValue: request.url)
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text(request.mode.title)
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      TextField("Name", text: $name)
+        .textFieldStyle(.roundedBorder)
+        .disabled(request.mode == .edit)
+
+      TextField("URL", text: $url)
+        .textFieldStyle(.roundedBorder)
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button(request.mode.primaryActionTitle) {
+          onSave(name, url)
+        }
+        .buttonStyle(.borderedProminent)
+        .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+      }
+    }
+    .padding(20)
+    .frame(width: 520)
   }
 }
 

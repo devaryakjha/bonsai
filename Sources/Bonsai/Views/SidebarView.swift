@@ -75,6 +75,7 @@ struct SidebarView: View {
       Section("Workspace") {
         SidebarMetricRow(title: "Changes", value: store.snapshot.status.count, systemImage: "square.and.pencil")
         SidebarMetricRow(title: "Branches", value: store.localBranches.count, systemImage: "point.3.connected.trianglepath.dotted")
+        SidebarMetricRow(title: "Remotes", value: store.snapshot.remotes.count, systemImage: "network")
         SidebarMetricRow(title: "Tags", value: store.tags.count, systemImage: "tag")
         SidebarMetricRow(title: "Stashes", value: store.snapshot.stashes.count, systemImage: "tray")
         SidebarMetricRow(title: "Submodules", value: store.snapshot.submodules.count, systemImage: "shippingbox")
@@ -149,6 +150,35 @@ struct SidebarView: View {
               }
           }
         }
+      }
+
+      Section {
+        ForEach(store.snapshot.remotes) { remote in
+          VStack(alignment: .leading, spacing: 2) {
+            Label(remote.name, systemImage: "network")
+            Text(remote.fetchURL ?? remote.pushURL ?? "")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .lineLimit(1)
+          }
+          .contextMenu {
+            Button("Edit URL") {
+              store.presentEditRemote(remote)
+            }
+            Button("Remove") {
+              Task { await store.removeRemote(remote) }
+            }
+          }
+        }
+
+        Button {
+          store.presentAddRemote()
+        } label: {
+          Label("Add Remote", systemImage: "plus.circle")
+        }
+        .buttonStyle(.plain)
+      } header: {
+        Text("Remotes")
       }
 
       if !store.tags.isEmpty {

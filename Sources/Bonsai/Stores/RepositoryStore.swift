@@ -18,7 +18,13 @@ final class RepositoryStore {
   var selectedCommit: GitCommit?
   var selectedStatusEntry: GitStatusEntry?
   var selectedChangedFile: GitChangedFile?
-  var mainMode: MainMode = .history
+  var mainMode: MainMode = .history {
+    didSet {
+      guard oldValue != mainMode else { return }
+      alignSelectionForCurrentMode()
+      Task { await refreshDiff() }
+    }
+  }
   var diffText = ""
   var commandResult: CommandResult?
   var gitHubNotifications: [GitHubNotification] = []
@@ -27,6 +33,7 @@ final class RepositoryStore {
   var conflictResolutionRequest: ConflictResolutionRequest?
   var interactiveRebasePlan: InteractiveRebasePlan?
   var resetRequest: ResetRequest?
+  var remoteEditorRequest: RemoteEditorRequest?
   var repositorySetupMode: RepositorySetupMode?
   var repositorySetupRemoteURL = ""
   var repositorySetupDestinationPath = ""
@@ -333,6 +340,45 @@ final class RepositoryStore {
     }
   }
 
+  func presentAddRemote() {
+    remoteEditorRequest = RemoteEditorRequest(mode: .add, originalName: nil, name: "", url: "")
+  }
+
+  func presentEditRemote(_ remote: GitRemote) {
+    remoteEditorRequest = RemoteEditorRequest(
+      mode: .edit,
+      originalName: remote.name,
+      name: remote.name,
+      url: remote.pushURL ?? remote.fetchURL ?? ""
+    )
+  }
+
+  func saveRemote(name: String, url: String) async {
+    guard let request = remoteEditorRequest else { return }
+    remoteEditorRequest = nil
+    let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    let trimmedURL = url.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmedName.isEmpty, !trimmedURL.isEmpty else {
+      errorMessage = "Remote name and URL are required."
+      return
+    }
+
+    await runMutation(title: request.mode.title) {
+      switch request.mode {
+      case .add:
+        return try await gitClient.addRemote(name: trimmedName, url: trimmedURL, in: requiredRepository())
+      case .edit:
+        return try await gitClient.setRemoteURL(name: request.originalName ?? trimmedName, url: trimmedURL, in: requiredRepository())
+      }
+    }
+  }
+
+  func removeRemote(_ remote: GitRemote) async {
+    await runMutation(title: "Remove Remote \(remote.name)") {
+      try await gitClient.removeRemote(name: remote.name, in: requiredRepository())
+    }
+  }
+
   func presentCreateBranch() {
     operationInput = ""
     operationRequest = GitOperationRequest(
@@ -595,6 +641,24 @@ final class RepositoryStore {
       await refreshDiff()
     } catch {
       errorMessage = error.localizedDescription
+    }
+  }
+
+  private func alignSelectionForCurrentMode() {
+    switch mainMode {
+    case .history:
+      selectedStatusEntry = nil
+      if selectedCommit == nil {
+        selectedCommit = snapshot.commits.first
+      }
+      if selectedChangedFile == nil {
+        selectedChangedFile = snapshot.changedFiles.first
+      }
+    case .changes:
+      selectedChangedFile = nil
+      if selectedStatusEntry == nil {
+        selectedStatusEntry = snapshot.status.first
+      }
     }
   }
 
