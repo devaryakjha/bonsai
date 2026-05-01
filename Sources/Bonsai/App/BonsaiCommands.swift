@@ -119,6 +119,14 @@ struct BonsaiCommands: Commands {
         Task { await store.markGitHubNotificationsRead() }
       }
       .disabled(store.gitHubNotifications.isEmpty)
+
+      Button("Create GitHub Repository...") {
+        store.presentCreateGitHubRepository()
+      }
+
+      Button("Delete GitHub Repository...") {
+        store.presentDeleteGitHubRepository()
+      }
     }
   }
 }

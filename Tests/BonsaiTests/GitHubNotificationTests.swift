@@ -29,4 +29,25 @@ final class GitHubNotificationTests: XCTestCase {
     XCTAssertEqual(notifications[0].subject.title, "Review requested")
     XCTAssertEqual(notifications[0].reason, "mention")
   }
+
+  func testDecodeGitHubRepository() throws {
+    let data = """
+    {
+      "id": 42,
+      "name": "bonsai",
+      "full_name": "example/bonsai",
+      "html_url": "https://github.com/example/bonsai",
+      "clone_url": "https://github.com/example/bonsai.git",
+      "ssh_url": "git@github.com:example/bonsai.git",
+      "private": true
+    }
+    """.data(using: .utf8)!
+
+    let repository = try JSONDecoder().decode(GitHubRepository.self, from: data)
+
+    XCTAssertEqual(repository.id, 42)
+    XCTAssertEqual(repository.fullName, "example/bonsai")
+    XCTAssertEqual(repository.cloneURL, "https://github.com/example/bonsai.git")
+    XCTAssertTrue(repository.isPrivate)
+  }
 }

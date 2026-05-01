@@ -34,6 +34,7 @@ final class RepositoryStore {
   var interactiveRebasePlan: InteractiveRebasePlan?
   var resetRequest: ResetRequest?
   var remoteEditorRequest: RemoteEditorRequest?
+  var gitHubRepositoryRequest: GitHubRepositoryRequest?
   var repositorySetupMode: RepositorySetupMode?
   var repositorySetupRemoteURL = ""
   var repositorySetupDestinationPath = ""
@@ -607,6 +608,60 @@ final class RepositoryStore {
       commandResult = CommandResult(title: "GitHub Notifications", output: "Marked notifications as read.", isError: false)
     } catch {
       commandResult = CommandResult(title: "GitHub Notifications", output: error.localizedDescription, isError: true)
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  func presentCreateGitHubRepository() {
+    gitHubRepositoryRequest = GitHubRepositoryRequest(
+      operation: .create,
+      owner: "",
+      name: selectedRepository?.name ?? "",
+      repositoryDescription: "",
+      isPrivate: false
+    )
+  }
+
+  func presentDeleteGitHubRepository() {
+    gitHubRepositoryRequest = GitHubRepositoryRequest(
+      operation: .delete,
+      owner: "",
+      name: selectedRepository?.name ?? "",
+      repositoryDescription: "",
+      isPrivate: false
+    )
+  }
+
+  func runGitHubRepositoryOperation(_ request: GitHubRepositoryRequest) async {
+    guard let token = githubToken() else { return }
+    gitHubRepositoryRequest = nil
+
+    do {
+      switch request.operation {
+      case .create:
+        let repository = try await gitHubClient.createRepository(
+          token: token,
+          name: request.name.trimmingCharacters(in: .whitespacesAndNewlines),
+          description: request.repositoryDescription.trimmingCharacters(in: .whitespacesAndNewlines),
+          isPrivate: request.isPrivate
+        )
+        commandResult = CommandResult(
+          title: request.operation.title,
+          output: [repository.fullName, repository.cloneURL, repository.sshURL, repository.htmlURL]
+            .compactMap { $0 }
+            .joined(separator: "\n"),
+          isError: false
+        )
+      case .delete:
+        try await gitHubClient.deleteRepository(
+          token: token,
+          owner: request.owner.trimmingCharacters(in: .whitespacesAndNewlines),
+          name: request.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        )
+        commandResult = CommandResult(title: request.operation.title, output: "Deleted \(request.owner)/\(request.name).", isError: false)
+      }
+    } catch {
+      commandResult = CommandResult(title: request.operation.title, output: error.localizedDescription, isError: true)
       errorMessage = error.localizedDescription
     }
   }

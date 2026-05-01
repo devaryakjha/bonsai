@@ -181,6 +181,13 @@ struct ContentView: View {
             Task { await store.markGitHubNotificationsRead() }
           }
           .disabled(store.gitHubNotifications.isEmpty)
+          Divider()
+          Button("Create GitHub Repository...") {
+            store.presentCreateGitHubRepository()
+          }
+          Button("Delete GitHub Repository...") {
+            store.presentDeleteGitHubRepository()
+          }
         } label: {
           Label("Tools", systemImage: "wrench.and.screwdriver")
         }
@@ -265,6 +272,17 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.gitHubRepositoryRequest) { request in
+      GitHubRepositorySheet(
+        request: request,
+        onCancel: {
+          store.gitHubRepositoryRequest = nil
+        },
+        onConfirm: { updatedRequest in
+          Task { await store.runGitHubRepositoryOperation(updatedRequest) }
+        }
+      )
+    }
     .task {
       await store.refreshAll()
     }
@@ -278,6 +296,83 @@ struct ContentView: View {
     } message: {
       Text(store.errorMessage ?? "")
     }
+  }
+}
+
+private struct GitHubRepositorySheet: View {
+  var request: GitHubRepositoryRequest
+  var onCancel: () -> Void
+  var onConfirm: (GitHubRepositoryRequest) -> Void
+  @State private var owner: String
+  @State private var name: String
+  @State private var description: String
+  @State private var isPrivate: Bool
+
+  init(
+    request: GitHubRepositoryRequest,
+    onCancel: @escaping () -> Void,
+    onConfirm: @escaping (GitHubRepositoryRequest) -> Void
+  ) {
+    self.request = request
+    self.onCancel = onCancel
+    self.onConfirm = onConfirm
+    _owner = State(initialValue: request.owner)
+    _name = State(initialValue: request.name)
+    _description = State(initialValue: request.repositoryDescription)
+    _isPrivate = State(initialValue: request.isPrivate)
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text(request.operation.title)
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      if request.operation == .delete {
+        Text("Deletion is permanent and requires a token with repository deletion permissions.")
+          .foregroundStyle(.secondary)
+      }
+
+      if request.operation == .delete {
+        TextField("Owner", text: $owner)
+          .textFieldStyle(.roundedBorder)
+      }
+
+      TextField("Repository name", text: $name)
+        .textFieldStyle(.roundedBorder)
+
+      if request.operation == .create {
+        TextField("Description", text: $description)
+          .textFieldStyle(.roundedBorder)
+        Toggle("Private", isOn: $isPrivate)
+      }
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button(request.operation.primaryActionTitle) {
+          onConfirm(GitHubRepositoryRequest(
+            operation: request.operation,
+            owner: owner,
+            name: name,
+            repositoryDescription: description,
+            isPrivate: isPrivate
+          ))
+        }
+        .buttonStyle(.borderedProminent)
+        .disabled(!canConfirm)
+      }
+    }
+    .padding(20)
+    .frame(width: 520)
+  }
+
+  private var canConfirm: Bool {
+    let hasName = !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    if request.operation == .delete {
+      return hasName && !owner.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+    return hasName
   }
 }
 

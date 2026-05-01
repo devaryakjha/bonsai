@@ -152,6 +152,45 @@ struct GitHubNotification: Identifiable, Hashable, Decodable {
   }
 }
 
+struct GitHubRepository: Identifiable, Hashable, Decodable {
+  var id: Int
+  var name: String
+  var fullName: String
+  var htmlURL: String
+  var cloneURL: String?
+  var sshURL: String?
+  var isPrivate: Bool
+
+  enum CodingKeys: String, CodingKey {
+    case id
+    case name
+    case fullName = "full_name"
+    case htmlURL = "html_url"
+    case cloneURL = "clone_url"
+    case sshURL = "ssh_url"
+    case isPrivate = "private"
+  }
+}
+
+enum GitHubRepositoryOperation: String, Identifiable {
+  case create
+  case delete
+
+  var id: String { rawValue }
+  var title: String { self == .create ? "Create GitHub Repository" : "Delete GitHub Repository" }
+  var primaryActionTitle: String { self == .create ? "Create" : "Delete" }
+}
+
+struct GitHubRepositoryRequest: Identifiable, Hashable {
+  var operation: GitHubRepositoryOperation
+  var owner: String
+  var name: String
+  var repositoryDescription: String
+  var isPrivate: Bool
+
+  var id: String { operation.rawValue }
+}
+
 struct RepositorySnapshot {
   var status: [GitStatusEntry] = []
   var commits: [GitCommit] = []
