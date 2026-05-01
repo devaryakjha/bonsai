@@ -159,6 +159,40 @@ struct SplitDiff: Hashable {
   var newText: String
 }
 
+enum RebaseTodoAction: String, CaseIterable, Identifiable {
+  case pick
+  case reword
+  case edit
+  case squash
+  case fixup
+  case drop
+
+  var id: String { rawValue }
+  var title: String { rawValue.capitalized }
+}
+
+struct InteractiveRebaseItem: Identifiable, Hashable {
+  var id = UUID()
+  var action: RebaseTodoAction
+  var hash: String
+  var shortHash: String
+  var subject: String
+
+  var todoLine: String {
+    "\(action.rawValue) \(hash) \(subject)"
+  }
+}
+
+struct InteractiveRebasePlan: Identifiable, Hashable {
+  var id = UUID()
+  var upstream: String
+  var items: [InteractiveRebaseItem]
+
+  var todoText: String {
+    items.map(\.todoLine).joined(separator: "\n") + "\n"
+  }
+}
+
 enum RepositoryAction: String {
   case fetch = "Fetch"
   case pull = "Pull"

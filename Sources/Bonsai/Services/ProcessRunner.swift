@@ -18,12 +18,21 @@ enum ProcessRunnerError: LocalizedError {
 }
 
 struct ProcessRunner {
-  func run(_ executable: String, arguments: [String], currentDirectory: URL?, standardInput: String? = nil) async throws -> ProcessOutput {
+  func run(
+    _ executable: String,
+    arguments: [String],
+    currentDirectory: URL?,
+    standardInput: String? = nil,
+    environment: [String: String]? = nil
+  ) async throws -> ProcessOutput {
     try await Task.detached(priority: .userInitiated) {
       let process = Process()
       process.executableURL = URL(filePath: executable)
       process.arguments = arguments
       process.currentDirectoryURL = currentDirectory
+      if let environment {
+        process.environment = ProcessInfo.processInfo.environment.merging(environment) { _, new in new }
+      }
 
       let stdout = Pipe()
       let stderr = Pipe()

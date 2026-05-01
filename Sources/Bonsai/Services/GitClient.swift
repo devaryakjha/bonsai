@@ -227,6 +227,57 @@ struct GitClient {
     }
   }
 
+  func interactiveRebasePlan(in repository: GitRepository, count: Int = 10) async throws -> InteractiveRebasePlan {
+    let format = "%H%x1f%h%x1f%s"
+    let output = try await git([
+      "log",
+      "--reverse",
+      "--pretty=format:\(format)",
+      "-n",
+      "\(count)"
+    ], in: repository.url)
+
+    let items = output.stdout
+      .split(separator: "\n", omittingEmptySubsequences: true)
+      .compactMap { line -> InteractiveRebaseItem? in
+        let parts = line.split(separator: "\u{1f}", omittingEmptySubsequences: false).map(String.init)
+        guard parts.count >= 3 else { return nil }
+        return InteractiveRebaseItem(action: .pick, hash: parts[0], shortHash: parts[1], subject: parts[2])
+      }
+
+    guard let first = items.first, items.count >= 2 else {
+      throw GitClientError.notEnoughCommitsForInteractiveRebase
+    }
+
+    return InteractiveRebasePlan(upstream: "\(first.hash)^", items: items)
+  }
+
+  func startInteractiveRebase(_ plan: InteractiveRebasePlan, in repository: GitRepository) async throws -> String {
+    let tempDirectory = FileManager.default.temporaryDirectory
+      .appending(path: "bonsai-rebase-\(UUID().uuidString)", directoryHint: .isDirectory)
+    try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+    let todoURL = tempDirectory.appending(path: "git-rebase-todo")
+    let editorURL = tempDirectory.appending(path: "sequence-editor.sh")
+    try plan.todoText.write(to: todoURL, atomically: true, encoding: .utf8)
+    try """
+    #!/bin/sh
+    cp "$BONSAI_REBASE_TODO" "$1"
+    """.write(to: editorURL, atomically: true, encoding: .utf8)
+    try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: editorURL.path(percentEncoded: false))
+
+    let output = try await git(
+      ["rebase", "-i", plan.upstream],
+      in: repository.url,
+      environment: [
+        "GIT_SEQUENCE_EDITOR": editorURL.path(percentEncoded: false),
+        "BONSAI_REBASE_TODO": todoURL.path(percentEncoded: false)
+      ]
+    )
+    return output.combinedOutput
+  }
+
   func reflog(in repository: GitRepository) async throws -> String {
     try await runRaw(["reflog", "--date=iso"], in: repository)
   }
@@ -248,8 +299,8 @@ struct GitClient {
     return output.stdout
   }
 
-  func git(_ arguments: [String], in directory: URL?, standardInput: String? = nil) async throws -> ProcessOutput {
-    try await runner.run(gitExecutable, arguments: ["git"] + arguments, currentDirectory: directory, standardInput: standardInput)
+  func git(_ arguments: [String], in directory: URL?, standardInput: String? = nil, environment: [String: String]? = nil) async throws -> ProcessOutput {
+    try await runner.run(gitExecutable, arguments: ["git"] + arguments, currentDirectory: directory, standardInput: standardInput, environment: environment)
   }
 
   private func diffArguments(_ suffix: [String], algorithm: DiffAlgorithm) -> [String] {
@@ -261,6 +312,17 @@ struct GitClient {
       "--indent-heuristic",
       "--diff-algorithm=\(algorithm.rawValue)"
     ] + suffix
+  }
+}
+
+enum GitClientError: LocalizedError {
+  case notEnoughCommitsForInteractiveRebase
+
+  var errorDescription: String? {
+    switch self {
+    case .notEnoughCommitsForInteractiveRebase:
+      return "At least two commits are required to start an interactive rebase."
+    }
   }
 }
 

@@ -70,6 +70,13 @@ struct BonsaiCommands: Commands {
         Task { await store.showReflog() }
       }
       .disabled(store.selectedRepository == nil)
+
+      Divider()
+
+      Button("Interactive Rebase...") {
+        Task { await store.presentInteractiveRebase() }
+      }
+      .disabled(store.selectedRepository == nil)
     }
   }
 }

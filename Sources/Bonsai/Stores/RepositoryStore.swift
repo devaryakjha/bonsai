@@ -21,6 +21,7 @@ final class RepositoryStore {
   var operationRequest: GitOperationRequest?
   var operationInput = ""
   var conflictResolutionRequest: ConflictResolutionRequest?
+  var interactiveRebasePlan: InteractiveRebasePlan?
   var repositorySetupMode: RepositorySetupMode?
   var repositorySetupRemoteURL = ""
   var repositorySetupDestinationPath = ""
@@ -433,6 +434,37 @@ final class RepositoryStore {
     guard let path = selectedChangedFile?.path ?? selectedStatusEntry?.path else { return }
     await runReadOnlyCommand(title: "File History \(path)") {
       try await gitClient.fileHistory(path: path, in: requiredRepository())
+    }
+  }
+
+  func presentInteractiveRebase() async {
+    do {
+      interactiveRebasePlan = try await gitClient.interactiveRebasePlan(in: requiredRepository())
+    } catch {
+      commandResult = CommandResult(title: "Interactive Rebase", output: error.localizedDescription, isError: true)
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  func setRebaseAction(_ action: RebaseTodoAction, for item: InteractiveRebaseItem) {
+    guard let index = interactiveRebasePlan?.items.firstIndex(where: { $0.id == item.id }) else { return }
+    interactiveRebasePlan?.items[index].action = action
+  }
+
+  func moveRebaseItem(_ item: InteractiveRebaseItem, direction: Int) {
+    guard var plan = interactiveRebasePlan,
+          let index = plan.items.firstIndex(where: { $0.id == item.id }) else { return }
+    let target = index + direction
+    guard plan.items.indices.contains(target) else { return }
+    plan.items.swapAt(index, target)
+    interactiveRebasePlan = plan
+  }
+
+  func startInteractiveRebase() async {
+    guard let plan = interactiveRebasePlan else { return }
+    interactiveRebasePlan = nil
+    await runMutation(title: "Interactive Rebase") {
+      try await gitClient.startInteractiveRebase(plan, in: requiredRepository())
     }
   }
 

@@ -99,6 +99,10 @@ struct ContentView: View {
             Task { await store.runRevisionCommand("rebase") }
           }
           .disabled(store.selectedCommit == nil)
+          Divider()
+          Button("Interactive Rebase...") {
+            Task { await store.presentInteractiveRebase() }
+          }
         } label: {
           Label("Actions", systemImage: "bolt")
         }
@@ -190,6 +194,20 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(isPresented: Binding(
+      get: { store.interactiveRebasePlan != nil },
+      set: { if !$0 { store.interactiveRebasePlan = nil } }
+    )) {
+      InteractiveRebaseSheet(
+        store: store,
+        onCancel: {
+          store.interactiveRebasePlan = nil
+        },
+        onStart: {
+          Task { await store.startInteractiveRebase() }
+        }
+      )
+    }
     .task {
       await store.refreshAll()
     }
@@ -203,6 +221,120 @@ struct ContentView: View {
     } message: {
       Text(store.errorMessage ?? "")
     }
+  }
+}
+
+private struct InteractiveRebaseSheet: View {
+  let store: RepositoryStore
+  var onCancel: () -> Void
+  var onStart: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Text("Interactive Rebase")
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      Text("Edit the todo plan before Git starts the rebase.")
+        .foregroundStyle(.secondary)
+
+      if let plan = store.interactiveRebasePlan {
+        VStack(spacing: 0) {
+          ForEach(plan.items) { item in
+            InteractiveRebaseRow(
+              item: item,
+              canMoveUp: plan.items.first?.id != item.id,
+              canMoveDown: plan.items.last?.id != item.id,
+              onActionChanged: { action in
+                store.setRebaseAction(action, for: item)
+              },
+              onMoveUp: {
+                store.moveRebaseItem(item, direction: -1)
+              },
+              onMoveDown: {
+                store.moveRebaseItem(item, direction: 1)
+              }
+            )
+            Divider()
+          }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay {
+          RoundedRectangle(cornerRadius: 8)
+            .stroke(.quaternary)
+        }
+
+        Text(plan.todoText)
+          .font(.caption.monospaced())
+          .foregroundStyle(.secondary)
+          .lineLimit(6)
+          .textSelection(.enabled)
+      }
+
+      HStack {
+        Button("Cancel", action: onCancel)
+        Spacer()
+        Button("Start Rebase", action: onStart)
+          .buttonStyle(.borderedProminent)
+          .disabled(store.interactiveRebasePlan?.items.isEmpty != false)
+      }
+    }
+    .padding(20)
+    .frame(minWidth: 760)
+  }
+}
+
+private struct InteractiveRebaseRow: View {
+  var item: InteractiveRebaseItem
+  var canMoveUp: Bool
+  var canMoveDown: Bool
+  var onActionChanged: (RebaseTodoAction) -> Void
+  var onMoveUp: () -> Void
+  var onMoveDown: () -> Void
+
+  var body: some View {
+    HStack(spacing: 10) {
+      Picker("Action", selection: Binding(
+        get: { item.action },
+        set: onActionChanged
+      )) {
+        ForEach(RebaseTodoAction.allCases) { action in
+          Text(action.title).tag(action)
+        }
+      }
+      .labelsHidden()
+      .frame(width: 116)
+
+      Text(item.shortHash)
+        .font(.caption.monospaced())
+        .foregroundStyle(.secondary)
+        .frame(width: 72, alignment: .leading)
+
+      Text(item.subject)
+        .lineLimit(1)
+
+      Spacer()
+
+      Button {
+        onMoveUp()
+      } label: {
+        Image(systemName: "chevron.up")
+      }
+      .disabled(!canMoveUp)
+      .buttonStyle(.borderless)
+      .help("Move up")
+
+      Button {
+        onMoveDown()
+      } label: {
+        Image(systemName: "chevron.down")
+      }
+      .disabled(!canMoveDown)
+      .buttonStyle(.borderless)
+      .help("Move down")
+    }
+    .padding(.horizontal, 10)
+    .padding(.vertical, 8)
   }
 }
 
