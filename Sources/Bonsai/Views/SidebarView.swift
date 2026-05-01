@@ -35,15 +35,27 @@ struct SidebarView: View {
         }
       }
 
-      if !store.projectRepositories.isEmpty {
+      if !store.projectWorkspaceGroups.isEmpty {
         Section {
-          ForEach(store.projectRepositories) { repository in
-            Button {
-              store.openRecent(repository)
+          ForEach(store.projectWorkspaceGroups) { group in
+            DisclosureGroup {
+              ForEach(group.repositories) { repository in
+                Button {
+                  store.openRecent(repository)
+                } label: {
+                  Label(repository.name, systemImage: "folder")
+                }
+                .buttonStyle(.plain)
+              }
             } label: {
-              Label(repository.name, systemImage: "folder")
+              HStack {
+                Label(group.name, systemImage: "folder")
+                Spacer()
+                Text(group.repositories.count.formatted())
+                  .foregroundStyle(.secondary)
+                  .monospacedDigit()
+              }
             }
-            .buttonStyle(.plain)
           }
         } header: {
           HStack {

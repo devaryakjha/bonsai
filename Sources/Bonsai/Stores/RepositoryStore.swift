@@ -13,6 +13,7 @@ final class RepositoryStore {
   var selectedRepository: GitRepository?
   var recentRepositories: [GitRepository] = []
   var projectRepositories: [GitRepository] = []
+  var projectWorkspaceGroups: [WorkspaceGroup] = []
   var snapshot = RepositorySnapshot()
   var selectedCommit: GitCommit?
   var selectedStatusEntry: GitStatusEntry?
@@ -107,7 +108,7 @@ final class RepositoryStore {
   init() {
     recentRepositories = Self.loadRecents(key: recentsKey)
     recentCommitMessages = Self.loadStringList(key: recentCommitMessagesKey)
-    projectRepositories = ProjectRepositoryScanner.scanDefaultProjectsDirectory()
+    refreshProjectRepositories()
     selectedRepository = recentRepositories.first
   }
 
@@ -207,7 +208,7 @@ final class RepositoryStore {
   }
 
   func rescanProjectsDirectory() {
-    projectRepositories = ProjectRepositoryScanner.scanDefaultProjectsDirectory()
+    refreshProjectRepositories()
   }
 
   func openRepository(at url: URL) async {
@@ -663,6 +664,11 @@ final class RepositoryStore {
     recentRepositories.insert(repository, at: 0)
     recentRepositories = Array(recentRepositories.prefix(20))
     saveRecents()
+  }
+
+  private func refreshProjectRepositories() {
+    projectRepositories = ProjectRepositoryScanner.scanDefaultProjectsDirectory()
+    projectWorkspaceGroups = ProjectRepositoryScanner.scanDefaultWorkspaceGroups()
   }
 
   private func setSelectedRepository(_ repository: GitRepository) {

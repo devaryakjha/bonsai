@@ -7,6 +7,13 @@ struct GitRepository: Identifiable, Hashable, Codable {
   var name: String { URL(filePath: path).lastPathComponent }
 }
 
+struct WorkspaceGroup: Identifiable, Hashable {
+  var name: String
+  var repositories: [GitRepository]
+
+  var id: String { name }
+}
+
 struct GitStatusEntry: Identifiable, Hashable {
   enum ChangeKind: String {
     case modified = "Modified"
