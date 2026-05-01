@@ -290,7 +290,8 @@ struct GitClient {
       throw GitClientError.notEnoughCommitsForInteractiveRebase
     }
 
-    return InteractiveRebasePlan(upstream: "\(first.hash)^", items: items)
+    let upstream = try? await git(["rev-parse", "--verify", "\(first.hash)^"], in: repository.url)
+    return InteractiveRebasePlan(upstream: upstream == nil ? "--root" : "\(first.hash)^", items: items)
   }
 
   func startInteractiveRebase(_ plan: InteractiveRebasePlan, in repository: GitRepository) async throws -> String {

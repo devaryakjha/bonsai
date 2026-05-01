@@ -105,11 +105,15 @@ private struct DiffView: View {
           Divider()
         }
 
-        switch store.diffDisplayMode {
-        case .unified:
-          RichDiffTextView(text: store.diffText)
-        case .split:
-          SplitDiffTextView(splitDiff: store.splitDiff)
+        if store.selectedDiffIsBinary || store.selectedPreviewIsImage {
+          BinaryPreviewView(store: store)
+        } else {
+          switch store.diffDisplayMode {
+          case .unified:
+            RichDiffTextView(text: store.diffText)
+          case .split:
+            SplitDiffTextView(splitDiff: store.splitDiff)
+          }
         }
       }
     }
@@ -117,6 +121,50 @@ private struct DiffView: View {
 
   private var shouldShowHunks: Bool {
     store.selectedStatusEntry != nil && !store.diffHunks.isEmpty
+  }
+}
+
+private struct BinaryPreviewView: View {
+  let store: RepositoryStore
+
+  var body: some View {
+    VStack(spacing: 16) {
+      if let image = workingTreeImage {
+        Image(nsImage: image)
+          .resizable()
+          .scaledToFit()
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .padding()
+      } else {
+        Image(systemName: store.selectedPreviewIsImage ? "photo" : "doc")
+          .font(.system(size: 48))
+          .foregroundStyle(.secondary)
+
+        Text(store.selectedPreviewIsImage ? "Image Diff" : "Binary Diff")
+          .font(.title3)
+          .fontWeight(.semibold)
+
+        Text(store.selectedPreviewPath ?? "No file selected")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .lineLimit(2)
+          .multilineTextAlignment(.center)
+
+        if !store.diffText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+          Text(store.diffText)
+            .font(.caption.monospaced())
+            .foregroundStyle(.secondary)
+            .textSelection(.enabled)
+            .padding()
+        }
+      }
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+  }
+
+  private var workingTreeImage: NSImage? {
+    guard let url = store.selectedWorkingTreeImageURL else { return nil }
+    return NSImage(contentsOf: url)
   }
 }
 

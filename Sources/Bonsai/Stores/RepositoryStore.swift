@@ -54,6 +54,27 @@ final class RepositoryStore {
     GitParsers.parseSplitDiff(diffText)
   }
 
+  var selectedPreviewPath: String? {
+    selectedStatusEntry?.path ?? selectedChangedFile?.path
+  }
+
+  var selectedPreviewIsImage: Bool {
+    selectedPreviewPath.map(FilePreviewSupport.isImagePath) ?? false
+  }
+
+  var selectedDiffIsBinary: Bool {
+    FilePreviewSupport.isBinaryDiff(diffText)
+  }
+
+  var selectedWorkingTreeImageURL: URL? {
+    guard let selectedRepository,
+          let path = selectedStatusEntry?.path,
+          FilePreviewSupport.isImagePath(path) else {
+      return nil
+    }
+    return URL(filePath: selectedRepository.path, directoryHint: .isDirectory).appending(path: path)
+  }
+
   var stagedChanges: [GitStatusEntry] {
     snapshot.status.filter(\.isStaged)
   }
