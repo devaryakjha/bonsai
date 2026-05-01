@@ -1,17 +1,28 @@
 import SwiftUI
 
 struct HistoryView: View {
-  let store: RepositoryStore
+  @Bindable var store: RepositoryStore
 
   var body: some View {
     VStack(spacing: 0) {
+      HStack {
+        Image(systemName: "magnifyingglass")
+          .foregroundStyle(.secondary)
+        TextField("Search commits", text: $store.historySearchText)
+          .textFieldStyle(.plain)
+      }
+      .padding(.horizontal, 12)
+      .padding(.vertical, 8)
+
+      Divider()
+
       List(selection: Binding(
         get: { store.selectedCommit?.id },
         set: { id in
           store.selectCommit(store.snapshot.commits.first(where: { $0.id == id }))
         }
       )) {
-        ForEach(store.snapshot.commits) { commit in
+        ForEach(store.filteredCommits) { commit in
           CommitRow(commit: commit)
             .tag(commit.id)
             .contextMenu {

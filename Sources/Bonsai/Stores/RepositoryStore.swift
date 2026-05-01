@@ -25,6 +25,7 @@ final class RepositoryStore {
       Task { await refreshDiff() }
     }
   }
+  var historySearchText = ""
   var diffText = ""
   var commandResult: CommandResult?
   var gitHubNotifications: [GitHubNotification] = []
@@ -116,6 +117,10 @@ final class RepositoryStore {
 
   var tags: [GitRef] {
     snapshot.refs.filter { $0.kind == .tag }
+  }
+
+  var filteredCommits: [GitCommit] {
+    CommitFilter.filter(snapshot.commits, query: historySearchText)
   }
 
   init() {
