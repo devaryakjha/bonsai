@@ -30,11 +30,13 @@ review diffs.
 - Preserve text selection.
 - Highlight additions, deletions, and hunk headers.
 - Keep unified patch text available so hunk staging can apply exact patches.
+- Support unified and split side-by-side viewing modes.
 
 ## Acceptance Checks
 
 - All Git diff calls use explicit algorithm options.
 - Settings expose the diff algorithm.
 - The diff view uses an AppKit-backed renderer.
+- The diff view can switch between unified and split modes.
 - `swift test` passes.
 - `./script/build_and_run.sh --verify` passes.

@@ -72,4 +72,25 @@ final class GitParsersTests: XCTestCase {
     XCTAssertTrue(hunks[1].patch.contains("@@ -10,2 +10,3 @@"))
     XCTAssertTrue(hunks[1].patch.hasSuffix("\n"))
   }
+
+  func testParseSplitDiffSeparatesOldAndNewSides() {
+    let split = GitParsers.parseSplitDiff("""
+    diff --git a/file.txt b/file.txt
+    index 1111111..2222222 100644
+    --- a/file.txt
+    +++ b/file.txt
+    @@ -1,3 +1,3 @@
+     one
+    -two
+    +deux
+     three
+    """)
+
+    XCTAssertTrue(split.oldText.contains("-two"))
+    XCTAssertFalse(split.oldText.contains("+deux"))
+    XCTAssertTrue(split.newText.contains("+deux"))
+    XCTAssertFalse(split.newText.contains("-two"))
+    XCTAssertTrue(split.oldText.contains(" one"))
+    XCTAssertTrue(split.newText.contains(" one"))
+  }
 }

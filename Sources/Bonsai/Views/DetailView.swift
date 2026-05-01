@@ -61,6 +61,17 @@ private struct DetailHeaderView: View {
       }
       .pickerStyle(.segmented)
       .controlSize(.small)
+
+      Picker("View", selection: Binding(
+        get: { store.diffDisplayMode },
+        set: { store.diffDisplayMode = $0 }
+      )) {
+        ForEach(DiffDisplayMode.allCases) { mode in
+          Text(mode.title).tag(mode)
+        }
+      }
+      .pickerStyle(.segmented)
+      .controlSize(.small)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(12)
@@ -94,7 +105,12 @@ private struct DiffView: View {
           Divider()
         }
 
-        RichDiffTextView(text: store.diffText)
+        switch store.diffDisplayMode {
+        case .unified:
+          RichDiffTextView(text: store.diffText)
+        case .split:
+          SplitDiffTextView(splitDiff: store.splitDiff)
+        }
       }
     }
   }

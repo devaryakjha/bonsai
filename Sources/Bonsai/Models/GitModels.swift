@@ -146,6 +146,19 @@ enum DiffAlgorithm: String, CaseIterable, Identifiable {
   var title: String { rawValue.capitalized }
 }
 
+enum DiffDisplayMode: String, CaseIterable, Identifiable {
+  case unified
+  case split
+
+  var id: String { rawValue }
+  var title: String { self == .unified ? "Unified" : "Split" }
+}
+
+struct SplitDiff: Hashable {
+  var oldText: String
+  var newText: String
+}
+
 enum RepositoryAction: String {
   case fetch = "Fetch"
   case pull = "Pull"

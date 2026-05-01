@@ -37,9 +37,20 @@ final class RepositoryStore {
       Task { await refreshDiff() }
     }
   }
+  var diffDisplayMode: DiffDisplayMode = DiffDisplayMode(
+    rawValue: UserDefaults.standard.string(forKey: "bonsai.diffDisplayMode") ?? ""
+  ) ?? .unified {
+    didSet {
+      UserDefaults.standard.set(diffDisplayMode.rawValue, forKey: "bonsai.diffDisplayMode")
+    }
+  }
 
   var diffHunks: [DiffHunk] {
     GitParsers.parseDiffHunks(diffText)
+  }
+
+  var splitDiff: SplitDiff {
+    GitParsers.parseSplitDiff(diffText)
   }
 
   var stagedChanges: [GitStatusEntry] {

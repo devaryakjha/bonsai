@@ -181,6 +181,34 @@ enum GitParsers {
     return hunks
   }
 
+  static func parseSplitDiff(_ output: String) -> SplitDiff {
+    var oldLines: [String] = []
+    var newLines: [String] = []
+
+    for line in output.split(separator: "\n", omittingEmptySubsequences: false).map(String.init) {
+      if line.hasPrefix("diff --git") || line.hasPrefix("index ") || line.hasPrefix("---") || line.hasPrefix("+++") {
+        continue
+      }
+      if line.hasPrefix("@@") {
+        oldLines.append(line)
+        newLines.append(line)
+      } else if line.hasPrefix("-") {
+        oldLines.append(line)
+        newLines.append("")
+      } else if line.hasPrefix("+") {
+        oldLines.append("")
+        newLines.append(line)
+      } else if line.hasPrefix("\\ No newline") {
+        continue
+      } else {
+        oldLines.append(line)
+        newLines.append(line)
+      }
+    }
+
+    return SplitDiff(oldText: oldLines.joined(separator: "\n"), newText: newLines.joined(separator: "\n"))
+  }
+
   private static func changeKind(index: Character, workTree: Character) -> GitStatusEntry.ChangeKind {
     let status = "\(index)\(workTree)"
     if ["DD", "AU", "UD", "UA", "DU", "AA", "UU"].contains(status) {
