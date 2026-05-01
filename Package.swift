@@ -14,6 +14,11 @@ let package = Package(
     .executableTarget(
       name: "Bonsai",
       path: "Sources/Bonsai"
+    ),
+    .testTarget(
+      name: "BonsaiTests",
+      dependencies: ["Bonsai"],
+      path: "Tests/BonsaiTests"
     )
   ]
 )
