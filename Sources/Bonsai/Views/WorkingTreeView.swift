@@ -91,6 +91,14 @@ private struct StatusRow: View {
           }
         }
       }
+      Button("Blame") {
+        store.selectStatusEntry(entry)
+        Task { await store.showBlameForSelection() }
+      }
+      Button("File History") {
+        store.selectStatusEntry(entry)
+        Task { await store.showFileHistoryForSelection() }
+      }
       Button("Reveal in Finder") {
         if let repository = store.selectedRepository {
           NSWorkspace.shared.activateFileViewerSelecting([

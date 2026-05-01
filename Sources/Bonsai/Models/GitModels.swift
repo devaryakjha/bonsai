@@ -118,6 +118,24 @@ enum RepositoryAction: String {
   case push = "Push"
 }
 
+enum GitOperationKind: String, Identifiable {
+  case createBranch
+  case createTag
+  case stashPush
+
+  var id: String { rawValue }
+}
+
+struct GitOperationRequest: Identifiable {
+  var id = UUID()
+  var kind: GitOperationKind
+  var title: String
+  var message: String
+  var placeholder: String
+  var defaultValue: String
+  var primaryActionTitle: String
+}
+
 enum MainMode: String, CaseIterable, Identifiable {
   case history = "History"
   case changes = "Changes"

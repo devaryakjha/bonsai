@@ -38,5 +38,29 @@ struct BonsaiCommands: Commands {
       .keyboardShortcut("r", modifiers: [.command])
       .disabled(store.selectedRepository == nil)
     }
+
+    CommandMenu("Git") {
+      Button("Create Branch...") {
+        store.presentCreateBranch()
+      }
+      .disabled(store.selectedRepository == nil)
+
+      Button("Create Tag...") {
+        store.presentCreateTag()
+      }
+      .disabled(store.selectedRepository == nil)
+
+      Divider()
+
+      Button("Create Stash...") {
+        store.presentStashPush()
+      }
+      .disabled(store.selectedRepository == nil)
+
+      Button("Show Reflog") {
+        Task { await store.showReflog() }
+      }
+      .disabled(store.selectedRepository == nil)
+    }
   }
 }

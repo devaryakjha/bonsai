@@ -15,9 +15,26 @@ struct HistoryView: View {
           CommitRow(commit: commit)
             .tag(commit.id)
             .contextMenu {
-              Button("Cherry-pick") {}
-              Button("Revert") {}
-              Button("Create Branch Here") {}
+              Button("Cherry-pick") {
+                store.selectCommit(commit)
+                Task { await store.runRevisionCommand("cherry-pick") }
+              }
+              Button("Revert") {
+                store.selectCommit(commit)
+                Task { await store.runRevisionCommand("revert") }
+              }
+              Button("Merge") {
+                store.selectCommit(commit)
+                Task { await store.runRevisionCommand("merge") }
+              }
+              Button("Rebase Onto") {
+                store.selectCommit(commit)
+                Task { await store.runRevisionCommand("rebase") }
+              }
+              Button("Create Branch Here") {
+                store.selectCommit(commit)
+                store.presentCreateBranch()
+              }
               Divider()
               Button("Copy Hash") {
                 NSPasteboard.general.clearContents()
@@ -105,6 +122,16 @@ private struct ChangedFilesView: View {
             Spacer()
           }
           .tag(file.id)
+          .contextMenu {
+            Button("Blame") {
+              store.selectChangedFile(file)
+              Task { await store.showBlameForSelection() }
+            }
+            Button("File History") {
+              store.selectChangedFile(file)
+              Task { await store.showFileHistoryForSelection() }
+            }
+          }
         }
       }
       .listStyle(.plain)

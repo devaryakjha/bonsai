@@ -10,6 +10,7 @@ final class RepositoryStore {
 
   var selectedRepository: GitRepository?
   var recentRepositories: [GitRepository] = []
+  var projectRepositories: [GitRepository] = []
   var snapshot = RepositorySnapshot()
   var selectedCommit: GitCommit?
   var selectedStatusEntry: GitStatusEntry?
@@ -17,6 +18,8 @@ final class RepositoryStore {
   var mainMode: MainMode = .history
   var diffText = ""
   var commandResult: CommandResult?
+  var operationRequest: GitOperationRequest?
+  var operationInput = ""
   var isRefreshing = false
   var errorMessage: String?
   var commitMessage = ""
@@ -49,6 +52,7 @@ final class RepositoryStore {
 
   init() {
     recentRepositories = Self.loadRecents(key: recentsKey)
+    projectRepositories = ProjectRepositoryScanner.scanDefaultProjectsDirectory()
     selectedRepository = recentRepositories.first
   }
 
@@ -72,6 +76,10 @@ final class RepositoryStore {
     Task {
       await refreshAll()
     }
+  }
+
+  func rescanProjectsDirectory() {
+    projectRepositories = ProjectRepositoryScanner.scanDefaultProjectsDirectory()
   }
 
   func openRepository(at url: URL) async {
@@ -165,6 +173,139 @@ final class RepositoryStore {
     }
   }
 
+  func presentCreateBranch() {
+    operationInput = ""
+    operationRequest = GitOperationRequest(
+      kind: .createBranch,
+      title: "Create Branch",
+      message: selectedCommit.map { "Create a branch at \($0.shortHash)." } ?? "Create a branch at HEAD.",
+      placeholder: "feature/new-work",
+      defaultValue: "",
+      primaryActionTitle: "Create"
+    )
+  }
+
+  func presentCreateTag() {
+    operationInput = ""
+    operationRequest = GitOperationRequest(
+      kind: .createTag,
+      title: "Create Tag",
+      message: selectedCommit.map { "Create a tag at \($0.shortHash)." } ?? "Create a tag at HEAD.",
+      placeholder: "v0.1.0",
+      defaultValue: "",
+      primaryActionTitle: "Create"
+    )
+  }
+
+  func presentStashPush() {
+    operationInput = ""
+    operationRequest = GitOperationRequest(
+      kind: .stashPush,
+      title: "Create Stash",
+      message: "Save current working tree changes to a stash.",
+      placeholder: "Optional stash message",
+      defaultValue: "",
+      primaryActionTitle: "Stash"
+    )
+  }
+
+  func confirmOperation() async {
+    guard let request = operationRequest else { return }
+    let value = operationInput.trimmingCharacters(in: .whitespacesAndNewlines)
+    operationRequest = nil
+
+    switch request.kind {
+    case .createBranch:
+      guard !value.isEmpty else { return }
+      await runMutation(title: "Create Branch \(value)") {
+        try await gitClient.createBranch(named: value, startPoint: selectedCommit?.hash, in: requiredRepository())
+      }
+    case .createTag:
+      guard !value.isEmpty else { return }
+      await runMutation(title: "Create Tag \(value)") {
+        try await gitClient.createTag(named: value, target: selectedCommit?.hash, in: requiredRepository())
+      }
+    case .stashPush:
+      await runMutation(title: "Create Stash") {
+        try await gitClient.stashPush(message: value.isEmpty ? nil : value, in: requiredRepository())
+      }
+    }
+  }
+
+  func checkout(_ ref: GitRef) async {
+    await runMutation(title: "Checkout \(ref.shortName)") {
+      try await gitClient.checkout(ref.shortName, in: requiredRepository())
+    }
+  }
+
+  func checkoutSelectedCommit() async {
+    guard let selectedCommit else { return }
+    await runMutation(title: "Checkout \(selectedCommit.shortHash)") {
+      try await gitClient.checkout(selectedCommit.hash, in: requiredRepository())
+    }
+  }
+
+  func delete(_ ref: GitRef) async {
+    await runMutation(title: "Delete \(ref.shortName)") {
+      switch ref.kind {
+      case .localBranch:
+        return try await gitClient.deleteBranch(ref.shortName, force: false, in: requiredRepository())
+      case .remoteBranch:
+        let parts = ref.shortName.split(separator: "/", maxSplits: 1).map(String.init)
+        let remote = parts.first ?? "origin"
+        let branch = parts.count > 1 ? parts[1] : ref.shortName
+        return try await gitClient.runRaw(["push", remote, "--delete", branch], in: requiredRepository())
+      case .tag:
+        return try await gitClient.deleteTag(ref.shortName, in: requiredRepository())
+      }
+    }
+  }
+
+  func runRevisionCommand(_ command: String) async {
+    guard let selectedCommit else { return }
+    await runMutation(title: "\(command.capitalized) \(selectedCommit.shortHash)") {
+      try await gitClient.runRaw([command, selectedCommit.hash], in: requiredRepository())
+    }
+  }
+
+  func applyStash(_ stash: GitStash, pop: Bool) async {
+    await runMutation(title: pop ? "Pop \(stash.index)" : "Apply \(stash.index)") {
+      try await gitClient.stashApply(stash, pop: pop, in: requiredRepository())
+    }
+  }
+
+  func dropStash(_ stash: GitStash) async {
+    await runMutation(title: "Drop \(stash.index)") {
+      try await gitClient.stashDrop(stash, in: requiredRepository())
+    }
+  }
+
+  func updateSubmodules() async {
+    await runMutation(title: "Update Submodules") {
+      try await gitClient.updateSubmodules(in: requiredRepository())
+    }
+  }
+
+  func showReflog() async {
+    await runReadOnlyCommand(title: "Reflog") {
+      try await gitClient.reflog(in: requiredRepository())
+    }
+  }
+
+  func showBlameForSelection() async {
+    guard let path = selectedChangedFile?.path ?? selectedStatusEntry?.path else { return }
+    await runReadOnlyCommand(title: "Blame \(path)") {
+      try await gitClient.blame(path: path, in: requiredRepository())
+    }
+  }
+
+  func showFileHistoryForSelection() async {
+    guard let path = selectedChangedFile?.path ?? selectedStatusEntry?.path else { return }
+    await runReadOnlyCommand(title: "File History \(path)") {
+      try await gitClient.fileHistory(path: path, in: requiredRepository())
+    }
+  }
+
   private func refreshCommitFilesAndDiff() async {
     guard let repository = selectedRepository else { return }
     do {
@@ -201,6 +342,16 @@ final class RepositoryStore {
       let output = try await operation()
       commandResult = CommandResult(title: title, output: output.isEmpty ? "Completed." : output, isError: false)
       await refreshAll()
+    } catch {
+      commandResult = CommandResult(title: title, output: error.localizedDescription, isError: true)
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  private func runReadOnlyCommand(title: String, operation: () async throws -> String) async {
+    do {
+      let output = try await operation()
+      commandResult = CommandResult(title: title, output: output.isEmpty ? "No output." : output, isError: false)
     } catch {
       commandResult = CommandResult(title: title, output: error.localizedDescription, isError: true)
       errorMessage = error.localizedDescription

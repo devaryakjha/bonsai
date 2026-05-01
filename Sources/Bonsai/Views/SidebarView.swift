@@ -35,6 +35,31 @@ struct SidebarView: View {
         }
       }
 
+      if !store.projectRepositories.isEmpty {
+        Section {
+          ForEach(store.projectRepositories) { repository in
+            Button {
+              store.openRecent(repository)
+            } label: {
+              Label(repository.name, systemImage: "folder")
+            }
+            .buttonStyle(.plain)
+          }
+        } header: {
+          HStack {
+            Text("~/projects")
+            Spacer()
+            Button {
+              store.rescanProjectsDirectory()
+            } label: {
+              Image(systemName: "arrow.clockwise")
+            }
+            .buttonStyle(.borderless)
+            .help("Rescan ~/projects")
+          }
+        }
+      }
+
       Section("Workspace") {
         SidebarMetricRow(title: "Changes", value: store.snapshot.status.count, systemImage: "square.and.pencil")
         SidebarMetricRow(title: "Branches", value: store.localBranches.count, systemImage: "point.3.connected.trianglepath.dotted")
@@ -58,7 +83,16 @@ struct SidebarView: View {
                   .font(.caption)
                   .foregroundStyle(.secondary)
                   .lineLimit(1)
+                }
+            }
+            .contextMenu {
+              Button("Checkout") {
+                Task { await store.checkout(branch) }
               }
+              Button("Delete") {
+                Task { await store.delete(branch) }
+              }
+              .disabled(branch.isHead)
             }
           }
         }
@@ -69,6 +103,28 @@ struct SidebarView: View {
           ForEach(store.remoteBranches.prefix(20)) { branch in
             Label(branch.shortName, systemImage: "network")
               .lineLimit(1)
+              .contextMenu {
+                Button("Checkout") {
+                  Task { await store.checkout(branch) }
+                }
+              }
+          }
+        }
+      }
+
+      if !store.tags.isEmpty {
+        Section("Tags") {
+          ForEach(store.tags.prefix(20)) { tag in
+            Label(tag.shortName, systemImage: "tag")
+              .lineLimit(1)
+              .contextMenu {
+                Button("Checkout") {
+                  Task { await store.checkout(tag) }
+                }
+                Button("Delete") {
+                  Task { await store.delete(tag) }
+                }
+              }
           }
         }
       }

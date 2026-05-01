@@ -127,6 +127,80 @@ struct GitClient {
     return output.combinedOutput
   }
 
+  func runRaw(_ arguments: [String], in repository: GitRepository) async throws -> String {
+    let output = try await git(arguments, in: repository.url)
+    return output.combinedOutput
+  }
+
+  func createBranch(named name: String, startPoint: String?, in repository: GitRepository) async throws -> String {
+    var args = ["branch", name]
+    if let startPoint, !startPoint.isEmpty {
+      args.append(startPoint)
+    }
+    return try await runRaw(args, in: repository)
+  }
+
+  func createTag(named name: String, target: String?, in repository: GitRepository) async throws -> String {
+    var args = ["tag", name]
+    if let target, !target.isEmpty {
+      args.append(target)
+    }
+    return try await runRaw(args, in: repository)
+  }
+
+  func checkout(_ ref: String, in repository: GitRepository) async throws -> String {
+    try await runRaw(["checkout", ref], in: repository)
+  }
+
+  func deleteBranch(_ name: String, force: Bool, in repository: GitRepository) async throws -> String {
+    try await runRaw(["branch", force ? "-D" : "-d", name], in: repository)
+  }
+
+  func deleteTag(_ name: String, in repository: GitRepository) async throws -> String {
+    try await runRaw(["tag", "-d", name], in: repository)
+  }
+
+  func stashPush(message: String?, in repository: GitRepository) async throws -> String {
+    var args = ["stash", "push"]
+    if let message, !message.isEmpty {
+      args += ["-m", message]
+    }
+    return try await runRaw(args, in: repository)
+  }
+
+  func stashApply(_ stash: GitStash, pop: Bool, in repository: GitRepository) async throws -> String {
+    try await runRaw(["stash", pop ? "pop" : "apply", stash.index], in: repository)
+  }
+
+  func stashDrop(_ stash: GitStash, in repository: GitRepository) async throws -> String {
+    try await runRaw(["stash", "drop", stash.index], in: repository)
+  }
+
+  func updateSubmodules(in repository: GitRepository) async throws -> String {
+    try await runRaw(["submodule", "update", "--init", "--recursive"], in: repository)
+  }
+
+  func reflog(in repository: GitRepository) async throws -> String {
+    try await runRaw(["reflog", "--date=iso"], in: repository)
+  }
+
+  func blame(path: String, in repository: GitRepository) async throws -> String {
+    let output = try await git(["blame", "--line-porcelain", "--", path], in: repository.url)
+    return output.stdout
+  }
+
+  func fileHistory(path: String, in repository: GitRepository) async throws -> String {
+    let output = try await git([
+      "log",
+      "--follow",
+      "--date=iso",
+      "--stat",
+      "--",
+      path
+    ], in: repository.url)
+    return output.stdout
+  }
+
   func git(_ arguments: [String], in directory: URL?) async throws -> ProcessOutput {
     try await runner.run(gitExecutable, arguments: ["git"] + arguments, currentDirectory: directory)
   }
