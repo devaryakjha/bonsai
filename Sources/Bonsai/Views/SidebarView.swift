@@ -147,7 +147,7 @@ struct SidebarView: View {
         DisclosureGroup(isExpanded: $advancedExpanded) {
           advancedRows
         } label: {
-          Label("Remotes, worktrees and modules", systemImage: "slider.horizontal.3")
+          Label("Worktrees, remotes and submodules", systemImage: "slider.horizontal.3")
         }
       }
     }
@@ -262,18 +262,9 @@ struct SidebarView: View {
 
   @ViewBuilder
   private var advancedRows: some View {
+    SidebarSubgroupHeader(title: "Worktrees", count: store.snapshot.worktrees.count)
     ForEach(store.snapshot.worktrees) { worktree in
-      VStack(alignment: .leading, spacing: 2) {
-        Label(worktree.name, systemImage: worktree.path == store.selectedRepository?.path ? "checkmark.square" : "square.stack.3d.up")
-        Text(worktree.displayState)
-          .font(.caption)
-          .foregroundStyle(.secondary)
-          .lineLimit(1)
-        Text(worktree.path)
-          .font(.caption2)
-          .foregroundStyle(.tertiary)
-          .lineLimit(1)
-      }
+      WorktreeSidebarRow(worktree: worktree, isCurrent: worktree.path == store.selectedRepository?.path)
       .contextMenu {
         Button("Open Worktree") {
           store.openRecent(GitRepository(path: worktree.path))
@@ -285,45 +276,16 @@ struct SidebarView: View {
       }
     }
 
-    if !store.snapshot.worktrees.isEmpty {
-      Button {
-        store.presentCreateWorktree()
-      } label: {
-        Label("Create worktree", systemImage: "plus.circle")
-      }
-      .buttonStyle(.plain)
+    Button {
+      store.presentCreateWorktree()
+    } label: {
+      SidebarInlineAction(title: "Create worktree", systemImage: "plus.circle")
     }
+    .buttonStyle(.plain)
 
-    ForEach(store.snapshot.submodules) { submodule in
-      VStack(alignment: .leading, spacing: 2) {
-        Label(submodule.path, systemImage: "shippingbox")
-          .lineLimit(1)
-        HStack(spacing: 6) {
-          Text(submodule.statusTitle)
-          Text(submodule.shortCommit)
-            .monospaced()
-        }
-        .font(.caption)
-        .foregroundStyle(.secondary)
-      }
-      .contextMenu {
-        Button("Open Submodule") {
-          store.openSubmodule(submodule)
-        }
-        Button("Update Submodule") {
-          Task { await store.updateSubmodule(submodule) }
-        }
-      }
-    }
-
+    SidebarSubgroupHeader(title: "Remotes", count: store.snapshot.remotes.count)
     ForEach(store.snapshot.remotes) { remote in
-      VStack(alignment: .leading, spacing: 2) {
-        Label(remote.name, systemImage: "network")
-        Text(remote.fetchURL ?? remote.pushURL ?? "")
-          .font(.caption)
-          .foregroundStyle(.secondary)
-          .lineLimit(1)
-      }
+      RemoteSidebarRow(remote: remote)
       .contextMenu {
         Button("Edit URL") {
           store.presentEditRemote(remote)
@@ -337,9 +299,24 @@ struct SidebarView: View {
     Button {
       store.presentAddRemote()
     } label: {
-      Label("Add remote", systemImage: "plus.circle")
+      SidebarInlineAction(title: "Add remote", systemImage: "plus.circle")
     }
     .buttonStyle(.plain)
+
+    if !store.snapshot.submodules.isEmpty {
+      SidebarSubgroupHeader(title: "Submodules", count: store.snapshot.submodules.count)
+    }
+    ForEach(store.snapshot.submodules) { submodule in
+      SubmoduleSidebarRow(submodule: submodule)
+      .contextMenu {
+        Button("Open Submodule") {
+          store.openSubmodule(submodule)
+        }
+        Button("Update Submodule") {
+          Task { await store.updateSubmodule(submodule) }
+        }
+      }
+    }
   }
 
   private var gitFlowDetail: String {
@@ -391,6 +368,114 @@ private struct SidebarMetricRow: View {
       Text(value.formatted())
         .foregroundStyle(.secondary)
         .monospacedDigit()
+    }
+  }
+}
+
+private struct SidebarSubgroupHeader: View {
+  var title: String
+  var count: Int
+
+  var body: some View {
+    HStack {
+      Text(title)
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(.secondary)
+      Spacer()
+      Text(count.formatted())
+        .font(.caption2.monospacedDigit())
+        .foregroundStyle(.tertiary)
+    }
+    .padding(.top, 8)
+  }
+}
+
+private struct WorktreeSidebarRow: View {
+  var worktree: GitWorktree
+  var isCurrent: Bool
+
+  var body: some View {
+    AdvancedSidebarRow(
+      title: worktree.name,
+      detail: worktree.displayState,
+      tertiary: worktree.path,
+      systemImage: isCurrent ? "checkmark.circle.fill" : "square.stack.3d.up",
+      iconStyle: isCurrent ? .green : .secondary
+    )
+    .help(worktree.path)
+  }
+}
+
+private struct RemoteSidebarRow: View {
+  var remote: GitRemote
+
+  var body: some View {
+    AdvancedSidebarRow(
+      title: remote.name,
+      detail: remote.fetchURL ?? remote.pushURL ?? "No URL configured",
+      tertiary: nil,
+      systemImage: "network",
+      iconStyle: .secondary
+    )
+    .help(remote.fetchURL ?? remote.pushURL ?? remote.name)
+  }
+}
+
+private struct SubmoduleSidebarRow: View {
+  var submodule: GitSubmodule
+
+  var body: some View {
+    AdvancedSidebarRow(
+      title: submodule.path,
+      detail: "\(submodule.statusTitle) - \(submodule.shortCommit)",
+      tertiary: nil,
+      systemImage: "shippingbox",
+      iconStyle: submodule.status == "U" ? .orange : .secondary
+    )
+  }
+}
+
+private struct AdvancedSidebarRow: View {
+  var title: String
+  var detail: String
+  var tertiary: String?
+  var systemImage: String
+  var iconStyle: Color
+
+  var body: some View {
+    HStack(alignment: .top, spacing: 10) {
+      Image(systemName: systemImage)
+        .foregroundStyle(iconStyle)
+        .frame(width: 16)
+
+      VStack(alignment: .leading, spacing: 2) {
+        Text(title)
+          .lineLimit(1)
+        Text(detail)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .lineLimit(1)
+        if let tertiary {
+          Text(tertiary)
+            .font(.caption2)
+            .foregroundStyle(.tertiary)
+            .lineLimit(1)
+        }
+      }
+    }
+  }
+}
+
+private struct SidebarInlineAction: View {
+  var title: String
+  var systemImage: String
+
+  var body: some View {
+    HStack(spacing: 10) {
+      Image(systemName: systemImage)
+        .foregroundStyle(.secondary)
+        .frame(width: 16)
+      Text(title)
     }
   }
 }
