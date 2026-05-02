@@ -129,6 +129,11 @@ struct BonsaiCommands: Commands {
       }
       .disabled(store.selectedRepository == nil)
 
+      Button("Create Annotated Tag...") {
+        store.presentCreateAnnotatedTag()
+      }
+      .disabled(store.selectedRepository == nil)
+
       Button("Create Worktree...") {
         store.presentCreateWorktree()
       }

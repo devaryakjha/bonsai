@@ -84,6 +84,21 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.annotatedTagRequest) { request in
+      AnnotatedTagSheet(
+        request: request,
+        name: $store.annotatedTagName,
+        message: $store.annotatedTagMessage,
+        onCancel: {
+          store.annotatedTagRequest = nil
+          store.annotatedTagName = ""
+          store.annotatedTagMessage = ""
+        },
+        onCreate: {
+          Task { await store.createRequestedAnnotatedTag() }
+        }
+      )
+    }
     .sheet(item: $store.repositorySetupMode) { mode in
       RepositorySetupSheet(
         mode: mode,
@@ -1546,5 +1561,45 @@ private struct OperationSheet: View {
     }
     .padding(20)
     .frame(width: 420)
+  }
+}
+
+private struct AnnotatedTagSheet: View {
+  var request: AnnotatedTagRequest
+  @Binding var name: String
+  @Binding var message: String
+  var onCancel: () -> Void
+  var onCreate: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text(request.title)
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      Text(request.message)
+        .foregroundStyle(.secondary)
+
+      TextField("v0.1.0", text: $name)
+        .textFieldStyle(.roundedBorder)
+
+      TextEditor(text: $message)
+        .font(.body)
+        .frame(height: 92)
+        .overlay {
+          RoundedRectangle(cornerRadius: 6)
+            .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+        }
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button("Create", action: onCreate)
+          .buttonStyle(.borderedProminent)
+          .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+      }
+    }
+    .padding(20)
+    .frame(width: 460)
   }
 }

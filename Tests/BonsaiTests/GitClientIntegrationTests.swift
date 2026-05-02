@@ -652,6 +652,41 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(tagHash, firstHash)
   }
 
+  func testStoreCreatesAnnotatedTagAtSelectedHistoryCommit() async throws {
+    let repo = try await makeRepository()
+    try write("first\n", to: repo.appending(path: "file.txt"))
+    try await commitAll(in: repo, message: "First")
+    let firstHash = try await client.git(["rev-parse", "HEAD"], in: repo).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    try write("second\n", to: repo.appending(path: "file.txt"))
+    try await commitAll(in: repo, message: "Second")
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    let commits = await store.snapshot.commits
+    let firstCommit = try XCTUnwrap(commits.first { $0.hash == firstHash })
+    await MainActor.run {
+      store.selectCommit(firstCommit)
+      store.presentCreateAnnotatedTag()
+      store.annotatedTagName = "first-annotated"
+      store.annotatedTagMessage = "First annotated release"
+    }
+
+    await store.createRequestedAnnotatedTag()
+
+    let tagType = try await client.git(["cat-file", "-t", "refs/tags/first-annotated"], in: repo).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let taggedCommit = try await client.git(["rev-list", "-n", "1", "first-annotated"], in: repo).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let tagContents = try await client.git(["cat-file", "-p", "refs/tags/first-annotated"], in: repo).stdout
+    let commandResult = await store.commandResult
+    XCTAssertEqual(tagType, "tag")
+    XCTAssertEqual(taggedCommit, firstHash)
+    XCTAssertTrue(tagContents.contains("First annotated release"))
+    XCTAssertEqual(commandResult?.title, "Create annotated tag first-annotated")
+    XCTAssertEqual(commandResult?.isError, false)
+  }
+
   func testStoreRenamesAnnotatedTagWithoutFlatteningIt() async throws {
     let repo = try await makeRepository()
     try write("initial\n", to: repo.appending(path: "file.txt"))

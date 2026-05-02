@@ -46,6 +46,9 @@ final class RepositoryStore {
   var branchStartPoint: String?
   var tagRenameSource: GitRef?
   var tagTarget: String?
+  var annotatedTagRequest: AnnotatedTagRequest?
+  var annotatedTagName = ""
+  var annotatedTagMessage = ""
   var stashBranchSource: GitStash?
   var conflictResolutionRequest: ConflictResolutionRequest?
   var discardChangeRequest: DiscardChangeRequest?
@@ -1054,6 +1057,7 @@ final class RepositoryStore {
     branchStartPoint = selectedCommit?.hash
     tagRenameSource = nil
     tagTarget = nil
+    annotatedTagRequest = nil
     operationInput = ""
     operationRequest = GitOperationRequest(
       kind: .createBranch,
@@ -1070,6 +1074,7 @@ final class RepositoryStore {
     branchStartPoint = ref.shortName
     tagRenameSource = nil
     tagTarget = nil
+    annotatedTagRequest = nil
     operationInput = ""
     operationRequest = GitOperationRequest(
       kind: .createBranch,
@@ -1086,6 +1091,7 @@ final class RepositoryStore {
     branchStartPoint = nil
     tagRenameSource = nil
     tagTarget = nil
+    annotatedTagRequest = nil
     operationInput = branch.shortName
     operationRequest = GitOperationRequest(
       kind: .renameBranch,
@@ -1102,6 +1108,7 @@ final class RepositoryStore {
     branchStartPoint = nil
     tagRenameSource = nil
     tagTarget = selectedCommit?.hash
+    annotatedTagRequest = nil
     operationInput = ""
     operationRequest = GitOperationRequest(
       kind: .createTag,
@@ -1118,6 +1125,7 @@ final class RepositoryStore {
     branchStartPoint = nil
     tagRenameSource = nil
     tagTarget = ref.shortName
+    annotatedTagRequest = nil
     operationInput = ""
     operationRequest = GitOperationRequest(
       kind: .createTag,
@@ -1129,11 +1137,40 @@ final class RepositoryStore {
     )
   }
 
+  func presentCreateAnnotatedTag() {
+    operationRequest = nil
+    branchRenameSource = nil
+    branchStartPoint = nil
+    tagRenameSource = nil
+    tagTarget = nil
+    annotatedTagName = ""
+    annotatedTagMessage = ""
+    annotatedTagRequest = AnnotatedTagRequest(
+      target: selectedCommit?.hash,
+      targetDescription: selectedCommit?.shortHash ?? "HEAD"
+    )
+  }
+
+  func presentCreateAnnotatedTag(from ref: GitRef) {
+    operationRequest = nil
+    branchRenameSource = nil
+    branchStartPoint = nil
+    tagRenameSource = nil
+    tagTarget = nil
+    annotatedTagName = ""
+    annotatedTagMessage = ""
+    annotatedTagRequest = AnnotatedTagRequest(
+      target: ref.shortName,
+      targetDescription: ref.shortName
+    )
+  }
+
   func presentRenameTag(_ tag: GitRef) {
     branchRenameSource = nil
     branchStartPoint = nil
     tagRenameSource = tag
     tagTarget = nil
+    annotatedTagRequest = nil
     operationInput = tag.shortName
     operationRequest = GitOperationRequest(
       kind: .renameTag,
@@ -1296,6 +1333,20 @@ final class RepositoryStore {
     case .gitFlowHotfixFinish:
       guard !value.isEmpty else { return }
       await finishGitFlow(kind: .hotfix, name: value)
+    }
+  }
+
+  func createRequestedAnnotatedTag() async {
+    guard let request = annotatedTagRequest else { return }
+    let name = annotatedTagName.trimmingCharacters(in: .whitespacesAndNewlines)
+    let message = annotatedTagMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !name.isEmpty, !message.isEmpty else { return }
+    annotatedTagRequest = nil
+    annotatedTagName = ""
+    annotatedTagMessage = ""
+
+    await runMutation(title: "Create annotated tag \(name)") {
+      try await gitClient.createAnnotatedTag(named: name, message: message, target: request.target, in: requiredRepository())
     }
   }
 

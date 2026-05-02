@@ -470,6 +470,14 @@ struct GitClient {
     return try await runRaw(args, in: repository)
   }
 
+  func createAnnotatedTag(named name: String, message: String, target: String?, in repository: GitRepository) async throws -> String {
+    var args = ["tag", "-a", name, "-m", message]
+    if let target, !target.isEmpty {
+      args.append(target)
+    }
+    return try await runRaw(args, in: repository)
+  }
+
   func renameTag(from oldName: String, to newName: String, in repository: GitRepository) async throws -> String {
     let oldRef = "refs/tags/\(oldName)"
     let newRef = "refs/tags/\(newName)"

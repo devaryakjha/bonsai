@@ -1015,6 +1015,15 @@ struct ResetRequest: Identifiable, Hashable {
   var id: String { commit.hash }
 }
 
+struct AnnotatedTagRequest: Identifiable, Hashable {
+  var id = UUID()
+  var target: String?
+  var targetDescription: String
+
+  var title: String { "Create annotated tag" }
+  var message: String { "Create an annotated tag at \(targetDescription)." }
+}
+
 struct ReflogResetRequest: Identifiable, Hashable {
   var entry: GitReflogEntry
   var mode: ResetMode = .mixed

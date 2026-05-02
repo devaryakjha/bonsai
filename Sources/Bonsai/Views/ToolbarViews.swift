@@ -13,6 +13,9 @@ struct RepositoryToolbarActionsMenu: View {
         Button("Create Tag...") {
           store.presentCreateTag()
         }
+        Button("Create Annotated Tag...") {
+          store.presentCreateAnnotatedTag()
+        }
         Divider()
         Button("Force Push with Lease...") {
           store.presentForcePushCurrentBranch()
