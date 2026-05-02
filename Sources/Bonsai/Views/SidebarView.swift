@@ -4,7 +4,9 @@ struct SidebarView: View {
   let store: RepositoryStore
   @AppStorage("bonsai.sidebar.repositoryDetailsExpanded") private var repositoryDetailsExpanded = false
   @AppStorage("bonsai.sidebar.referencesExpanded") private var referencesExpanded = false
-  @AppStorage("bonsai.sidebar.advancedExpanded") private var advancedExpanded = false
+  @AppStorage("bonsai.sidebar.worktreesExpanded") private var worktreesExpanded = false
+  @AppStorage("bonsai.sidebar.remotesExpanded") private var remotesExpanded = false
+  @AppStorage("bonsai.sidebar.submodulesExpanded") private var submodulesExpanded = false
 
   var body: some View {
     List {
@@ -144,10 +146,24 @@ struct SidebarView: View {
           }
         }
 
-        DisclosureGroup(isExpanded: $advancedExpanded) {
-          advancedRows
+        DisclosureGroup(isExpanded: $worktreesExpanded) {
+          worktreeRows
         } label: {
-          Label("Worktrees, remotes and submodules", systemImage: "slider.horizontal.3")
+          SidebarDisclosureLabel(title: "Worktrees", count: store.snapshot.worktrees.count, systemImage: "square.stack.3d.up")
+        }
+
+        DisclosureGroup(isExpanded: $remotesExpanded) {
+          remoteRows
+        } label: {
+          SidebarDisclosureLabel(title: "Remotes", count: store.snapshot.remotes.count, systemImage: "network")
+        }
+
+        if !store.snapshot.submodules.isEmpty {
+          DisclosureGroup(isExpanded: $submodulesExpanded) {
+            submoduleRows
+          } label: {
+            SidebarDisclosureLabel(title: "Submodules", count: store.snapshot.submodules.count, systemImage: "shippingbox")
+          }
         }
       }
     }
@@ -261,8 +277,7 @@ struct SidebarView: View {
   }
 
   @ViewBuilder
-  private var advancedRows: some View {
-    SidebarSubgroupHeader(title: "Worktrees", count: store.snapshot.worktrees.count)
+  private var worktreeRows: some View {
     ForEach(store.snapshot.worktrees) { worktree in
       WorktreeSidebarRow(worktree: worktree, isCurrent: worktree.path == store.selectedRepository?.path)
       .contextMenu {
@@ -282,8 +297,10 @@ struct SidebarView: View {
       SidebarInlineAction(title: "Create worktree", systemImage: "plus.circle")
     }
     .buttonStyle(.plain)
+  }
 
-    SidebarSubgroupHeader(title: "Remotes", count: store.snapshot.remotes.count)
+  @ViewBuilder
+  private var remoteRows: some View {
     ForEach(store.snapshot.remotes) { remote in
       RemoteSidebarRow(remote: remote)
       .contextMenu {
@@ -302,10 +319,10 @@ struct SidebarView: View {
       SidebarInlineAction(title: "Add remote", systemImage: "plus.circle")
     }
     .buttonStyle(.plain)
+  }
 
-    if !store.snapshot.submodules.isEmpty {
-      SidebarSubgroupHeader(title: "Submodules", count: store.snapshot.submodules.count)
-    }
+  @ViewBuilder
+  private var submoduleRows: some View {
     ForEach(store.snapshot.submodules) { submodule in
       SubmoduleSidebarRow(submodule: submodule)
       .contextMenu {
@@ -372,21 +389,19 @@ private struct SidebarMetricRow: View {
   }
 }
 
-private struct SidebarSubgroupHeader: View {
+private struct SidebarDisclosureLabel: View {
   var title: String
   var count: Int
+  var systemImage: String
 
   var body: some View {
     HStack {
-      Text(title)
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(.secondary)
+      Label(title, systemImage: systemImage)
       Spacer()
       Text(count.formatted())
-        .font(.caption2.monospacedDigit())
-        .foregroundStyle(.tertiary)
+        .foregroundStyle(.secondary)
+        .monospacedDigit()
     }
-    .padding(.top, 8)
   }
 }
 
