@@ -52,14 +52,14 @@ struct ContentView: View {
         Button {
           Task { await store.runRepositoryAction(.pull) }
         } label: {
-          Label("Pull", systemImage: "arrow.down.to.line.circle")
+          Label(store.currentBranch?.pullTitle ?? "Pull", systemImage: "arrow.down.to.line.circle")
         }
         .disabled(store.selectedRepository == nil)
 
         Button {
           Task { await store.runRepositoryAction(.push) }
         } label: {
-          Label("Push", systemImage: "arrow.up.to.line.circle")
+          Label(store.currentBranch?.pushTitle ?? "Push", systemImage: "arrow.up.to.line.circle")
         }
         .disabled(store.selectedRepository == nil)
       }

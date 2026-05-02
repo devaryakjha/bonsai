@@ -27,13 +27,13 @@ struct BonsaiCommands: Commands {
       .keyboardShortcut("f", modifiers: [.command])
       .disabled(store.selectedRepository == nil)
 
-      Button("Pull") {
+      Button(store.currentBranch?.pullTitle ?? "Pull") {
         Task { await store.runRepositoryAction(.pull) }
       }
       .keyboardShortcut("u", modifiers: [.command, .shift])
       .disabled(store.selectedRepository == nil)
 
-      Button("Push") {
+      Button(store.currentBranch?.pushTitle ?? "Push") {
         Task { await store.runRepositoryAction(.push) }
       }
       .keyboardShortcut("p", modifiers: [.command, .shift])

@@ -110,6 +110,12 @@ struct GitRef: Identifiable, Hashable {
     if behind > 0 { parts.append("down \(behind)") }
     return parts.joined(separator: " ")
   }
+  var pullTitle: String {
+    behind > 0 ? "Pull \(behind)" : "Pull"
+  }
+  var pushTitle: String {
+    ahead > 0 ? "Push \(ahead)" : "Push"
+  }
 
   var remoteTrackingLocalName: String? {
     guard kind == .remoteBranch else { return nil }
