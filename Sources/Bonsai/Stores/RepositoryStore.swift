@@ -46,6 +46,7 @@ final class RepositoryStore {
   var discardChangeRequest: DiscardChangeRequest?
   var interactiveRebasePlan: InteractiveRebasePlan?
   var resetRequest: ResetRequest?
+  var deleteRefRequest: DeleteRefRequest?
   var reflogEntries: [GitReflogEntry] = []
   var reflogResetRequest: ReflogResetRequest?
   var remoteEditorRequest: RemoteEditorRequest?
@@ -789,7 +790,18 @@ final class RepositoryStore {
     }
   }
 
-  func delete(_ ref: GitRef) async {
+  func presentDelete(_ ref: GitRef) {
+    guard !ref.isHead else { return }
+    deleteRefRequest = DeleteRefRequest(ref: ref)
+  }
+
+  func deleteRequestedRef() async {
+    guard let request = deleteRefRequest else { return }
+    deleteRefRequest = nil
+    await delete(request.ref)
+  }
+
+  private func delete(_ ref: GitRef) async {
     await runMutation(title: "Delete \(ref.shortName)") {
       switch ref.kind {
       case .localBranch:

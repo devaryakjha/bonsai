@@ -690,6 +690,42 @@ struct ReflogResetRequest: Identifiable, Hashable {
   var id: String { entry.id }
 }
 
+struct DeleteRefRequest: Identifiable, Hashable {
+  var ref: GitRef
+
+  var id: String { ref.id }
+  var title: String {
+    switch ref.kind {
+    case .localBranch:
+      return "Delete branch"
+    case .remoteBranch:
+      return "Delete remote branch"
+    case .tag:
+      return "Delete tag"
+    }
+  }
+  var message: String {
+    switch ref.kind {
+    case .localBranch:
+      return "Delete local branch \(ref.shortName)."
+    case .remoteBranch:
+      return "Delete remote branch \(ref.shortName)."
+    case .tag:
+      return "Delete tag \(ref.shortName)."
+    }
+  }
+  var detail: String {
+    switch ref.kind {
+    case .localBranch:
+      return "The branch reference will be removed from this repository."
+    case .remoteBranch:
+      return "The branch reference will be deleted from its remote."
+    case .tag:
+      return "The tag reference will be removed from this repository."
+    }
+  }
+}
+
 struct DiscardChangeRequest: Identifiable, Hashable {
   var entry: GitStatusEntry
 

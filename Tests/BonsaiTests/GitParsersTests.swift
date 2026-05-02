@@ -225,6 +225,19 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(entries.map(\.statusTitle), ["Added", "Modified", "Deleted", "Conflicted"])
   }
 
+  func testDeleteRefRequestCopyNamesReferenceKind() {
+    let local = GitRef(name: "refs/heads/feature", shortName: "feature", objectName: "abc123", isHead: false, kind: .localBranch)
+    let remote = GitRef(name: "refs/remotes/origin/feature", shortName: "origin/feature", objectName: "abc123", isHead: false, kind: .remoteBranch)
+    let tag = GitRef(name: "refs/tags/v0.1.0", shortName: "v0.1.0", objectName: "abc123", isHead: false, kind: .tag)
+
+    XCTAssertEqual(DeleteRefRequest(ref: local).title, "Delete branch")
+    XCTAssertEqual(DeleteRefRequest(ref: local).message, "Delete local branch feature.")
+    XCTAssertEqual(DeleteRefRequest(ref: remote).title, "Delete remote branch")
+    XCTAssertEqual(DeleteRefRequest(ref: remote).detail, "The branch reference will be deleted from its remote.")
+    XCTAssertEqual(DeleteRefRequest(ref: tag).title, "Delete tag")
+    XCTAssertEqual(DeleteRefRequest(ref: tag).message, "Delete tag v0.1.0.")
+  }
+
   func testParseLineHistoryEntriesReadsCommitsAndSkipsPatchBodies() {
     let entries = GitParsers.parseLineHistoryEntries("""
     \u{1e}abcdef1234567890\u{1f}abcdef1\u{1f}Asha\u{1f}asha@example.test\u{1f}2026-05-02T10:00:00+05:30\u{1f}Update line

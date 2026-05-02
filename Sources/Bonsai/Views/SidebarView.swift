@@ -121,8 +121,8 @@ struct SidebarView: View {
                   Task { await store.unsetUpstream(branch) }
                 }
               }
-              Button("Delete") {
-                Task { await store.delete(branch) }
+              Button("Delete", role: .destructive) {
+                store.presentDelete(branch)
               }
               .disabled(branch.isHead)
             }
@@ -269,8 +269,8 @@ struct SidebarView: View {
           Button("Checkout") {
             Task { await store.checkout(tag) }
           }
-          Button("Delete") {
-            Task { await store.delete(tag) }
+          Button("Delete", role: .destructive) {
+            store.presentDelete(tag)
           }
         }
     }

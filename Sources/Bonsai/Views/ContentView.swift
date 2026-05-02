@@ -148,6 +148,17 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.deleteRefRequest) { request in
+      DeleteRefSheet(
+        request: request,
+        onCancel: {
+          store.deleteRefRequest = nil
+        },
+        onDelete: {
+          Task { await store.deleteRequestedRef() }
+        }
+      )
+    }
     .sheet(isPresented: Binding(
       get: { !store.reflogEntries.isEmpty },
       set: { if !$0 { store.reflogEntries = [] } }
@@ -696,6 +707,36 @@ private struct ReflogResetSheet: View {
     }
     .padding(20)
     .frame(width: 480)
+  }
+}
+
+private struct DeleteRefSheet: View {
+  var request: DeleteRefRequest
+  var onCancel: () -> Void
+  var onDelete: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text(request.title)
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      Text(request.message)
+        .font(.body.monospaced())
+        .lineLimit(2)
+
+      Text(request.detail)
+        .foregroundStyle(.secondary)
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button("Delete", role: .destructive, action: onDelete)
+          .buttonStyle(.borderedProminent)
+      }
+    }
+    .padding(20)
+    .frame(width: 460)
   }
 }
 
