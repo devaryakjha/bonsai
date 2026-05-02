@@ -36,6 +36,23 @@ final class DiffInlineHighlighterTests: XCTestCase {
     XCTAssertFalse(DiffRenderPolicy.allowsInlineHighlight(oldLine: "short", newLine: longLine))
   }
 
+  func testRenderPolicySkipsInlineHighlightForVeryLargeDiffs() {
+    XCTAssertTrue(
+      DiffRenderPolicy.allowsInlineHighlight(
+        oldLine: "let title = \"Fork\"",
+        newLine: "let title = \"Bonsai\"",
+        diffLineCount: DiffRenderPolicy.maxInlineHighlightLineCount
+      )
+    )
+    XCTAssertFalse(
+      DiffRenderPolicy.allowsInlineHighlight(
+        oldLine: "let title = \"Fork\"",
+        newLine: "let title = \"Bonsai\"",
+        diffLineCount: DiffRenderPolicy.maxInlineHighlightLineCount + 1
+      )
+    )
+  }
+
   func testRenderPolicyBoundsSplitPlaceholderColumns() {
     XCTAssertEqual(DiffRenderPolicy.placeholderColumns(for: "short"), DiffRenderPolicy.minPlaceholderColumns)
 

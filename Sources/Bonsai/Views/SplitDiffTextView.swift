@@ -267,7 +267,13 @@ struct SplitDiffTextView: NSViewRepresentable {
         .backgroundColor: NSColor.textBackgroundColor.withAlphaComponent(0.35)
       ], range: gutterRange)
 
-      if let inlineRange = inlineRange(for: line, counterpart: counterpartLine, side: side, contentOffset: renderedLine.contentOffset) {
+      if let inlineRange = inlineRange(
+        for: line,
+        counterpart: counterpartLine,
+        side: side,
+        contentOffset: renderedLine.contentOffset,
+        diffLineCount: lines.count
+      ) {
         let highlightColor = side == .new
           ? NSColor.systemGreen.withAlphaComponent(0.24)
           : NSColor.systemRed.withAlphaComponent(0.24)
@@ -299,20 +305,26 @@ struct SplitDiffTextView: NSViewRepresentable {
     return NSColor.textBackgroundColor.withAlphaComponent(0.35)
   }
 
-  private static func inlineRange(for line: String, counterpart: String, side: SplitSide, contentOffset: Int) -> NSRange? {
+  private static func inlineRange(
+    for line: String,
+    counterpart: String,
+    side: SplitSide,
+    contentOffset: Int,
+    diffLineCount: Int
+  ) -> NSRange? {
     switch side {
     case .old:
       guard line.hasPrefix("-"), counterpart.hasPrefix("+") else { return nil }
       let oldLine = String(line.dropFirst())
       let newLine = String(counterpart.dropFirst())
-      guard DiffRenderPolicy.allowsInlineHighlight(oldLine: oldLine, newLine: newLine) else { return nil }
+      guard DiffRenderPolicy.allowsInlineHighlight(oldLine: oldLine, newLine: newLine, diffLineCount: diffLineCount) else { return nil }
       guard let range = DiffInlineHighlighter.changedRanges(old: oldLine, new: newLine).oldRange else { return nil }
       return nsRange(for: range, in: oldLine, markerOffset: contentOffset)
     case .new:
       guard line.hasPrefix("+"), counterpart.hasPrefix("-") else { return nil }
       let oldLine = String(counterpart.dropFirst())
       let newLine = String(line.dropFirst())
-      guard DiffRenderPolicy.allowsInlineHighlight(oldLine: oldLine, newLine: newLine) else { return nil }
+      guard DiffRenderPolicy.allowsInlineHighlight(oldLine: oldLine, newLine: newLine, diffLineCount: diffLineCount) else { return nil }
       guard let range = DiffInlineHighlighter.changedRanges(old: oldLine, new: newLine).newRange else { return nil }
       return nsRange(for: range, in: newLine, markerOffset: contentOffset)
     }

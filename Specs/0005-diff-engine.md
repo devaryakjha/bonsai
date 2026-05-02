@@ -31,6 +31,8 @@ review diffs.
   as an independent SwiftUI view for the normal path.
 - Preserve text selection.
 - Highlight additions, deletions, and hunk headers.
+- Apply inline word-level highlights for normal-sized diffs, then skip that
+  extra pass on very large patches so scrolling and selection stay responsive.
 - Keep unified patch text available so hunk staging can apply exact patches.
 - Support unified and split side-by-side viewing modes.
 

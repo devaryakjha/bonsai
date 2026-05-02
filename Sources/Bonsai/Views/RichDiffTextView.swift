@@ -80,7 +80,7 @@ struct RichDiffTextView: NSViewRepresentable {
       }
 
       let lineString = NSMutableAttributedString(string: line + "\n", attributes: attributes)
-      if let inlineRange = inlineRange(for: line, at: index, in: lines) {
+      if let inlineRange = inlineRange(for: line, at: index, in: lines, diffLineCount: lines.count) {
         let highlightColor = line.hasPrefix("+")
           ? NSColor.systemGreen.withAlphaComponent(0.24)
           : NSColor.systemRed.withAlphaComponent(0.24)
@@ -99,7 +99,7 @@ struct RichDiffTextView: NSViewRepresentable {
       || line.hasPrefix("+++ ")
   }
 
-  private static func inlineRange(for line: String, at index: Int, in lines: [String]) -> NSRange? {
+  private static func inlineRange(for line: String, at index: Int, in lines: [String], diffLineCount: Int) -> NSRange? {
     guard line.hasPrefix("+") || line.hasPrefix("-"),
           !line.hasPrefix("+++") && !line.hasPrefix("---") else {
       return nil
@@ -117,7 +117,7 @@ struct RichDiffTextView: NSViewRepresentable {
       oldLine = String(line.dropFirst())
       newLine = String(lines[index + 1].dropFirst())
     }
-    guard DiffRenderPolicy.allowsInlineHighlight(oldLine: oldLine, newLine: newLine) else { return nil }
+    guard DiffRenderPolicy.allowsInlineHighlight(oldLine: oldLine, newLine: newLine, diffLineCount: diffLineCount) else { return nil }
 
     let ranges = DiffInlineHighlighter.changedRanges(old: oldLine, new: newLine)
     let content = isAddition ? newLine : oldLine
