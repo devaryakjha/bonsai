@@ -67,6 +67,28 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(report.timings.allSatisfy { $0.milliseconds >= 0 })
   }
 
+  func testRepositoryTreemapAggregatesTrackedTopLevelSizes() async throws {
+    let repo = try await makeRepository()
+    try FileManager.default.createDirectory(at: repo.appending(path: "Sources"), withIntermediateDirectories: true)
+    try FileManager.default.createDirectory(at: repo.appending(path: "Assets"), withIntermediateDirectories: true)
+    try write("1234567890", to: repo.appending(path: "Sources/App.swift"))
+    try write("12345", to: repo.appending(path: "Sources/Store.swift"))
+    try write("1234567", to: repo.appending(path: "Assets/Icon.txt"))
+    try write("123", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Initial project")
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let report = try await client.repositoryTreemap(in: repository)
+    let tiles = Dictionary(uniqueKeysWithValues: report.tiles.map { ($0.path, $0) })
+
+    XCTAssertEqual(report.repository.path, repository.path)
+    XCTAssertEqual(tiles["Sources/"]?.bytes, 15)
+    XCTAssertEqual(tiles["Sources/"]?.fileCount, 2)
+    XCTAssertEqual(tiles["Assets/"]?.bytes, 7)
+    XCTAssertEqual(tiles["README.md"]?.bytes, 3)
+    XCTAssertEqual(report.totalBytes, 25)
+  }
+
   func testClearRecentRepositoriesKeepsSelectedRepository() async throws {
     let previousRecents = UserDefaults.standard.data(forKey: "bonsai.recentRepositories")
     defer {

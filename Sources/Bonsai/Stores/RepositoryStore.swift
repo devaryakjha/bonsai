@@ -55,7 +55,9 @@ final class RepositoryStore {
   var treeBlobText = ""
   var commandResult: CommandResult?
   var repositoryBenchmarkReport: RepositoryBenchmarkReport?
+  var repositoryTreemapReport: RepositoryTreemapReport?
   var isRunningRepositoryBenchmark = false
+  var isLoadingRepositoryTreemap = false
   var blameDocument: GitBlameDocument?
   var fileHistoryDocument: GitFileHistoryDocument?
   var lineHistoryDocument: GitLineHistoryDocument?
@@ -270,6 +272,20 @@ final class RepositoryStore {
       repositoryBenchmarkReport = try await gitClient.repositoryBenchmark(in: repository)
     } catch {
       commandResult = CommandResult(title: "Repository benchmark", output: error.localizedDescription, isError: true)
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  func showRepositoryTreemap() async {
+    guard !isLoadingRepositoryTreemap else { return }
+
+    do {
+      let repository = try requiredRepository()
+      isLoadingRepositoryTreemap = true
+      defer { isLoadingRepositoryTreemap = false }
+      repositoryTreemapReport = try await gitClient.repositoryTreemap(in: repository)
+    } catch {
+      commandResult = CommandResult(title: "Repository treemap", output: error.localizedDescription, isError: true)
       errorMessage = error.localizedDescription
     }
   }

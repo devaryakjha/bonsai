@@ -949,6 +949,52 @@ struct RepositoryObjectStats: Hashable {
   )
 }
 
+struct RepositoryTreemapReport: Identifiable, Hashable {
+  var repository: GitRepository
+  var generatedAt: Date
+  var tiles: [RepositoryTreemapTile]
+
+  var id: String { "\(repository.path):\(generatedAt.timeIntervalSince1970)" }
+
+  var repositoryName: String {
+    repository.name
+  }
+
+  var totalBytes: Int {
+    tiles.reduce(0) { $0 + $1.bytes }
+  }
+
+  var totalSizeLabel: String {
+    RepositoryTreemapTile.sizeLabel(for: totalBytes)
+  }
+}
+
+struct RepositoryTreemapTile: Identifiable, Hashable {
+  var title: String
+  var path: String
+  var bytes: Int
+  var fileCount: Int
+
+  var id: String { path }
+
+  var sizeLabel: String {
+    Self.sizeLabel(for: bytes)
+  }
+
+  var fileCountLabel: String {
+    fileCount == 1 ? "1 file" : "\(fileCount.formatted()) files"
+  }
+
+  static func sizeLabel(for bytes: Int) -> String {
+    ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
+  }
+}
+
+struct RepositoryTreemapFile: Hashable {
+  var path: String
+  var bytes: Int
+}
+
 struct DiffHunk: Identifiable, Hashable {
   var id: Int
   var fileHeader: [String]

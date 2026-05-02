@@ -56,6 +56,11 @@ struct BonsaiCommands: Commands {
       }
       .disabled(store.selectedRepository == nil || store.isRunningRepositoryBenchmark)
 
+      Button("Repository Treemap…") {
+        Task { await store.showRepositoryTreemap() }
+      }
+      .disabled(store.selectedRepository == nil || store.isLoadingRepositoryTreemap)
+
       Divider()
 
       Button("Fetch") {

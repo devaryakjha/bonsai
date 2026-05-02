@@ -40,7 +40,7 @@ implementation evidence.
 | Claude branch review and generated commit messages | Needs dedicated provider/local-AI design before v0 completion |
 | Conflict-resolved diffs after external merge tools | Covered by `Specs/0245-conflict-resolved-diff.md` |
 | Repository benchmark | Covered by `Specs/0246-repository-benchmark.md` |
-| Repository treemap | Needs dedicated analytics spec |
+| Repository treemap | Covered by `Specs/0247-repository-treemap.md` |
 
 ## Acceptance
 

@@ -123,6 +123,11 @@ struct ContentView: View {
         store.repositoryBenchmarkReport = nil
       }
     }
+    .sheet(item: $store.repositoryTreemapReport) { report in
+      RepositoryTreemapSheet(report: report) {
+        store.repositoryTreemapReport = nil
+      }
+    }
     .sheet(item: $store.conflictResolutionRequest) { request in
       ConflictResolutionSheet(
         request: request,

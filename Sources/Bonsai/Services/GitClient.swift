@@ -160,6 +160,72 @@ struct GitClient {
     output.split(separator: "\0", omittingEmptySubsequences: true).count
   }
 
+  func repositoryTreemap(in repository: GitRepository) async throws -> RepositoryTreemapReport {
+    let output = try await git(Self.repositoryTreemapArguments(), in: repository.url)
+    let files = Self.parseRepositoryTreemapFiles(output.stdout)
+    return RepositoryTreemapReport(
+      repository: repository,
+      generatedAt: Date(),
+      tiles: Self.repositoryTreemapTiles(files: files)
+    )
+  }
+
+  static func repositoryTreemapArguments() -> [String] {
+    ["ls-tree", "-r", "-l", "-z", "HEAD"]
+  }
+
+  static func parseRepositoryTreemapFiles(_ output: String) -> [RepositoryTreemapFile] {
+    output.split(separator: "\0", omittingEmptySubsequences: true).compactMap { record in
+      guard let tabIndex = record.firstIndex(of: "\t") else { return nil }
+      let metadata = record[..<tabIndex]
+        .split(separator: " ", omittingEmptySubsequences: true)
+      guard metadata.count >= 4 else { return nil }
+      guard let bytes = Int(metadata[3]), bytes >= 0 else { return nil }
+      let path = String(record[record.index(after: tabIndex)...])
+      guard !path.isEmpty else { return nil }
+      return RepositoryTreemapFile(path: path, bytes: bytes)
+    }
+  }
+
+  static func repositoryTreemapTiles(files: [RepositoryTreemapFile], maxTiles: Int = 12) -> [RepositoryTreemapTile] {
+    guard !files.isEmpty else { return [] }
+
+    var aggregate: [String: (title: String, path: String, bytes: Int, fileCount: Int)] = [:]
+    for file in files {
+      let component = file.path.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: true).first.map(String.init) ?? file.path
+      let isDirectory = file.path.contains("/")
+      let key = isDirectory ? "\(component)/" : component
+      let title = isDirectory ? component : file.path
+      var value = aggregate[key] ?? (title: title, path: key, bytes: 0, fileCount: 0)
+      value.bytes += file.bytes
+      value.fileCount += 1
+      aggregate[key] = value
+    }
+
+    let sorted = aggregate.values
+      .map { RepositoryTreemapTile(title: $0.title, path: $0.path, bytes: $0.bytes, fileCount: $0.fileCount) }
+      .sorted {
+        if $0.bytes == $1.bytes {
+          return $0.title.localizedStandardCompare($1.title) == .orderedAscending
+        }
+        return $0.bytes > $1.bytes
+      }
+
+    guard sorted.count > maxTiles, maxTiles > 1 else {
+      return sorted
+    }
+
+    let visible = Array(sorted.prefix(maxTiles - 1))
+    let hidden = sorted.dropFirst(maxTiles - 1)
+    let other = RepositoryTreemapTile(
+      title: "Other",
+      path: "__other__",
+      bytes: hidden.reduce(0) { $0 + $1.bytes },
+      fileCount: hidden.reduce(0) { $0 + $1.fileCount }
+    )
+    return visible + [other]
+  }
+
   func snapshot(
     for repository: GitRepository,
     selectedCommit: GitCommit?,

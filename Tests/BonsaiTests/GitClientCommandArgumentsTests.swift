@@ -21,6 +21,7 @@ final class GitClientCommandArgumentsTests: XCTestCase {
     XCTAssertEqual(GitClient.repositoryBenchmarkRefsArguments(), ["for-each-ref", "--format=%(refname)"])
     XCTAssertEqual(GitClient.repositoryBenchmarkTrackedFilesArguments(), ["ls-files", "-z"])
     XCTAssertEqual(GitClient.repositoryBenchmarkObjectStatsArguments(), ["count-objects", "-vH"])
+    XCTAssertEqual(GitClient.repositoryTreemapArguments(), ["ls-tree", "-r", "-l", "-z", "HEAD"])
     XCTAssertEqual(GitClient.headVerificationArguments(), ["rev-parse", "--verify", "HEAD"])
     XCTAssertEqual(
       GitClient.commitListArguments(limit: 300),
@@ -97,6 +98,27 @@ final class GitClientCommandArgumentsTests: XCTestCase {
     XCTAssertEqual(stats.packedObjects, 345)
     XCTAssertEqual(stats.packSize, "1.43 MiB")
     XCTAssertEqual(GitClient.countNULTerminatedRecords("Sources/App.swift\0README.md\0"), 2)
+  }
+
+  func testRepositoryTreemapParsesAndAggregatesTopLevelTiles() {
+    let files = GitClient.parseRepositoryTreemapFiles(
+      "100644 blob 1111111111111111111111111111111111111111     120\tSources/App.swift\0" +
+      "100644 blob 2222222222222222222222222222222222222222      80\tSources/Store.swift\0" +
+      "100644 blob 3333333333333333333333333333333333333333      40\tREADME.md\0" +
+      "100644 blob 4444444444444444444444444444444444444444      20\tAssets/Icon.png\0" +
+      "160000 commit 4444444444444444444444444444444444444444       -\tVendor/Library\0"
+    )
+    let tiles = GitClient.repositoryTreemapTiles(files: files, maxTiles: 2)
+
+    XCTAssertEqual(files.count, 4)
+    XCTAssertEqual(tiles.count, 2)
+    XCTAssertEqual(tiles[0].title, "Sources")
+    XCTAssertEqual(tiles[0].path, "Sources/")
+    XCTAssertEqual(tiles[0].bytes, 200)
+    XCTAssertEqual(tiles[0].fileCount, 2)
+    XCTAssertEqual(tiles[1].title, "Other")
+    XCTAssertEqual(tiles[1].bytes, 60)
+    XCTAssertEqual(tiles[1].fileCount, 2)
   }
 
   func testInspectionReadArgumentsPreservePathsAndDiffModes() {
