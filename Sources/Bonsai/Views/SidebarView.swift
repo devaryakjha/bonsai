@@ -307,8 +307,8 @@ struct SidebarView: View {
         Button("Edit URL") {
           store.presentEditRemote(remote)
         }
-        Button("Remove") {
-          Task { await store.removeRemote(remote) }
+        Button("Remove", role: .destructive) {
+          store.presentRemoveRemote(remote)
         }
       }
     }

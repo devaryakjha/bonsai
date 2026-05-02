@@ -743,6 +743,17 @@ struct DropStashRequest: Identifiable, Hashable {
   }
 }
 
+struct RemoveRemoteRequest: Identifiable, Hashable {
+  var remote: GitRemote
+
+  var id: String { remote.id }
+  var title: String { "Remove remote" }
+  var message: String { "Remove remote \(remote.name)." }
+  var detail: String {
+    remote.fetchURL ?? remote.pushURL ?? "The remote configuration will be removed."
+  }
+}
+
 enum RemoteEditorMode: String, Identifiable {
   case add
   case edit

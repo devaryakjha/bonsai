@@ -247,6 +247,15 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(request.detail, "WIP on main")
   }
 
+  func testRemoveRemoteRequestCopyNamesRemoteAndURL() {
+    let remote = GitRemote(name: "origin", fetchURL: "git@example.com:bonsai.git", pushURL: nil)
+    let request = RemoveRemoteRequest(remote: remote)
+
+    XCTAssertEqual(request.title, "Remove remote")
+    XCTAssertEqual(request.message, "Remove remote origin.")
+    XCTAssertEqual(request.detail, "git@example.com:bonsai.git")
+  }
+
   func testParseLineHistoryEntriesReadsCommitsAndSkipsPatchBodies() {
     let entries = GitParsers.parseLineHistoryEntries("""
     \u{1e}abcdef1234567890\u{1f}abcdef1\u{1f}Asha\u{1f}asha@example.test\u{1f}2026-05-02T10:00:00+05:30\u{1f}Update line

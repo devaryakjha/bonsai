@@ -246,6 +246,17 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.removeRemoteRequest) { request in
+      RemoveRemoteSheet(
+        request: request,
+        onCancel: {
+          store.removeRemoteRequest = nil
+        },
+        onRemove: {
+          Task { await store.removeRequestedRemote() }
+        }
+      )
+    }
     .sheet(item: $store.gitHubRepositoryRequest) { request in
       GitHubRepositorySheet(
         request: request,
@@ -666,6 +677,38 @@ private struct RemoteEditorSheet: View {
         }
         .buttonStyle(.borderedProminent)
         .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+      }
+    }
+    .padding(20)
+    .frame(width: 520)
+  }
+}
+
+private struct RemoveRemoteSheet: View {
+  var request: RemoveRemoteRequest
+  var onCancel: () -> Void
+  var onRemove: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text(request.title)
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      Text(request.message)
+        .font(.body.monospaced())
+        .lineLimit(2)
+
+      Text(request.detail)
+        .foregroundStyle(.secondary)
+        .lineLimit(3)
+        .textSelection(.enabled)
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button("Remove", role: .destructive, action: onRemove)
+          .buttonStyle(.borderedProminent)
       }
     }
     .padding(20)

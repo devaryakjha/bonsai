@@ -51,6 +51,7 @@ final class RepositoryStore {
   var reflogEntries: [GitReflogEntry] = []
   var reflogResetRequest: ReflogResetRequest?
   var remoteEditorRequest: RemoteEditorRequest?
+  var removeRemoteRequest: RemoveRemoteRequest?
   var gitHubRepositoryRequest: GitHubRepositoryRequest?
   var repositorySetupMode: RepositorySetupMode?
   var repositorySetupRemoteURL = ""
@@ -562,7 +563,17 @@ final class RepositoryStore {
     }
   }
 
-  func removeRemote(_ remote: GitRemote) async {
+  func presentRemoveRemote(_ remote: GitRemote) {
+    removeRemoteRequest = RemoveRemoteRequest(remote: remote)
+  }
+
+  func removeRequestedRemote() async {
+    guard let request = removeRemoteRequest else { return }
+    removeRemoteRequest = nil
+    await removeRemote(request.remote)
+  }
+
+  private func removeRemote(_ remote: GitRemote) async {
     await runMutation(title: "Remove remote \(remote.name)") {
       try await gitClient.removeRemote(name: remote.name, in: requiredRepository())
     }
