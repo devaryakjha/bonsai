@@ -376,6 +376,39 @@ struct GitClient {
     ]
   }
 
+  func commitPatch(
+    _ commit: GitCommit,
+    algorithm: DiffAlgorithm,
+    whitespaceMode: DiffWhitespaceMode,
+    in repository: GitRepository
+  ) async throws -> String {
+    let output = try await git(
+      Self.commitPatchArguments(commit, algorithm: algorithm, whitespaceMode: whitespaceMode),
+      in: repository.url
+    )
+    return output.stdout
+  }
+
+  static func commitPatchArguments(
+    _ commit: GitCommit,
+    algorithm: DiffAlgorithm,
+    whitespaceMode: DiffWhitespaceMode
+  ) -> [String] {
+    [
+      "show",
+      "--format=",
+      "--no-ext-diff",
+      "--no-color",
+      "--find-renames",
+      "--find-copies",
+      "--submodule=diff",
+      "--indent-heuristic",
+      "--diff-algorithm=\(algorithm.rawValue)",
+    ] + whitespaceMode.gitArguments + [
+      commit.hash
+    ]
+  }
+
   func diffForStashFile(
     _ file: GitChangedFile,
     stash: GitStash,

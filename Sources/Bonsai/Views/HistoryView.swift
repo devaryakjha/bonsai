@@ -112,6 +112,9 @@ struct HistoryView: View {
               }
               Divider()
               CommitCopyMenu(commit: commit)
+              Button("Copy Patch") {
+                Task { await store.copyCommitPatch(commit) }
+              }
             }
         }
       }

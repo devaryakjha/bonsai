@@ -159,6 +159,22 @@ final class GitClientCommandArgumentsTests: XCTestCase {
         "stash@{2}"
       ]
     )
+    XCTAssertEqual(
+      GitClient.commitPatchArguments(commit, algorithm: .patience, whitespaceMode: .ignoreChanges),
+      [
+        "show",
+        "--format=",
+        "--no-ext-diff",
+        "--no-color",
+        "--find-renames",
+        "--find-copies",
+        "--submodule=diff",
+        "--indent-heuristic",
+        "--diff-algorithm=patience",
+        "--ignore-space-change",
+        "abc123456789"
+      ]
+    )
   }
 
   func testInspectionHistoryAndBlobReadArgumentsAreStable() {

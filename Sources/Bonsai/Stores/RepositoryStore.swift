@@ -1745,6 +1745,27 @@ final class RepositoryStore {
     }
   }
 
+  func copyCommitPatch(_ commit: GitCommit) async {
+    do {
+      let patch = try await gitClient.commitPatch(
+        commit,
+        algorithm: diffAlgorithm,
+        whitespaceMode: diffWhitespaceMode,
+        in: requiredRepository()
+      )
+      guard !patch.isEmpty else {
+        commandResult = CommandResult(title: "Copy commit patch", output: "The commit patch is empty.", isError: true)
+        errorMessage = "The commit patch is empty."
+        return
+      }
+      PasteboardWriter.copy(patch)
+      commandResult = CommandResult(title: "Copy commit patch", output: "Copied \(commit.shortHash) patch to the clipboard.", isError: false)
+    } catch {
+      commandResult = CommandResult(title: "Copy commit patch", output: error.localizedDescription, isError: true)
+      errorMessage = error.localizedDescription
+    }
+  }
+
   func presentDropStash(_ stash: GitStash) {
     dropStashRequest = DropStashRequest(stash: stash)
   }

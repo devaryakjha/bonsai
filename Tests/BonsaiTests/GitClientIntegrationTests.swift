@@ -30,6 +30,22 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertNil(errorMessage)
   }
 
+  func testCommitPatchReturnsFullCommitPatch() async throws {
+    let repo = try await makeRepository()
+    try write("one\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Initial readme")
+    try write("one\ntwo\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Expand readme")
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let commits = try await client.commits(in: repository)
+    let commit = try XCTUnwrap(commits.first)
+    let patch = try await client.commitPatch(commit, algorithm: .histogram, whitespaceMode: .show, in: repository)
+
+    XCTAssertTrue(patch.contains("diff --git a/README.md b/README.md"))
+    XCTAssertTrue(patch.contains("+two"))
+  }
+
   func testClearRecentRepositoriesKeepsSelectedRepository() async throws {
     let previousRecents = UserDefaults.standard.data(forKey: "bonsai.recentRepositories")
     defer {
