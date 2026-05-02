@@ -15,13 +15,13 @@ them separate scan targets while keeping their item lists opt-in.
   discoverable.
 - Show Submodules only when the repository has submodules.
 - Keep each infrastructure item list collapsed by default and explicitly labeled
-  as a show/empty state.
+  with its category or empty state.
 - Preserve existing context-menu actions for worktrees, remotes, and submodules.
 
 ## Acceptance
 
 - The sidebar no longer presents infrastructure as a single generic Details
   stack.
-- Collapsed infrastructure rows use compact labels such as `Show worktrees`,
-  `No remotes`, and `Show submodules`.
+- Collapsed infrastructure rows use compact labels such as `Linked worktrees`,
+  `No configured remotes`, and `Repository submodules`.
 - SwiftPM tests and the app verifier pass.

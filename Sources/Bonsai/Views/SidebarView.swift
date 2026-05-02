@@ -251,7 +251,7 @@ struct SidebarView: View {
           worktreeRows
         } label: {
           SidebarDisclosureLabel(
-            title: store.snapshot.worktrees.isEmpty ? "No worktrees" : "Show worktrees",
+            title: SidebarInfrastructureCopy.worktreesTitle(count: store.snapshot.worktrees.count),
             count: store.snapshot.worktrees.count,
             systemImage: "square.stack.3d.up"
           )
@@ -269,7 +269,7 @@ struct SidebarView: View {
           remoteRows
         } label: {
           SidebarDisclosureLabel(
-            title: store.snapshot.remotes.isEmpty ? "No remotes" : "Show remotes",
+            title: SidebarInfrastructureCopy.remotesTitle(count: store.snapshot.remotes.count),
             count: store.snapshot.remotes.count,
             systemImage: "network"
           )
@@ -282,7 +282,7 @@ struct SidebarView: View {
             submoduleRows
           } label: {
             SidebarDisclosureLabel(
-              title: "Show submodules",
+              title: SidebarInfrastructureCopy.submodulesTitle(count: store.snapshot.submodules.count),
               count: store.snapshot.submodules.count,
               systemImage: "shippingbox"
             )
