@@ -177,11 +177,11 @@ struct SidebarView: View {
                 store.presentRenameBranch(branch)
               }
               Button("Merge into Current Branch") {
-                Task { await store.mergeBranch(branch) }
+                Task { await store.mergeReference(branch) }
               }
               .disabled(store.currentBranch == nil || branch.isHead)
               Button("Rebase Current onto Branch") {
-                Task { await store.rebaseOntoBranch(branch) }
+                Task { await store.rebaseOntoReference(branch) }
               }
               .disabled(store.currentBranch == nil || branch.isHead)
               if branch.upstream != nil {
@@ -414,11 +414,11 @@ struct SidebarView: View {
           }
           .disabled(store.currentBranch == nil)
           Button("Merge into Current Branch") {
-            Task { await store.mergeBranch(branch) }
+            Task { await store.mergeReference(branch) }
           }
           .disabled(store.currentBranch == nil || branch.remoteBranchName == nil)
           Button("Rebase Current onto Branch") {
-            Task { await store.rebaseOntoBranch(branch) }
+            Task { await store.rebaseOntoReference(branch) }
           }
           .disabled(store.currentBranch == nil || branch.remoteBranchName == nil)
           Divider()
@@ -444,11 +444,11 @@ struct SidebarView: View {
             store.presentRenameTag(tag)
           }
           Button("Merge into Current Branch") {
-            Task { await store.mergeBranch(tag) }
+            Task { await store.mergeReference(tag) }
           }
           .disabled(store.currentBranch == nil)
           Button("Rebase Current onto Tag") {
-            Task { await store.rebaseOntoBranch(tag) }
+            Task { await store.rebaseOntoReference(tag) }
           }
           .disabled(store.currentBranch == nil)
           if !store.tagPushRemotes.isEmpty {

@@ -810,7 +810,7 @@ final class GitClientIntegrationTests: XCTestCase {
     let branches = await store.localBranches
     let sourceBranch = try XCTUnwrap(branches.first { $0.shortName == "feature/merge-source" })
 
-    await store.mergeBranch(sourceBranch)
+    await store.mergeReference(sourceBranch)
 
     let currentBranch = try await client.git(["branch", "--show-current"], in: repo).stdout
       .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -840,7 +840,7 @@ final class GitClientIntegrationTests: XCTestCase {
     let branches = await store.localBranches
     let targetBranch = try XCTUnwrap(branches.first { $0.shortName == "feature/rebase-target" })
 
-    await store.rebaseOntoBranch(targetBranch)
+    await store.rebaseOntoReference(targetBranch)
 
     let currentBranch = try await client.git(["branch", "--show-current"], in: repo).stdout
       .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -881,7 +881,7 @@ final class GitClientIntegrationTests: XCTestCase {
     let remoteBranches = await store.remoteBranches
     let remoteBranch = try XCTUnwrap(remoteBranches.first { $0.shortName == "origin/feature/remote-merge" })
 
-    await store.mergeBranch(remoteBranch)
+    await store.mergeReference(remoteBranch)
 
     let currentBranch = try await client.git(["branch", "--show-current"], in: clone).stdout
       .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -920,7 +920,7 @@ final class GitClientIntegrationTests: XCTestCase {
     let remoteBranches = await store.remoteBranches
     let remoteBranch = try XCTUnwrap(remoteBranches.first { $0.shortName == "origin/feature/remote-rebase" })
 
-    await store.rebaseOntoBranch(remoteBranch)
+    await store.rebaseOntoReference(remoteBranch)
 
     let currentBranch = try await client.git(["branch", "--show-current"], in: clone).stdout
       .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -953,7 +953,7 @@ final class GitClientIntegrationTests: XCTestCase {
     let tags = await store.tags
     let tag = try XCTUnwrap(tags.first { $0.shortName == "v-tag-merge" })
 
-    await store.mergeBranch(tag)
+    await store.mergeReference(tag)
 
     let currentBranch = try await client.git(["branch", "--show-current"], in: repo).stdout
       .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -983,7 +983,7 @@ final class GitClientIntegrationTests: XCTestCase {
     let tags = await store.tags
     let tag = try XCTUnwrap(tags.first { $0.shortName == "v-tag-rebase" })
 
-    await store.rebaseOntoBranch(tag)
+    await store.rebaseOntoReference(tag)
 
     let currentBranch = try await client.git(["branch", "--show-current"], in: repo).stdout
       .trimmingCharacters(in: .whitespacesAndNewlines)

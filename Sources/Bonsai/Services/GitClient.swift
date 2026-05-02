@@ -416,12 +416,12 @@ struct GitClient {
     ], in: repository)
   }
 
-  func mergeBranch(_ branch: GitRef, in repository: GitRepository) async throws -> String {
-    try await runRaw(["merge", "--no-edit", branch.shortName], in: repository)
+  func mergeReference(_ ref: GitRef, in repository: GitRepository) async throws -> String {
+    try await runRaw(["merge", "--no-edit", ref.shortName], in: repository)
   }
 
-  func rebaseOntoBranch(_ branch: GitRef, in repository: GitRepository) async throws -> String {
-    try await runRaw(["rebase", branch.shortName], in: repository)
+  func rebaseOntoReference(_ ref: GitRef, in repository: GitRepository) async throws -> String {
+    try await runRaw(["rebase", ref.shortName], in: repository)
   }
 
   func pushTag(_ tag: String, remote: String, in repository: GitRepository) async throws -> String {

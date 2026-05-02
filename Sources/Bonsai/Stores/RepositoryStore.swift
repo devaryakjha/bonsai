@@ -1243,23 +1243,23 @@ final class RepositoryStore {
     }
   }
 
-  func mergeBranch(_ branch: GitRef) async {
-    guard canUseAsRefOperationTarget(branch) else { return }
-    await runMutation(title: "Merge \(branch.shortName)") {
-      try await gitClient.mergeBranch(branch, in: requiredRepository())
+  func mergeReference(_ ref: GitRef) async {
+    guard canUseAsRefOperationTarget(ref) else { return }
+    await runMutation(title: "Merge \(ref.shortName)") {
+      try await gitClient.mergeReference(ref, in: requiredRepository())
     }
   }
 
-  func rebaseOntoBranch(_ branch: GitRef) async {
-    guard canUseAsRefOperationTarget(branch) else { return }
-    await runMutation(title: "Rebase onto \(branch.shortName)") {
-      try await gitClient.rebaseOntoBranch(branch, in: requiredRepository())
+  func rebaseOntoReference(_ ref: GitRef) async {
+    guard canUseAsRefOperationTarget(ref) else { return }
+    await runMutation(title: "Rebase onto \(ref.shortName)") {
+      try await gitClient.rebaseOntoReference(ref, in: requiredRepository())
     }
   }
 
-  private func canUseAsRefOperationTarget(_ branch: GitRef) -> Bool {
-    guard currentBranch != nil, !branch.isHead else { return false }
-    return branch.kind == .localBranch || branch.kind == .tag || branch.remoteBranchName != nil
+  private func canUseAsRefOperationTarget(_ ref: GitRef) -> Bool {
+    guard currentBranch != nil, !ref.isHead else { return false }
+    return ref.kind == .localBranch || ref.kind == .tag || ref.remoteBranchName != nil
   }
 
   func unsetUpstream(_ branch: GitRef) async {
