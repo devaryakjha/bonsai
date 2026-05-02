@@ -248,6 +248,33 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(stashes.isEmpty)
   }
 
+  func testSubmoduleListingAndSingleUpdate() async throws {
+    let child = try await makeRepository()
+    try write("child\n", to: child.appending(path: "README.md"))
+    try await commitAll(in: child, message: "Child")
+
+    let repo = try await makeRepository()
+    _ = try await client.git([
+      "-c",
+      "protocol.file.allow=always",
+      "submodule",
+      "add",
+      child.path(percentEncoded: false),
+      "Vendor/Child"
+    ], in: repo)
+    try await commitAll(in: repo, message: "Add submodule")
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let submodules = try await client.submodules(in: repository)
+    let submodule = try XCTUnwrap(submodules.first)
+    XCTAssertEqual(submodule.path, "Vendor/Child")
+    XCTAssertEqual(submodule.statusTitle, "Ready")
+
+    _ = try await client.updateSubmodule(submodule, in: repository)
+    let refreshed = try await client.submodules(in: repository)
+    XCTAssertEqual(refreshed.first?.path, "Vendor/Child")
+  }
+
   func testCommitTreeBrowsingReadsNestedBlobText() async throws {
     let repo = try await makeRepository()
     try write("root\n", to: repo.appending(path: "README.md"))

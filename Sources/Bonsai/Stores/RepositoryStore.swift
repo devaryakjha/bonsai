@@ -690,6 +690,21 @@ final class RepositoryStore {
     }
   }
 
+  func updateSubmodule(_ submodule: GitSubmodule) async {
+    await runMutation(title: "Update Submodule \(submodule.path)") {
+      try await gitClient.updateSubmodule(submodule, in: requiredRepository())
+    }
+  }
+
+  func openSubmodule(_ submodule: GitSubmodule) {
+    guard let selectedRepository else { return }
+    let url = URL(filePath: selectedRepository.path, directoryHint: .isDirectory)
+      .appending(path: submodule.path, directoryHint: .isDirectory)
+    Task {
+      await openRepository(at: url)
+    }
+  }
+
   func lfsPull() async {
     await runMutation(title: "Git LFS Pull") {
       try await gitClient.lfsPull(in: requiredRepository())

@@ -195,6 +195,32 @@ struct SidebarView: View {
         }
       }
 
+      if !store.snapshot.submodules.isEmpty {
+        Section("Submodules") {
+          ForEach(store.snapshot.submodules) { submodule in
+            VStack(alignment: .leading, spacing: 2) {
+              Label(submodule.path, systemImage: "shippingbox")
+                .lineLimit(1)
+              HStack(spacing: 6) {
+                Text(submodule.statusTitle)
+                Text(submodule.shortCommit)
+                  .monospaced()
+              }
+              .font(.caption)
+              .foregroundStyle(.secondary)
+            }
+            .contextMenu {
+              Button("Open Submodule") {
+                store.openSubmodule(submodule)
+              }
+              Button("Update Submodule") {
+                Task { await store.updateSubmodule(submodule) }
+              }
+            }
+          }
+        }
+      }
+
       Section {
         ForEach(store.snapshot.remotes) { remote in
           VStack(alignment: .leading, spacing: 2) {

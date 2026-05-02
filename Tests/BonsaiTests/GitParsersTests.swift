@@ -91,6 +91,23 @@ final class GitParsersTests: XCTestCase {
     XCTAssertTrue(worktrees[1].isPrunable)
   }
 
+  func testParseSubmodulesKeepsStatusAndReadableState() {
+    let submodules = GitParsers.parseSubmodules("""
+     abc1234567890abcdef Vendor/Ready (heads/main)
+    -def4567890abcdef123 Vendor/Missing
+    +fedcba9876543210fed Vendor/Changed
+    U1111111111111111111 Vendor/Conflict
+    """)
+
+    XCTAssertEqual(submodules.count, 4)
+    XCTAssertEqual(submodules[0].path, "Vendor/Ready")
+    XCTAssertEqual(submodules[0].statusTitle, "Ready")
+    XCTAssertEqual(submodules[0].shortCommit, "abc1234")
+    XCTAssertEqual(submodules[1].statusTitle, "Not initialized")
+    XCTAssertEqual(submodules[2].statusTitle, "Changed")
+    XCTAssertEqual(submodules[3].statusTitle, "Conflicted")
+  }
+
   func testParseDiffHunksReconstructsPatchPerHunk() {
     let hunks = GitParsers.parseDiffHunks("""
     diff --git a/file.txt b/file.txt

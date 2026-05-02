@@ -118,6 +118,19 @@ struct GitSubmodule: Identifiable, Hashable {
   var status: String
 
   var id: String { path }
+  var shortCommit: String { String(commit.prefix(7)) }
+  var statusTitle: String {
+    switch status {
+    case "-":
+      return "Not initialized"
+    case "+":
+      return "Changed"
+    case "U":
+      return "Conflicted"
+    default:
+      return "Ready"
+    }
+  }
 }
 
 struct GitWorktree: Identifiable, Hashable {
