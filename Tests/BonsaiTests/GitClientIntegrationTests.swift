@@ -197,6 +197,41 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(canAmendWithoutStagedChanges)
   }
 
+  func testFailedCommitPreservesComposerState() async throws {
+    let previousRecentMessages = UserDefaults.standard.data(forKey: "bonsai.recentCommitMessages")
+    UserDefaults.standard.removeObject(forKey: "bonsai.recentCommitMessages")
+    defer {
+      if let previousRecentMessages {
+        UserDefaults.standard.set(previousRecentMessages, forKey: "bonsai.recentCommitMessages")
+      } else {
+        UserDefaults.standard.removeObject(forKey: "bonsai.recentCommitMessages")
+      }
+    }
+
+    let repo = try await makeRepository()
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    await MainActor.run {
+      store.commitMessage = "Amend missing commit"
+      store.amendCommit = true
+      store.signCommit = true
+    }
+
+    await store.commit()
+
+    let message = await store.commitMessage
+    let amendCommit = await store.amendCommit
+    let signCommit = await store.signCommit
+    let recentCommitMessages = await store.recentCommitMessages
+    let commandResult = await store.commandResult
+    XCTAssertEqual(message, "Amend missing commit")
+    XCTAssertTrue(amendCommit)
+    XCTAssertTrue(signCommit)
+    XCTAssertFalse(recentCommitMessages.contains("Amend missing commit"))
+    XCTAssertEqual(commandResult?.title, "Amend commit")
+    XCTAssertEqual(commandResult?.isError, true)
+  }
+
   func testStorePullRequiresUsableUpstream() async throws {
     let repo = try await makeRepository()
     try write("initial\n", to: repo.appending(path: "file.txt"))

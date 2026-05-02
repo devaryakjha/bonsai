@@ -628,12 +628,14 @@ final class RepositoryStore {
       return
     }
 
-    await runMutation(title: amendCommit ? "Amend commit" : "Commit") {
+    let committed = await runMutation(title: amendCommit ? "Amend commit" : "Commit") {
       try await gitClient.commit(message: message, amend: amendCommit, sign: signCommit, in: requiredRepository())
     }
-    commitMessage = ""
-    amendCommit = false
-    rememberCommitMessage(message)
+    if committed {
+      commitMessage = ""
+      amendCommit = false
+      rememberCommitMessage(message)
+    }
   }
 
   func runRepositoryAction(_ action: RepositoryAction) async {
@@ -1474,16 +1476,19 @@ final class RepositoryStore {
     }
   }
 
-  private func runMutation(title: String, operation: () async throws -> String) async {
+  @discardableResult
+  private func runMutation(title: String, operation: () async throws -> String) async -> Bool {
     do {
       let output = try await operation()
       commandResult = CommandResult(title: title, output: output.isEmpty ? "Completed." : output, isError: false)
       if autoRefreshAfterMutations {
         await refreshAll()
       }
+      return true
     } catch {
       commandResult = CommandResult(title: title, output: error.localizedDescription, isError: true)
       errorMessage = error.localizedDescription
+      return false
     }
   }
 
