@@ -29,43 +29,7 @@ private struct DetailHeaderView: View {
 
         Spacer(minLength: 16)
 
-        VStack(alignment: .trailing, spacing: 8) {
-          Picker("Algorithm", selection: Binding(
-            get: { store.diffAlgorithm },
-            set: { store.diffAlgorithm = $0 }
-          )) {
-            ForEach(DiffAlgorithm.allCases) { algorithm in
-              Text(algorithm.title).tag(algorithm)
-            }
-          }
-          .pickerStyle(.segmented)
-          .controlSize(.small)
-          .labelsHidden()
-          .accessibilityLabel("Diff algorithm")
-          .frame(width: 300)
-
-          Picker("View", selection: Binding(
-            get: { store.diffDisplayMode },
-            set: { store.diffDisplayMode = $0 }
-          )) {
-            ForEach(DiffDisplayMode.allCases) { mode in
-              Text(mode.title).tag(mode)
-            }
-          }
-          .pickerStyle(.segmented)
-          .controlSize(.small)
-          .labelsHidden()
-          .accessibilityLabel("Diff view")
-          .frame(width: 168)
-
-          Button {
-            store.copyCurrentPatch()
-          } label: {
-            Label("Copy Patch", systemImage: "doc.on.doc")
-          }
-          .controlSize(.small)
-          .disabled(!store.canCopyCurrentPatch)
-        }
+        DiffHeaderControls(store: store)
       }
 
       if !store.diffText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -133,6 +97,60 @@ private struct DetailHeaderView: View {
         .font(.caption)
         .foregroundStyle(.secondary)
     }
+  }
+}
+
+private struct DiffHeaderControls: View {
+  let store: RepositoryStore
+
+  var body: some View {
+    HStack(spacing: 8) {
+      Picker("Diff view", selection: Binding(
+        get: { store.diffDisplayMode },
+        set: { store.diffDisplayMode = $0 }
+      )) {
+        ForEach(DiffDisplayMode.allCases) { mode in
+          Text(mode.title).tag(mode)
+        }
+      }
+      .pickerStyle(.segmented)
+      .controlSize(.small)
+      .labelsHidden()
+      .accessibilityLabel("Diff view")
+      .frame(width: 150)
+
+      Menu {
+        Section("Algorithm") {
+          ForEach(DiffAlgorithm.allCases) { algorithm in
+            Button {
+              store.diffAlgorithm = algorithm
+            } label: {
+              if store.diffAlgorithm == algorithm {
+                Label(algorithm.title, systemImage: "checkmark")
+              } else {
+                Text(algorithm.title)
+              }
+            }
+          }
+        }
+      } label: {
+        Label("Diff Options", systemImage: "slider.horizontal.3")
+      }
+      .controlSize(.small)
+      .help("Diff options")
+
+      Button {
+        store.copyCurrentPatch()
+      } label: {
+        Label("Copy Patch", systemImage: "doc.on.doc")
+          .labelStyle(.iconOnly)
+      }
+      .controlSize(.small)
+      .help("Copy patch")
+      .accessibilityLabel("Copy patch")
+      .disabled(!store.canCopyCurrentPatch)
+    }
+    .fixedSize()
   }
 }
 
