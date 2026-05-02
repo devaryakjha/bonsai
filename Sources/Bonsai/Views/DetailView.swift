@@ -40,6 +40,8 @@ private struct DetailHeaderView: View {
           }
           .pickerStyle(.segmented)
           .controlSize(.small)
+          .labelsHidden()
+          .accessibilityLabel("Diff algorithm")
           .frame(width: 300)
 
           Picker("View", selection: Binding(
@@ -52,6 +54,8 @@ private struct DetailHeaderView: View {
           }
           .pickerStyle(.segmented)
           .controlSize(.small)
+          .labelsHidden()
+          .accessibilityLabel("Diff view")
           .frame(width: 168)
 
           Button {
