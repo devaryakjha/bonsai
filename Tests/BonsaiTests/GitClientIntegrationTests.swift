@@ -964,6 +964,34 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(commandResult?.isError, false)
   }
 
+  func testStoreIgnoresUntrackedFolder() async throws {
+    let repo = try await makeRepository()
+    try write("tracked\n", to: repo.appending(path: "tracked.txt"))
+    try await commitAll(in: repo, message: "Initial")
+    try write("one\n", to: repo.appending(path: "Logs/one.log"))
+    try write("two\n", to: repo.appending(path: "Logs/two.tmp"))
+    try write("note\n", to: repo.appending(path: "Notes/note.txt"))
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    await MainActor.run {
+      store.mainMode = .changes
+      store.selectedStatusEntry = store.snapshot.status.first { $0.path == "Logs/one.log" }
+    }
+
+    await store.ignoreSelectedStatusEntryDirectory()
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let ignoreText = try String(contentsOf: repo.appending(path: ".gitignore"), encoding: .utf8)
+    let status = try await client.status(in: repository)
+    let commandResult = await store.commandResult
+    XCTAssertTrue(ignoreText.contains("/Logs/\n"))
+    XCTAssertFalse(status.contains { $0.path.hasPrefix("Logs/") })
+    XCTAssertTrue(status.contains { $0.path == "Notes/note.txt" })
+    XCTAssertEqual(commandResult?.title, "Ignore /Logs/")
+    XCTAssertEqual(commandResult?.isError, false)
+  }
+
   func testReflogEntryCanResetHeadToPreviousCommit() async throws {
     let repo = try await makeRepository()
     try write("one\n", to: repo.appending(path: "file.txt"))

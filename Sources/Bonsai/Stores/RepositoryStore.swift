@@ -262,6 +262,12 @@ final class RepositoryStore {
     return GitIgnorePattern.extensionPattern(for: path) != nil
   }
 
+  var canIgnoreSelectedStatusEntryDirectory: Bool {
+    guard selectedStatusEntry?.isUntracked == true,
+          let path = selectedStatusEntry?.path else { return false }
+    return GitIgnorePattern.directoryPattern(for: path) != nil
+  }
+
   var canStageAll: Bool {
     !unstagedChanges.isEmpty
   }
@@ -734,6 +740,19 @@ final class RepositoryStore {
   func ignoreSelectedStatusEntryExtension() async {
     guard canIgnoreSelectedStatusEntryExtension, let selectedStatusEntry else { return }
     await ignoreExtension(selectedStatusEntry)
+  }
+
+  func ignoreDirectory(_ entry: GitStatusEntry) async {
+    guard entry.isUntracked,
+          let pattern = GitIgnorePattern.directoryPattern(for: entry.path) else { return }
+    await runMutation(title: "Ignore \(pattern)") {
+      try gitClient.ignoreDirectory(for: entry.path, in: requiredRepository())
+    }
+  }
+
+  func ignoreSelectedStatusEntryDirectory() async {
+    guard canIgnoreSelectedStatusEntryDirectory, let selectedStatusEntry else { return }
+    await ignoreDirectory(selectedStatusEntry)
   }
 
   func presentDiscardHunk(_ hunk: DiffHunk) {

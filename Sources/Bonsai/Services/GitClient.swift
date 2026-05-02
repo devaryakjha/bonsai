@@ -299,6 +299,13 @@ struct GitClient {
     return try ignorePattern(pattern, label: pattern, in: repository)
   }
 
+  func ignoreDirectory(for path: String, in repository: GitRepository) throws -> String {
+    guard let pattern = GitIgnorePattern.directoryPattern(for: path) else {
+      return "No containing folder found for \(path)."
+    }
+    return try ignorePattern(pattern, label: pattern, in: repository)
+  }
+
   private func ignorePattern(_ pattern: String, label: String, in repository: GitRepository) throws -> String {
     let ignoreURL = repository.url.appending(path: ".gitignore")
     let existing = (try? String(contentsOf: ignoreURL, encoding: .utf8)) ?? ""

@@ -15,4 +15,11 @@ enum GitIgnorePattern {
     }
     return "*\(fileName[dotIndex...])"
   }
+
+  static func directoryPattern(for path: String) -> String? {
+    var components = path.split(separator: "/", omittingEmptySubsequences: true).map(String.init)
+    guard components.count > 1 else { return nil }
+    _ = components.popLast()
+    return "/\(components.joined(separator: "/"))/"
+  }
 }

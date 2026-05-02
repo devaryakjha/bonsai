@@ -381,6 +381,13 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(GitIgnorePattern.extensionPattern(for: ".env"), nil)
   }
 
+  func testGitIgnorePatternExtractsContainingDirectories() {
+    XCTAssertEqual(GitIgnorePattern.directoryPattern(for: "DerivedData/app.log"), "/DerivedData/")
+    XCTAssertEqual(GitIgnorePattern.directoryPattern(for: "Build Products/App/app.zip"), "/Build Products/App/")
+    XCTAssertEqual(GitIgnorePattern.directoryPattern(for: "/Logs/app.log"), "/Logs/")
+    XCTAssertEqual(GitIgnorePattern.directoryPattern(for: "Makefile"), nil)
+  }
+
   func testDeleteRefRequestCopyNamesReferenceKind() {
     let local = GitRef(name: "refs/heads/feature", shortName: "feature", objectName: "abc123", isHead: false, kind: .localBranch)
     let remote = GitRef(name: "refs/remotes/origin/feature", shortName: "origin/feature", objectName: "abc123", isHead: false, kind: .remoteBranch)
