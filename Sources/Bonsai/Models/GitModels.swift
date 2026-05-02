@@ -752,6 +752,24 @@ struct InteractiveRebasePlan: Identifiable, Hashable {
   var todoText: String {
     items.map(\.todoLine).joined(separator: "\n") + "\n"
   }
+  var validationMessage: String? {
+    guard let first = items.first else {
+      return "No commits selected for rebase."
+    }
+    if first.action.requiresPreviousCommit {
+      return "\(first.action.title) requires a previous commit."
+    }
+    return nil
+  }
+  var canStart: Bool {
+    validationMessage == nil
+  }
+}
+
+extension RebaseTodoAction {
+  var requiresPreviousCommit: Bool {
+    self == .squash || self == .fixup
+  }
 }
 
 enum ResetMode: String, CaseIterable, Identifiable {

@@ -1103,6 +1103,12 @@ private struct InteractiveRebaseSheet: View {
             .padding(.top, 4)
         }
         .font(.caption)
+
+        if let validationMessage = plan.validationMessage {
+          Label(validationMessage, systemImage: "exclamationmark.triangle")
+            .font(.caption)
+            .foregroundStyle(.orange)
+        }
       }
 
       HStack {
@@ -1110,7 +1116,8 @@ private struct InteractiveRebaseSheet: View {
         Spacer()
         Button("Start rebase", action: onStart)
           .buttonStyle(.borderedProminent)
-          .disabled(store.interactiveRebasePlan?.items.isEmpty != false)
+          .disabled(store.interactiveRebasePlan?.canStart != true)
+          .help(store.interactiveRebasePlan?.validationMessage ?? "Start rebase")
       }
     }
     .padding(20)

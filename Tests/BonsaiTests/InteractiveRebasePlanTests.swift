@@ -19,4 +19,40 @@ final class InteractiveRebasePlanTests: XCTestCase {
 
     """)
   }
+
+  func testPlanValidationBlocksFirstSquashOrFixup() {
+    let squashPlan = InteractiveRebasePlan(
+      upstream: "abc123^",
+      items: [
+        InteractiveRebaseItem(action: .squash, hash: "abc123", shortHash: "abc123", subject: "First"),
+        InteractiveRebaseItem(action: .pick, hash: "def456", shortHash: "def456", subject: "Second")
+      ]
+    )
+    let fixupPlan = InteractiveRebasePlan(
+      upstream: "abc123^",
+      items: [
+        InteractiveRebaseItem(action: .fixup, hash: "abc123", shortHash: "abc123", subject: "First"),
+        InteractiveRebaseItem(action: .pick, hash: "def456", shortHash: "def456", subject: "Second")
+      ]
+    )
+
+    XCTAssertEqual(squashPlan.validationMessage, "Squash requires a previous commit.")
+    XCTAssertFalse(squashPlan.canStart)
+    XCTAssertEqual(fixupPlan.validationMessage, "Fixup requires a previous commit.")
+    XCTAssertFalse(fixupPlan.canStart)
+  }
+
+  func testPlanValidationAllowsFirstPickRewordEditOrDrop() {
+    for action in [RebaseTodoAction.pick, .reword, .edit, .drop] {
+      let plan = InteractiveRebasePlan(
+        upstream: "abc123^",
+        items: [
+          InteractiveRebaseItem(action: action, hash: "abc123", shortHash: "abc123", subject: "First")
+        ]
+      )
+
+      XCTAssertNil(plan.validationMessage)
+      XCTAssertTrue(plan.canStart)
+    }
+  }
 }
