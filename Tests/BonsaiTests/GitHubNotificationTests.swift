@@ -306,6 +306,15 @@ final class GitHubNotificationTests: XCTestCase {
     XCTAssertEqual(target.webURL?.absoluteString, "https://github.com/example/bonsai")
   }
 
+  func testGitHubRepositoryTargetExposesBranchWebURL() {
+    let target = GitHubRepositoryTarget(owner: "example", name: "bonsai")
+
+    XCTAssertEqual(
+      target.branchWebURL("feature/dashboard polish")?.absoluteString,
+      "https://github.com/example/bonsai/tree/feature/dashboard%20polish"
+    )
+  }
+
   func testRemoteExposesFirstGitHubRepositoryTarget() {
     let remote = GitRemote(
       name: "origin",
@@ -324,6 +333,19 @@ final class GitHubNotificationTests: XCTestCase {
     )
 
     XCTAssertEqual(remote.githubWebURL?.absoluteString, "https://github.com/example/bonsai")
+  }
+
+  func testRemoteExposesGitHubBranchWebURL() {
+    let remote = GitRemote(
+      name: "origin",
+      fetchURL: "https://github.com/example/bonsai.git",
+      pushURL: nil
+    )
+
+    XCTAssertEqual(
+      remote.githubBranchWebURL(branchName: "feature/dashboard polish")?.absoluteString,
+      "https://github.com/example/bonsai/tree/feature/dashboard%20polish"
+    )
   }
 
   @MainActor

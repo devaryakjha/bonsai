@@ -434,6 +434,14 @@ struct SidebarView: View {
             Task { await store.rebaseOntoReference(branch) }
           }
           .disabled(store.currentBranch == nil || branch.remoteBranchName == nil)
+          if let webURL = store.githubWebURL(forRemoteBranch: branch) {
+            Button("Open in Browser") {
+              store.openRemoteBranchInBrowser(branch)
+            }
+            Button("Copy Web URL") {
+              PasteboardWriter.copy(webURL.absoluteString)
+            }
+          }
           Divider()
           ReferenceCopyMenu(ref: branch)
           Divider()

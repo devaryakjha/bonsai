@@ -944,6 +944,20 @@ final class RepositoryStore {
     NSWorkspace.shared.open(url)
   }
 
+  func githubWebURL(forRemoteBranch branch: GitRef) -> URL? {
+    guard let remoteName = branch.remoteName,
+          let branchName = branch.remoteBranchName,
+          let remote = snapshot.remotes.first(where: { $0.name == remoteName }) else {
+      return nil
+    }
+    return remote.githubBranchWebURL(branchName: branchName)
+  }
+
+  func openRemoteBranchInBrowser(_ branch: GitRef) {
+    guard let url = githubWebURL(forRemoteBranch: branch) else { return }
+    NSWorkspace.shared.open(url)
+  }
+
   func fetchRemoteBranch(_ branch: GitRef) async {
     await runMutation(title: "Fetch \(branch.shortName)") {
       try await gitClient.fetchRemoteBranch(branch, in: requiredRepository())
