@@ -20,10 +20,27 @@ Bonsai is built as a SwiftPM macOS app.
 Use `./script/build_and_run.sh --verify` to build, launch, and confirm the app
 process is running.
 
+Run the standard validation gates before code changes are submitted:
+
+```sh
+git diff --check
+swift test
+./script/build_and_run.sh --verify
+```
+
 ## Specs
 
 Specs live in `Specs/` and are the source of truth for implementation order and
 acceptance criteria.
+
+## Contributing
+
+See `CONTRIBUTING.md` for the local workflow, validation gates, and UI review
+standards.
+
+## Security
+
+See `SECURITY.md` for supported versions and vulnerability reporting guidance.
 
 ## License
 
