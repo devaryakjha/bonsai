@@ -729,6 +729,15 @@ enum GitRevisionCommand: String, CaseIterable, Identifiable {
   var id: String { rawValue }
   var gitSubcommand: String { rawValue }
 
+  func arguments(commitHash: String) -> [String] {
+    switch self {
+    case .cherryPick, .revert, .merge:
+      return [gitSubcommand, "--no-edit", commitHash]
+    case .rebase:
+      return [gitSubcommand, commitHash]
+    }
+  }
+
   var historyTitle: String {
     switch self {
     case .cherryPick:

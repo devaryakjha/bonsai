@@ -253,19 +253,23 @@ final class GitParsersTests: XCTestCase {
 
   func testRevisionCommandsOwnCopyAndGitSubcommands() {
     XCTAssertEqual(GitRevisionCommand.cherryPick.gitSubcommand, "cherry-pick")
+    XCTAssertEqual(GitRevisionCommand.cherryPick.arguments(commitHash: "abc1234"), ["cherry-pick", "--no-edit", "abc1234"])
     XCTAssertEqual(GitRevisionCommand.cherryPick.historyTitle, "Cherry-pick")
     XCTAssertEqual(GitRevisionCommand.cherryPick.selectedCommitTitle, "Cherry-pick selected commit")
     XCTAssertEqual(GitRevisionCommand.cherryPick.resultTitle(shortHash: "abc1234"), "Cherry-pick abc1234")
 
     XCTAssertEqual(GitRevisionCommand.revert.gitSubcommand, "revert")
+    XCTAssertEqual(GitRevisionCommand.revert.arguments(commitHash: "abc1234"), ["revert", "--no-edit", "abc1234"])
     XCTAssertEqual(GitRevisionCommand.revert.historyTitle, "Revert")
     XCTAssertEqual(GitRevisionCommand.revert.selectedCommitTitle, "Revert selected commit")
 
     XCTAssertEqual(GitRevisionCommand.merge.gitSubcommand, "merge")
+    XCTAssertEqual(GitRevisionCommand.merge.arguments(commitHash: "abc1234"), ["merge", "--no-edit", "abc1234"])
     XCTAssertEqual(GitRevisionCommand.merge.historyTitle, "Merge")
     XCTAssertEqual(GitRevisionCommand.merge.selectedCommitTitle, "Merge selected commit")
 
     XCTAssertEqual(GitRevisionCommand.rebase.gitSubcommand, "rebase")
+    XCTAssertEqual(GitRevisionCommand.rebase.arguments(commitHash: "abc1234"), ["rebase", "abc1234"])
     XCTAssertEqual(GitRevisionCommand.rebase.historyTitle, "Rebase onto")
     XCTAssertEqual(GitRevisionCommand.rebase.selectedCommitTitle, "Rebase onto selected commit")
   }

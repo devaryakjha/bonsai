@@ -316,7 +316,7 @@ struct GitClient {
   }
 
   func runRevisionCommand(_ command: GitRevisionCommand, commit: GitCommit, in repository: GitRepository) async throws -> String {
-    try await runRaw([command.gitSubcommand, commit.hash], in: repository)
+    try await runRaw(command.arguments(commitHash: commit.hash), in: repository)
   }
 
   func createBranch(named name: String, startPoint: String?, in repository: GitRepository) async throws -> String {
