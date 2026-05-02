@@ -1,17 +1,40 @@
 import Foundation
 
-enum ClaudeCodeClientError: LocalizedError {
-  case notInstalled
+enum CodeAgentProvider: String, CaseIterable, Hashable {
+  case claude
+  case codex
+
+  var displayName: String {
+    switch self {
+    case .claude:
+      return "Claude Code"
+    case .codex:
+      return "Codex CLI"
+    }
+  }
+
+  var executableName: String {
+    switch self {
+    case .claude:
+      return "claude"
+    case .codex:
+      return "codex"
+    }
+  }
+}
+
+enum CodeAgentClientError: LocalizedError {
+  case notInstalled(CodeAgentProvider)
   case noStagedChanges
   case noCurrentBranch
   case noBranchChanges
   case baseRevisionNotFound
-  case emptyResponse
+  case emptyResponse(CodeAgentProvider)
 
   var errorDescription: String? {
     switch self {
-    case .notInstalled:
-      return "Claude Code is not installed or is not on PATH."
+    case .notInstalled(let provider):
+      return "\(provider.displayName) is not installed or is not on PATH."
     case .noStagedChanges:
       return "Stage changes before generating a commit message."
     case .noCurrentBranch:
@@ -20,26 +43,26 @@ enum ClaudeCodeClientError: LocalizedError {
       return "The current branch has no changes to review."
     case .baseRevisionNotFound:
       return "Could not find a base revision for branch review."
-    case .emptyResponse:
-      return "Claude did not return output."
+    case .emptyResponse(let provider):
+      return "\(provider.displayName) did not return output."
     }
   }
 }
 
-struct ClaudeCodeClient {
+struct CodeAgentClient {
   static let maxDiffCharacters = 60_000
 
   private let runner = ProcessRunner()
   private let gitClient = GitClient()
-  private let executableResolver: () -> String?
+  private let executableResolver: (CodeAgentProvider) -> String?
 
-  init(executableResolver: @escaping () -> String? = Self.resolveExecutable) {
+  init(executableResolver: @escaping (CodeAgentProvider) -> String? = Self.resolveExecutable) {
     self.executableResolver = executableResolver
   }
 
-  func generateCommitMessage(in repository: GitRepository) async throws -> String {
-    guard let executable = executableResolver() else {
-      throw ClaudeCodeClientError.notInstalled
+  func generateCommitMessage(with provider: CodeAgentProvider, in repository: GitRepository) async throws -> String {
+    guard let executable = executableResolver(provider) else {
+      throw CodeAgentClientError.notInstalled(provider)
     }
 
     let repositoryURL = URL(filePath: repository.path, directoryHint: .isDirectory)
@@ -47,31 +70,35 @@ struct ClaudeCodeClient {
     let stagedDiff = try await gitClient.git(Self.stagedDiffArguments(), in: repositoryURL).stdout
 
     guard !stagedDiff.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-      throw ClaudeCodeClientError.noStagedChanges
+      throw CodeAgentClientError.noStagedChanges
     }
 
     let prompt = Self.commitMessagePrompt(diffStat: diffStat, stagedDiff: stagedDiff)
     let output = try await runner.run(
       executable,
-      arguments: Self.claudePrintArguments(),
+      arguments: Self.agentArguments(for: provider),
       currentDirectory: repositoryURL,
       standardInput: prompt
     )
     let message = Self.normalizedCommitMessage(from: output.stdout)
 
     guard !message.isEmpty else {
-      throw ClaudeCodeClientError.emptyResponse
+      throw CodeAgentClientError.emptyResponse(provider)
     }
 
     return message
   }
 
-  func reviewCurrentBranch(_ branch: GitRef?, in repository: GitRepository) async throws -> ClaudeBranchReviewDocument {
-    guard let executable = executableResolver() else {
-      throw ClaudeCodeClientError.notInstalled
+  func reviewCurrentBranch(
+    _ branch: GitRef?,
+    with provider: CodeAgentProvider,
+    in repository: GitRepository
+  ) async throws -> CodeAgentBranchReviewDocument {
+    guard let executable = executableResolver(provider) else {
+      throw CodeAgentClientError.notInstalled(provider)
     }
     guard let branch else {
-      throw ClaudeCodeClientError.noCurrentBranch
+      throw CodeAgentClientError.noCurrentBranch
     }
 
     let repositoryURL = URL(filePath: repository.path, directoryHint: .isDirectory)
@@ -81,7 +108,7 @@ struct ClaudeCodeClient {
     let branchDiff = try await gitClient.git(Self.branchReviewDiffArguments(diffRange: diffRange), in: repositoryURL).stdout
 
     guard !branchDiff.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-      throw ClaudeCodeClientError.noBranchChanges
+      throw CodeAgentClientError.noBranchChanges
     }
 
     let prompt = Self.branchReviewPrompt(
@@ -92,18 +119,19 @@ struct ClaudeCodeClient {
     )
     let output = try await runner.run(
       executable,
-      arguments: Self.claudePrintArguments(),
+      arguments: Self.agentArguments(for: provider),
       currentDirectory: repositoryURL,
       standardInput: prompt
     )
     let review = output.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
 
     guard !review.isEmpty else {
-      throw ClaudeCodeClientError.emptyResponse
+      throw CodeAgentClientError.emptyResponse(provider)
     }
 
-    return ClaudeBranchReviewDocument(
+    return CodeAgentBranchReviewDocument(
       repository: repository,
+      providerName: provider.displayName,
       branchName: branch.shortName,
       baseReference: baseReference,
       generatedAt: Date(),
@@ -144,6 +172,15 @@ struct ClaudeCodeClient {
     ["diff", "--find-renames", "--find-copies", diffRange, "--"]
   }
 
+  static func agentArguments(for provider: CodeAgentProvider) -> [String] {
+    switch provider {
+    case .claude:
+      return claudePrintArguments()
+    case .codex:
+      return codexExecArguments()
+    }
+  }
+
   static func claudePrintArguments() -> [String] {
     [
       "--print",
@@ -152,6 +189,20 @@ struct ClaudeCodeClient {
       "dontAsk",
       "--max-budget-usd",
       "0.25"
+    ]
+  }
+
+  static func codexExecArguments() -> [String] {
+    [
+      "exec",
+      "--sandbox",
+      "read-only",
+      "--ask-for-approval",
+      "never",
+      "--ephemeral",
+      "--color",
+      "never",
+      "-"
     ]
   }
 
@@ -165,7 +216,7 @@ struct ClaudeCodeClient {
     - Use a concise imperative subject, 72 characters or less when practical.
     - Add a short body only when it materially helps future readers.
     - Do not use Markdown fences, bullet labels, signatures, trailers, or AI attribution.
-    - Do not mention Claude.
+    - Do not mention AI tooling.
 
     Diffstat:
     \(diffStat.trimmingCharacters(in: .whitespacesAndNewlines))
@@ -213,6 +264,7 @@ struct ClaudeCodeClient {
       .filter { line in
         !line.hasPrefix("```")
           && !line.localizedCaseInsensitiveContains("generated with claude")
+          && !line.localizedCaseInsensitiveContains("generated with codex")
           && !line.localizedCaseInsensitiveContains("co-authored-by:")
       }
 
@@ -240,17 +292,19 @@ struct ClaudeCodeClient {
     return "\(prefix)\n\n[Diff truncated to \(limit) characters]"
   }
 
-  static func resolveExecutable() -> String? {
+  static func resolveExecutable(for provider: CodeAgentProvider) -> String? {
     let environment = ProcessInfo.processInfo.environment
     let pathEntries = (environment["PATH"] ?? "")
       .split(separator: ":")
       .map(String.init)
 
     let home = NSHomeDirectory()
-    let candidates = pathEntries.map { "\($0)/claude" } + [
-      "\(home)/.local/bin/claude",
-      "/opt/homebrew/bin/claude",
-      "/usr/local/bin/claude"
+    let executableName = provider.executableName
+    let candidates = pathEntries.map { "\($0)/\(executableName)" } + [
+      "\(home)/.local/bin/\(executableName)",
+      "\(home)/.bun/bin/\(executableName)",
+      "/opt/homebrew/bin/\(executableName)",
+      "/usr/local/bin/\(executableName)"
     ]
 
     return candidates.first { FileManager.default.isExecutableFile(atPath: $0) }
@@ -268,6 +322,6 @@ struct ClaudeCodeClient {
         continue
       }
     }
-    throw ClaudeCodeClientError.baseRevisionNotFound
+    throw CodeAgentClientError.baseRevisionNotFound
   }
 }

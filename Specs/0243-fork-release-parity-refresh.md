@@ -40,7 +40,7 @@ implementation evidence.
 | SVG and TGA image diffs | Covered by this spec |
 | External editor reveal/open-in additions | Covered by `Specs/0244-external-editor-open-in.md` |
 | Claude branch review and generated commit messages | Covered by `Specs/0251-claude-generated-commit-message.md` and `Specs/0252-claude-branch-review.md` |
-| Codex AI commit messages and code review | Claude-compatible installed-agent flow is covered; Codex CLI provider parity remains a design candidate |
+| Codex AI commit messages and code review | Covered by `Specs/0254-code-agent-provider-parity.md` |
 | Cmd+V to apply patch from clipboard | Covered by `Specs/0253-apply-patch-clipboard-shortcut.md` |
 | Collapsible commit details | Covered by `Specs/0222-commit-details-shortcut.md` |
 | Copy repository path from sidebar repository menu | Covered by `Specs/0095-calm-repository-header-actions.md` |

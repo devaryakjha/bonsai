@@ -52,7 +52,7 @@ surfaces that are not all represented in the older homepage matrix.
 | SVG and TGA image support | Verified |
 | External editor reveal/open-in integrations | Verified |
 | Claude branch review and generated commit messages | Verified through `Specs/0251-claude-generated-commit-message.md` and `Specs/0252-claude-branch-review.md` |
-| Codex AI commit messages and code review | Open: Claude-compatible installed-agent flow is verified; Codex CLI provider parity needs a dedicated provider selection design |
+| Codex AI commit messages and code review | Verified through `Specs/0254-code-agent-provider-parity.md` |
 | Cmd+V to apply patch from clipboard | Verified through `Specs/0253-apply-patch-clipboard-shortcut.md` |
 | Collapsible commit details | Verified |
 | Copy repository path from sidebar repository menu | Verified |
@@ -66,8 +66,6 @@ surfaces that are not all represented in the older homepage matrix.
 - Re-run a fresh parity scrape against current Fork public release notes before
   declaring v0 complete, then close or explicitly defer every open release-note
   delta above.
-- Design the Codex CLI variant of AI commit-message and branch-review actions,
-  or explicitly document Claude-only installed-agent support as the v0 scope.
 - Run a large-repository performance pass on history loading and rich diff
   rendering, including split diff and image diff paths.
 - Do visual QA on the actual running app for sidebar density, toolbar wrapping,

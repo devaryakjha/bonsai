@@ -897,14 +897,15 @@ struct CommandResult: Identifiable, Hashable {
   static let noOutput = "No output"
 }
 
-struct ClaudeBranchReviewDocument: Identifiable, Hashable {
+struct CodeAgentBranchReviewDocument: Identifiable, Hashable {
   var repository: GitRepository
+  var providerName: String
   var branchName: String
   var baseReference: String
   var generatedAt: Date
   var text: String
 
-  var id: String { "\(repository.path):\(branchName):\(generatedAt.timeIntervalSince1970)" }
+  var id: String { "\(repository.path):\(providerName):\(branchName):\(generatedAt.timeIntervalSince1970)" }
 }
 
 struct RepositoryBenchmarkReport: Identifiable, Hashable {

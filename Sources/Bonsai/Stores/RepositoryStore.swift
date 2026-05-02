@@ -19,7 +19,7 @@ private struct DiffParseCache {
 final class RepositoryStore {
   private let gitClient = GitClient()
   private let gitHubClient = GitHubClient()
-  private let claudeCodeClient = ClaudeCodeClient()
+  private let codeAgentClient = CodeAgentClient()
   private let recentsKey = "bonsai.recentRepositories"
   private let recentCommitMessagesKey = "bonsai.recentCommitMessages"
   private let autoRefreshKey = "bonsai.autoRefresh"
@@ -55,7 +55,7 @@ final class RepositoryStore {
   var stashChangedFiles: [GitChangedFile] = []
   var treeBlobText = ""
   var commandResult: CommandResult?
-  var claudeBranchReviewDocument: ClaudeBranchReviewDocument?
+  var codeAgentBranchReviewDocument: CodeAgentBranchReviewDocument?
   var repositoryBenchmarkReport: RepositoryBenchmarkReport?
   var repositoryTreemapReport: RepositoryTreemapReport?
   var isRunningRepositoryBenchmark = false
@@ -117,7 +117,7 @@ final class RepositoryStore {
   var amendCommit = false
   var signCommit = false
   var isGeneratingCommitMessage = false
-  var isRunningClaudeBranchReview = false
+  var isRunningCodeAgentBranchReview = false
   var diffAlgorithm: DiffAlgorithm = DiffAlgorithm(
     rawValue: UserDefaults.standard.string(forKey: "bonsai.diffAlgorithm") ?? ""
   ) ?? .histogram {
@@ -351,32 +351,32 @@ final class RepositoryStore {
     commitReadinessIssue == nil
   }
 
-  var canGenerateCommitMessageWithClaude: Bool {
+  var canGenerateCommitMessageWithCodeAgent: Bool {
     selectedRepository != nil && !stagedChanges.isEmpty && !isGeneratingCommitMessage
   }
 
-  var generateCommitMessageWithClaudeHelp: String {
+  var generateCommitMessageWithCodeAgentHelp: String {
     if isGeneratingCommitMessage {
       return "Generating commit message"
     }
     if stagedChanges.isEmpty {
       return "Stage changes before generating a commit message"
     }
-    return "Generate commit message with Claude Code"
+    return "Generate commit message with an installed AI provider"
   }
 
-  var canReviewCurrentBranchWithClaude: Bool {
-    selectedRepository != nil && currentBranch != nil && !isRunningClaudeBranchReview
+  var canReviewCurrentBranchWithCodeAgent: Bool {
+    selectedRepository != nil && currentBranch != nil && !isRunningCodeAgentBranchReview
   }
 
-  var reviewCurrentBranchWithClaudeHelp: String {
-    if isRunningClaudeBranchReview {
+  var reviewCurrentBranchWithCodeAgentHelp: String {
+    if isRunningCodeAgentBranchReview {
       return "Reviewing current branch"
     }
     if currentBranch == nil {
       return "Checkout a branch before running branch review"
     }
-    return "Review current branch with Claude Code"
+    return "Review current branch with an installed AI provider"
   }
 
   var commitOptionsSummary: String {
@@ -1088,10 +1088,10 @@ final class RepositoryStore {
     }
   }
 
-  func generateCommitMessageWithClaude() async {
+  func generateCommitMessage(with provider: CodeAgentProvider) async {
     guard let repository = selectedRepository else { return }
     guard !stagedChanges.isEmpty else {
-      let output = ClaudeCodeClientError.noStagedChanges.localizedDescription
+      let output = CodeAgentClientError.noStagedChanges.localizedDescription
       commandResult = CommandResult(title: "Generate commit message", output: output, isError: true)
       return
     }
@@ -1100,35 +1100,39 @@ final class RepositoryStore {
     defer { isGeneratingCommitMessage = false }
 
     do {
-      commitMessage = try await claudeCodeClient.generateCommitMessage(in: repository)
+      commitMessage = try await codeAgentClient.generateCommitMessage(with: provider, in: repository)
       commandResult = CommandResult(title: "Generate commit message", output: "Commit message updated.", isError: false)
     } catch {
       commandResult = CommandResult(title: "Generate commit message", output: error.localizedDescription, isError: true)
     }
   }
 
-  func reviewCurrentBranchWithClaude() async {
+  func reviewCurrentBranch(with provider: CodeAgentProvider) async {
     guard let repository = selectedRepository else { return }
     guard let currentBranch else {
-      let output = ClaudeCodeClientError.noCurrentBranch.localizedDescription
-      commandResult = CommandResult(title: "Claude branch review", output: output, isError: true)
+      let output = CodeAgentClientError.noCurrentBranch.localizedDescription
+      commandResult = CommandResult(title: "Branch review", output: output, isError: true)
       return
     }
 
-    isRunningClaudeBranchReview = true
-    defer { isRunningClaudeBranchReview = false }
+    isRunningCodeAgentBranchReview = true
+    defer { isRunningCodeAgentBranchReview = false }
 
     do {
-      claudeBranchReviewDocument = try await claudeCodeClient.reviewCurrentBranch(currentBranch, in: repository)
+      codeAgentBranchReviewDocument = try await codeAgentClient.reviewCurrentBranch(
+        currentBranch,
+        with: provider,
+        in: repository
+      )
     } catch {
-      commandResult = CommandResult(title: "Claude branch review", output: error.localizedDescription, isError: true)
+      commandResult = CommandResult(title: "Branch review", output: error.localizedDescription, isError: true)
     }
   }
 
-  func copyClaudeBranchReview() {
-    guard let text = claudeBranchReviewDocument?.text else { return }
+  func copyCodeAgentBranchReview() {
+    guard let text = codeAgentBranchReviewDocument?.text else { return }
     PasteboardWriter.copy(text)
-    commandResult = CommandResult(title: "Claude branch review", output: "Copied branch review to the clipboard.", isError: false)
+    commandResult = CommandResult(title: "Branch review", output: "Copied branch review to the clipboard.", isError: false)
   }
 
   func runRepositoryAction(_ action: RepositoryAction) async {
@@ -2498,7 +2502,7 @@ final class RepositoryStore {
     blameDocument = nil
     fileHistoryDocument = nil
     lineHistoryDocument = nil
-    claudeBranchReviewDocument = nil
+    codeAgentBranchReviewDocument = nil
     createWorktreeRequest = nil
     createWorktreeDestinationPath = ""
     createWorktreeBranchName = ""

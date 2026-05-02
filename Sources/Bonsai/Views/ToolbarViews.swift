@@ -134,11 +134,16 @@ struct RepositoryToolbarActionsMenu: View {
           }
           .disabled(store.selectedChangedFile == nil && store.selectedStatusEntry == nil)
           Divider()
-          Button("Review Current Branch with Claude") {
-            Task { await store.reviewCurrentBranchWithClaude() }
+          Menu("Review Current Branch") {
+            Button("Claude Code") {
+              Task { await store.reviewCurrentBranch(with: .claude) }
+            }
+            Button("Codex CLI") {
+              Task { await store.reviewCurrentBranch(with: .codex) }
+            }
           }
-          .disabled(!store.canReviewCurrentBranchWithClaude)
-          .help(store.reviewCurrentBranchWithClaudeHelp)
+          .disabled(!store.canReviewCurrentBranchWithCodeAgent)
+          .help(store.reviewCurrentBranchWithCodeAgentHelp)
         }
         Menu(ToolbarToolsMenuCopy.patchMenuTitle) {
           Button("Copy Current Patch") {

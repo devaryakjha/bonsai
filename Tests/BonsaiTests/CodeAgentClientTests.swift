@@ -1,10 +1,10 @@
 import XCTest
 @testable import Bonsai
 
-final class ClaudeCodeClientTests: XCTestCase {
+final class CodeAgentClientTests: XCTestCase {
   func testClaudePrintArgumentsUseNonInteractiveBoundedInvocation() {
     XCTAssertEqual(
-      ClaudeCodeClient.claudePrintArguments(),
+      CodeAgentClient.claudePrintArguments(),
       [
         "--print",
         "--no-session-persistence",
@@ -16,9 +16,33 @@ final class ClaudeCodeClientTests: XCTestCase {
     )
   }
 
+  func testCodexExecArgumentsUseReadOnlyNonInteractiveInvocation() {
+    XCTAssertEqual(
+      CodeAgentClient.codexExecArguments(),
+      [
+        "exec",
+        "--sandbox",
+        "read-only",
+        "--ask-for-approval",
+        "never",
+        "--ephemeral",
+        "--color",
+        "never",
+        "-"
+      ]
+    )
+  }
+
+  func testProviderMetadataNamesInstalledCLIs() {
+    XCTAssertEqual(CodeAgentProvider.claude.displayName, "Claude Code")
+    XCTAssertEqual(CodeAgentProvider.claude.executableName, "claude")
+    XCTAssertEqual(CodeAgentProvider.codex.displayName, "Codex CLI")
+    XCTAssertEqual(CodeAgentProvider.codex.executableName, "codex")
+  }
+
   func testCommitMessagePromptUsesDiffStatAndBoundedStagedDiff() {
     let diff = String(repeating: "+change\n", count: 12_000)
-    let prompt = ClaudeCodeClient.commitMessagePrompt(
+    let prompt = CodeAgentClient.commitMessagePrompt(
       diffStat: " Sources/App.swift | 2 +-\n",
       stagedDiff: diff
     )
@@ -41,15 +65,27 @@ final class ClaudeCodeClientTests: XCTestCase {
     """
 
     XCTAssertEqual(
-      ClaudeCodeClient.normalizedCommitMessage(from: output),
+      CodeAgentClient.normalizedCommitMessage(from: output),
       "Polish release packaging\n\nAdd release verifier and documentation."
     )
   }
 
-  func testStagedDiffArgumentsStayReadOnly() {
-    XCTAssertEqual(ClaudeCodeClient.stagedDiffStatArguments(), ["diff", "--cached", "--stat"])
+  func testNormalizedCommitMessageStripsCodexAttribution() {
+    let output = """
+    Commit message: Add provider menu
+    Generated with Codex
+    """
+
     XCTAssertEqual(
-      ClaudeCodeClient.stagedDiffArguments(),
+      CodeAgentClient.normalizedCommitMessage(from: output),
+      "Add provider menu"
+    )
+  }
+
+  func testStagedDiffArgumentsStayReadOnly() {
+    XCTAssertEqual(CodeAgentClient.stagedDiffStatArguments(), ["diff", "--cached", "--stat"])
+    XCTAssertEqual(
+      CodeAgentClient.stagedDiffArguments(),
       ["diff", "--cached", "--find-renames", "--find-copies", "--"]
     )
   }
@@ -65,23 +101,23 @@ final class ClaudeCodeClientTests: XCTestCase {
     )
 
     XCTAssertEqual(
-      ClaudeCodeClient.branchReviewBaseCandidates(for: branch),
+      CodeAgentClient.branchReviewBaseCandidates(for: branch),
       ["origin/main", "origin/master", "main", "master"]
     )
   }
 
   func testBranchReviewArgumentsStayReadOnly() {
-    XCTAssertEqual(ClaudeCodeClient.branchReviewBaseArguments(candidate: "origin/main"), ["merge-base", "HEAD", "origin/main"])
-    XCTAssertEqual(ClaudeCodeClient.branchReviewDiffStatArguments(diffRange: "abc...HEAD"), ["diff", "--stat", "abc...HEAD"])
+    XCTAssertEqual(CodeAgentClient.branchReviewBaseArguments(candidate: "origin/main"), ["merge-base", "HEAD", "origin/main"])
+    XCTAssertEqual(CodeAgentClient.branchReviewDiffStatArguments(diffRange: "abc...HEAD"), ["diff", "--stat", "abc...HEAD"])
     XCTAssertEqual(
-      ClaudeCodeClient.branchReviewDiffArguments(diffRange: "abc...HEAD"),
+      CodeAgentClient.branchReviewDiffArguments(diffRange: "abc...HEAD"),
       ["diff", "--find-renames", "--find-copies", "abc...HEAD", "--"]
     )
   }
 
   func testBranchReviewPromptIncludesBranchBaseAndBoundedDiff() {
     let diff = String(repeating: "+review\n", count: 12_000)
-    let prompt = ClaudeCodeClient.branchReviewPrompt(
+    let prompt = CodeAgentClient.branchReviewPrompt(
       branchName: "feature/review",
       baseReference: "abcdef1",
       diffStat: " Sources/App.swift | 3 +++",

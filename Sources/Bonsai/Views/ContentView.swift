@@ -128,14 +128,14 @@ struct ContentView: View {
         store.repositoryTreemapReport = nil
       }
     }
-    .sheet(item: $store.claudeBranchReviewDocument) { document in
-      ClaudeBranchReviewSheet(
+    .sheet(item: $store.codeAgentBranchReviewDocument) { document in
+      CodeAgentBranchReviewSheet(
         document: document,
         onCopy: {
-          store.copyClaudeBranchReview()
+          store.copyCodeAgentBranchReview()
         },
         onClose: {
-          store.claudeBranchReviewDocument = nil
+          store.codeAgentBranchReviewDocument = nil
         }
       )
     }
@@ -443,8 +443,8 @@ struct ContentView: View {
   }
 }
 
-private struct ClaudeBranchReviewSheet: View {
-  var document: ClaudeBranchReviewDocument
+private struct CodeAgentBranchReviewSheet: View {
+  var document: CodeAgentBranchReviewDocument
   var onCopy: () -> Void
   var onClose: () -> Void
 
@@ -452,7 +452,7 @@ private struct ClaudeBranchReviewSheet: View {
     VStack(alignment: .leading, spacing: 14) {
       HStack(alignment: .firstTextBaseline) {
         VStack(alignment: .leading, spacing: 3) {
-          Text("Claude branch review")
+          Text("\(document.providerName) branch review")
             .font(.title3)
             .fontWeight(.semibold)
             .lineLimit(1)
