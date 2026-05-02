@@ -12,6 +12,7 @@ struct BonsaiApp: App {
         .frame(minWidth: 1120, minHeight: 720)
     }
     .commands {
+      BonsaiAppInfoCommands()
       BonsaiCommands(store: repositoryStore)
       DiffFindCommands()
     }
@@ -25,6 +26,7 @@ struct BonsaiApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
   func applicationDidFinishLaunching(_ notification: Notification) {
     NSApp.setActivationPolicy(.regular)
+    BonsaiAppBranding.installApplicationIcon()
     NSApp.activate(ignoringOtherApps: true)
   }
 }
