@@ -44,6 +44,9 @@ The parity target was refreshed against the Fork homepage and Mac release notes
 on 2026-05-03. The current public release-note page lists Fork 2.66 and newer
 surfaces that are not all represented in the older homepage matrix.
 
+Source checked: `https://fork.dev/releasenotes`, whose Mac release notes showed
+Fork 2.66 dated 10 Apr 2026 at the time of this refresh.
+
 | Release-note surface | Bonsai status |
 | --- | --- |
 | Multiple source code directories | Verified |
@@ -67,9 +70,6 @@ surfaces that are not all represented in the older homepage matrix.
 
 ## Remaining Completion Gates
 
-- Re-run a fresh parity scrape against current Fork public release notes before
-  declaring v0 complete, then close or explicitly defer every open release-note
-  delta above.
 - Run the credentialed Developer ID signing and notarization path before any
   public binary distribution. The local release packaging verifier proves bundle
   structure and signability, not Apple notarization success.
