@@ -261,6 +261,13 @@ struct SidebarView: View {
         ForEach(store.snapshot.integrations.lfsFiles) { file in
           LFSFileSidebarRow(file: file)
             .contextMenu {
+              Button("Copy Path") {
+                PasteboardWriter.copy(file.path)
+              }
+              Button("Copy Object ID") {
+                PasteboardWriter.copy(file.oid)
+              }
+              Divider()
               Button("Lock") {
                 Task { await store.lfsLock(file) }
               }
@@ -329,7 +336,10 @@ struct SidebarView: View {
         Button("Open Worktree") {
           store.openRecent(GitRepository(path: worktree.path))
         }
-        Button("Remove worktree", role: .destructive) {
+        Button("Copy Path") {
+          PasteboardWriter.copy(worktree.path)
+        }
+        Button("Remove Worktree", role: .destructive) {
           store.presentRemoveWorktree(worktree)
         }
         .disabled(worktree.path == store.selectedRepository?.path)
@@ -351,6 +361,16 @@ struct SidebarView: View {
       .contextMenu {
         Button("Fetch") {
           Task { await store.fetchRemote(remote) }
+        }
+        if let fetchURL = remote.fetchURL {
+          Button("Copy Fetch URL") {
+            PasteboardWriter.copy(fetchURL)
+          }
+        }
+        if let pushURL = remote.pushURL {
+          Button("Copy Push URL") {
+            PasteboardWriter.copy(pushURL)
+          }
         }
         Button("Edit URL") {
           store.presentEditRemote(remote)
@@ -379,6 +399,9 @@ struct SidebarView: View {
         }
         Button("Update Submodule") {
           Task { await store.updateSubmodule(submodule) }
+        }
+        Button("Copy Path") {
+          PasteboardWriter.copy(submodule.path)
         }
       }
     }
