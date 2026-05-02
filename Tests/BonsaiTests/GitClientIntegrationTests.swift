@@ -176,6 +176,35 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(errorMessage, "Add a remote before publishing.")
   }
 
+  func testStoreCreatesBranchFromStash() async throws {
+    let repo = try await makeRepository()
+    let file = repo.appending(path: "file.txt")
+    try write("initial\n", to: file)
+    try await commitAll(in: repo, message: "Initial")
+    try write("stashed\n", to: file)
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    _ = try await client.stashPush(message: "stash branch", in: repository)
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    let stashes = await store.snapshot.stashes
+    let stash = try XCTUnwrap(stashes.first)
+    await MainActor.run {
+      store.presentStashBranch(stash)
+      store.operationInput = "stash-work"
+    }
+
+    await store.confirmOperation()
+
+    let branch = try await client.git(["branch", "--show-current"], in: repo).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+    XCTAssertEqual(branch, "stash-work")
+    let status = try await client.status(in: repository)
+    XCTAssertTrue(status.contains { $0.path == "file.txt" })
+    let remainingStashes = try await client.stashes(in: repository)
+    XCTAssertTrue(remainingStashes.isEmpty)
+  }
+
   func testStoreCreatesTagAtSelectedHistoryCommit() async throws {
     let repo = try await makeRepository()
     try write("first\n", to: repo.appending(path: "file.txt"))

@@ -399,6 +399,10 @@ struct GitClient {
     try await runRaw(["stash", "drop", stash.index], in: repository)
   }
 
+  func stashBranch(_ branch: String, stash: GitStash, in repository: GitRepository) async throws -> String {
+    try await runRaw(["stash", "branch", branch, stash.index], in: repository)
+  }
+
   func updateSubmodules(in repository: GitRepository) async throws -> String {
     try await runRaw(["submodule", "update", "--init", "--recursive"], in: repository)
   }

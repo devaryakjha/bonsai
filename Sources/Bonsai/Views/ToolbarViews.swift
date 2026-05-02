@@ -91,6 +91,9 @@ struct RepositoryToolbarActionsMenu: View {
             Button("Pop") {
               Task { await store.applyStash(stash, pop: true) }
             }
+            Button("Create Branch...") {
+              store.presentStashBranch(stash)
+            }
             Button("Drop", role: .destructive) {
               store.presentDropStash(stash)
             }

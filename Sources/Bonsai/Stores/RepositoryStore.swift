@@ -42,6 +42,7 @@ final class RepositoryStore {
   var operationRequest: GitOperationRequest?
   var operationInput = ""
   var branchRenameSource: GitRef?
+  var stashBranchSource: GitStash?
   var conflictResolutionRequest: ConflictResolutionRequest?
   var discardChangeRequest: DiscardChangeRequest?
   var dropStashRequest: DropStashRequest?
@@ -725,6 +726,7 @@ final class RepositoryStore {
   }
 
   func presentStashPush(includeUntracked: Bool = false) {
+    stashBranchSource = nil
     operationInput = ""
     operationRequest = GitOperationRequest(
       kind: includeUntracked ? .stashPushIncludeUntracked : .stashPush,
@@ -733,6 +735,19 @@ final class RepositoryStore {
       placeholder: "Optional stash message",
       defaultValue: "",
       primaryActionTitle: "Stash"
+    )
+  }
+
+  func presentStashBranch(_ stash: GitStash) {
+    stashBranchSource = stash
+    operationInput = ""
+    operationRequest = GitOperationRequest(
+      kind: .stashBranch,
+      title: "Create branch from stash",
+      message: "Create a branch from \(stash.index).",
+      placeholder: "feature/stashed-work",
+      defaultValue: "",
+      primaryActionTitle: "Create"
     )
   }
 
@@ -773,8 +788,10 @@ final class RepositoryStore {
     guard let request = operationRequest else { return }
     let value = operationInput.trimmingCharacters(in: .whitespacesAndNewlines)
     let branchToRename = branchRenameSource
+    let stashToBranch = stashBranchSource
     operationRequest = nil
     branchRenameSource = nil
+    stashBranchSource = nil
 
     switch request.kind {
     case .createBranch:
@@ -804,6 +821,11 @@ final class RepositoryStore {
     case .stashPushIncludeUntracked:
       await runMutation(title: "Create stash including untracked") {
         try await gitClient.stashPush(message: value.isEmpty ? nil : value, includeUntracked: true, in: requiredRepository())
+      }
+    case .stashBranch:
+      guard let stashToBranch, !value.isEmpty else { return }
+      await runMutation(title: "Create branch \(value)") {
+        try await gitClient.stashBranch(value, stash: stashToBranch, in: requiredRepository())
       }
     case .bisectStart:
       guard let selectedCommit, !value.isEmpty else { return }

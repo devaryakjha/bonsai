@@ -829,6 +829,7 @@ enum GitOperationKind: String, Identifiable {
   case createWorktree
   case stashPush
   case stashPushIncludeUntracked
+  case stashBranch
   case bisectStart
   case gitFlowFeatureStart
   case gitFlowReleaseStart
