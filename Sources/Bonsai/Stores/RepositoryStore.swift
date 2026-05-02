@@ -140,6 +140,15 @@ final class RepositoryStore {
     ])
   }
 
+  func openRepositoryInTerminal() {
+    guard let selectedRepository else { return }
+    openRepositoryInTerminal(selectedRepository)
+  }
+
+  func openRepositoryInTerminal(_ repository: GitRepository) {
+    openDirectoryInTerminal(RepositoryFileLocator.repositoryURL(repository))
+  }
+
   func copyRepositoryPath() {
     guard let selectedRepository else { return }
     copyRepositoryPath(selectedRepository)
@@ -155,8 +164,22 @@ final class RepositoryStore {
     ])
   }
 
+  func openWorkspaceGroupInTerminal(_ group: WorkspaceGroup) {
+    openDirectoryInTerminal(URL(filePath: group.path, directoryHint: .isDirectory))
+  }
+
   func copyWorkspaceGroupPath(_ group: WorkspaceGroup) {
     PasteboardWriter.copy(group.path)
+  }
+
+  private func openDirectoryInTerminal(_ directoryURL: URL) {
+    do {
+      try TerminalLauncher.openDirectory(directoryURL)
+    } catch {
+      let output = "Could not open Terminal for \(directoryURL.path(percentEncoded: false))."
+      errorMessage = output
+      commandResult = CommandResult(title: "Open in Terminal", output: output, isError: true)
+    }
   }
 
   var commitReadinessIssue: String? {

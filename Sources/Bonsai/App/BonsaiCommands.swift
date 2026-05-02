@@ -36,6 +36,11 @@ struct BonsaiCommands: Commands {
       }
       .disabled(store.selectedRepository == nil)
 
+      Button("Open in Terminal") {
+        store.openRepositoryInTerminal()
+      }
+      .disabled(store.selectedRepository == nil)
+
       Divider()
 
       Button("Fetch") {

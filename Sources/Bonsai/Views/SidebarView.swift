@@ -27,6 +27,9 @@ struct SidebarView: View {
               Button("Reveal in Finder") {
                 store.revealRepositoryInFinder()
               }
+              Button("Open in Terminal") {
+                store.openRepositoryInTerminal()
+              }
             }
         } else {
           Button {
@@ -53,6 +56,9 @@ struct SidebarView: View {
               }
               Button("Reveal in Finder") {
                 store.revealRepositoryInFinder(repository)
+              }
+              Button("Open in Terminal") {
+                store.openRepositoryInTerminal(repository)
               }
               Divider()
               Button("Remove from Recents", role: .destructive) {
@@ -82,6 +88,9 @@ struct SidebarView: View {
                   Button("Reveal in Finder") {
                     store.revealRepositoryInFinder(repository)
                   }
+                  Button("Open in Terminal") {
+                    store.openRepositoryInTerminal(repository)
+                  }
                 }
               }
             } label: {
@@ -100,6 +109,9 @@ struct SidebarView: View {
               }
               Button("Reveal in Finder") {
                 store.revealWorkspaceGroupInFinder(group)
+              }
+              Button("Open in Terminal") {
+                store.openWorkspaceGroupInTerminal(group)
               }
             }
           }
