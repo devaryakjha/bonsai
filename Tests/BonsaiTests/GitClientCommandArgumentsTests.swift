@@ -2,6 +2,83 @@ import XCTest
 @testable import Bonsai
 
 final class GitClientCommandArgumentsTests: XCTestCase {
+  func testBranchArgumentsPreserveNamesAndStartPoints() {
+    XCTAssertEqual(
+      GitClient.createBranchArguments(named: "feature/local branch", startPoint: nil),
+      ["branch", "feature/local branch"]
+    )
+    XCTAssertEqual(
+      GitClient.createBranchArguments(named: "feature/local branch", startPoint: "origin/main"),
+      ["branch", "feature/local branch", "origin/main"]
+    )
+    XCTAssertEqual(
+      GitClient.renameBranchArguments(from: "feature/local branch", to: "release/v1 candidate"),
+      ["branch", "-m", "feature/local branch", "release/v1 candidate"]
+    )
+    XCTAssertEqual(
+      GitClient.deleteBranchArguments("release/v1 candidate", force: false),
+      ["branch", "-d", "release/v1 candidate"]
+    )
+    XCTAssertEqual(
+      GitClient.deleteBranchArguments("release/v1 candidate", force: true),
+      ["branch", "-D", "release/v1 candidate"]
+    )
+  }
+
+  func testTagArgumentsPreserveNamesMessagesAndTargets() {
+    XCTAssertEqual(
+      GitClient.createTagArguments(named: "v1.0 candidate", target: nil),
+      ["tag", "v1.0 candidate"]
+    )
+    XCTAssertEqual(
+      GitClient.createTagArguments(named: "v1.0 candidate", target: "HEAD~1"),
+      ["tag", "v1.0 candidate", "HEAD~1"]
+    )
+    XCTAssertEqual(
+      GitClient.createAnnotatedTagArguments(
+        named: "v1.0 candidate",
+        message: "Release candidate build",
+        target: "abc1234"
+      ),
+      ["tag", "-a", "v1.0 candidate", "-m", "Release candidate build", "abc1234"]
+    )
+    XCTAssertEqual(
+      GitClient.deleteTagArguments("v1.0 candidate"),
+      ["tag", "-d", "v1.0 candidate"]
+    )
+  }
+
+  func testCheckoutUpstreamAndResetArgumentsPreserveRefs() {
+    let remoteBranch = GitRef(
+      name: "refs/remotes/origin/feature/sidebar",
+      shortName: "origin/feature/sidebar",
+      objectName: "abc123",
+      isHead: false,
+      kind: .remoteBranch
+    )
+
+    XCTAssertEqual(
+      GitClient.checkoutArguments("feature/local branch"),
+      ["checkout", "feature/local branch"]
+    )
+    XCTAssertEqual(
+      GitClient.checkoutTrackingRemoteArguments(remoteBranch),
+      ["checkout", "--track", "origin/feature/sidebar"]
+    )
+    XCTAssertEqual(
+      GitClient.setUpstreamArguments("origin/feature/sidebar", for: "feature/local branch"),
+      ["branch", "--set-upstream-to=origin/feature/sidebar", "feature/local branch"]
+    )
+    XCTAssertEqual(
+      GitClient.unsetUpstreamArguments(for: "feature/local branch"),
+      ["branch", "--unset-upstream", "feature/local branch"]
+    )
+    XCTAssertEqual(
+      GitClient.resetArguments(to: "abc1234", mode: .hard),
+      ["reset", "--hard", "abc1234"]
+    )
+  }
+
   func testRemoteManagementArgumentsPreserveNamesAndURLs() {
     XCTAssertEqual(
       GitClient.addRemoteArguments(

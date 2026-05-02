@@ -505,31 +505,47 @@ struct GitClient {
   }
 
   func createBranch(named name: String, startPoint: String?, in repository: GitRepository) async throws -> String {
+    try await runRaw(Self.createBranchArguments(named: name, startPoint: startPoint), in: repository)
+  }
+
+  static func createBranchArguments(named name: String, startPoint: String?) -> [String] {
     var args = ["branch", name]
     if let startPoint, !startPoint.isEmpty {
       args.append(startPoint)
     }
-    return try await runRaw(args, in: repository)
+    return args
   }
 
   func renameBranch(from oldName: String, to newName: String, in repository: GitRepository) async throws -> String {
-    try await runRaw(["branch", "-m", oldName, newName], in: repository)
+    try await runRaw(Self.renameBranchArguments(from: oldName, to: newName), in: repository)
+  }
+
+  static func renameBranchArguments(from oldName: String, to newName: String) -> [String] {
+    ["branch", "-m", oldName, newName]
   }
 
   func createTag(named name: String, target: String?, in repository: GitRepository) async throws -> String {
+    try await runRaw(Self.createTagArguments(named: name, target: target), in: repository)
+  }
+
+  static func createTagArguments(named name: String, target: String?) -> [String] {
     var args = ["tag", name]
     if let target, !target.isEmpty {
       args.append(target)
     }
-    return try await runRaw(args, in: repository)
+    return args
   }
 
   func createAnnotatedTag(named name: String, message: String, target: String?, in repository: GitRepository) async throws -> String {
+    try await runRaw(Self.createAnnotatedTagArguments(named: name, message: message, target: target), in: repository)
+  }
+
+  static func createAnnotatedTagArguments(named name: String, message: String, target: String?) -> [String] {
     var args = ["tag", "-a", name, "-m", message]
     if let target, !target.isEmpty {
       args.append(target)
     }
-    return try await runRaw(args, in: repository)
+    return args
   }
 
   func renameTag(from oldName: String, to newName: String, in repository: GitRepository) async throws -> String {
@@ -545,31 +561,55 @@ struct GitClient {
   }
 
   func checkout(_ ref: String, in repository: GitRepository) async throws -> String {
-    try await runRaw(["checkout", ref], in: repository)
+    try await runRaw(Self.checkoutArguments(ref), in: repository)
+  }
+
+  static func checkoutArguments(_ ref: String) -> [String] {
+    ["checkout", ref]
   }
 
   func checkoutTrackingRemote(_ ref: GitRef, in repository: GitRepository) async throws -> String {
-    try await runRaw(["checkout", "--track", ref.shortName], in: repository)
+    try await runRaw(Self.checkoutTrackingRemoteArguments(ref), in: repository)
+  }
+
+  static func checkoutTrackingRemoteArguments(_ ref: GitRef) -> [String] {
+    ["checkout", "--track", ref.shortName]
   }
 
   func setUpstream(_ upstream: String, for branch: String, in repository: GitRepository) async throws -> String {
-    try await runRaw(["branch", "--set-upstream-to=\(upstream)", branch], in: repository)
+    try await runRaw(Self.setUpstreamArguments(upstream, for: branch), in: repository)
+  }
+
+  static func setUpstreamArguments(_ upstream: String, for branch: String) -> [String] {
+    ["branch", "--set-upstream-to=\(upstream)", branch]
   }
 
   func unsetUpstream(for branch: String, in repository: GitRepository) async throws -> String {
-    try await runRaw(["branch", "--unset-upstream", branch], in: repository)
+    try await runRaw(Self.unsetUpstreamArguments(for: branch), in: repository)
+  }
+
+  static func unsetUpstreamArguments(for branch: String) -> [String] {
+    ["branch", "--unset-upstream", branch]
   }
 
   func reset(to commit: GitCommit, mode: ResetMode, in repository: GitRepository) async throws -> String {
-    try await runRaw(["reset", mode.flag, commit.hash], in: repository)
+    try await runRaw(Self.resetArguments(to: commit.hash, mode: mode), in: repository)
   }
 
   func reset(to entry: GitReflogEntry, mode: ResetMode, in repository: GitRepository) async throws -> String {
-    try await runRaw(["reset", mode.flag, entry.hash], in: repository)
+    try await runRaw(Self.resetArguments(to: entry.hash, mode: mode), in: repository)
+  }
+
+  static func resetArguments(to revision: String, mode: ResetMode) -> [String] {
+    ["reset", mode.flag, revision]
   }
 
   func deleteBranch(_ name: String, force: Bool, in repository: GitRepository) async throws -> String {
-    try await runRaw(["branch", force ? "-D" : "-d", name], in: repository)
+    try await runRaw(Self.deleteBranchArguments(name, force: force), in: repository)
+  }
+
+  static func deleteBranchArguments(_ name: String, force: Bool) -> [String] {
+    ["branch", force ? "-D" : "-d", name]
   }
 
   func deleteRemoteBranch(_ branch: GitRef, in repository: GitRepository) async throws -> String {
@@ -585,7 +625,11 @@ struct GitClient {
   }
 
   func deleteTag(_ name: String, in repository: GitRepository) async throws -> String {
-    try await runRaw(["tag", "-d", name], in: repository)
+    try await runRaw(Self.deleteTagArguments(name), in: repository)
+  }
+
+  static func deleteTagArguments(_ name: String) -> [String] {
+    ["tag", "-d", name]
   }
 
   func createWorktree(at path: String, startPoint: String, branch: String? = nil, in repository: GitRepository) async throws -> String {
