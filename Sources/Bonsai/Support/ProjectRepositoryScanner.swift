@@ -38,8 +38,10 @@ enum ProjectRepositoryScanner {
 
     return grouped
       .map { name, repositories in
-        WorkspaceGroup(
+        let groupURL = name == "Projects" ? root : root.appending(path: name)
+        return WorkspaceGroup(
           name: name,
+          path: groupURL.path(percentEncoded: false),
           repositories: repositories.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         )
       }

@@ -144,6 +144,16 @@ final class RepositoryStore {
     PasteboardWriter.copy(repository.path)
   }
 
+  func revealWorkspaceGroupInFinder(_ group: WorkspaceGroup) {
+    NSWorkspace.shared.activateFileViewerSelecting([
+      URL(filePath: group.path)
+    ])
+  }
+
+  func copyWorkspaceGroupPath(_ group: WorkspaceGroup) {
+    PasteboardWriter.copy(group.path)
+  }
+
   var commitReadinessIssue: String? {
     if commitMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
       return "Commit message is required."

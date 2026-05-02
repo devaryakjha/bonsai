@@ -9,9 +9,10 @@ struct GitRepository: Identifiable, Hashable, Codable {
 
 struct WorkspaceGroup: Identifiable, Hashable {
   var name: String
+  var path: String
   var repositories: [GitRepository]
 
-  var id: String { name }
+  var id: String { path }
 }
 
 struct GitStatusEntry: Identifiable, Hashable {

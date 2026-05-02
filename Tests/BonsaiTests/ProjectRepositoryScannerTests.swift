@@ -43,6 +43,9 @@ final class ProjectRepositoryScannerTests: XCTestCase {
     let groups = ProjectRepositoryScanner.workspaceGroups(under: root, maxDepth: 2)
 
     XCTAssertEqual(groups.map(\.name), ["Projects", "mobile", "services"])
+    XCTAssertEqual(groups.first { $0.name == "Projects" }?.path, root.path(percentEncoded: false))
+    XCTAssertEqual(groups.first { $0.name == "mobile" }?.path, root.appending(path: "mobile").path(percentEncoded: false))
+    XCTAssertEqual(groups.first { $0.name == "services" }?.path, root.appending(path: "services").path(percentEncoded: false))
     XCTAssertEqual(groups.first { $0.name == "Projects" }?.repositories.map(\.name), ["bonsai"])
     XCTAssertEqual(groups.first { $0.name == "mobile" }?.repositories.map(\.name), ["chibi"])
     XCTAssertEqual(groups.first { $0.name == "services" }?.repositories.map(\.name), ["api"])

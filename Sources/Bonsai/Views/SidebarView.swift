@@ -91,6 +91,15 @@ struct SidebarView: View {
                   .monospacedDigit()
               }
             }
+            .help(group.path)
+            .contextMenu {
+              Button("Copy Path") {
+                store.copyWorkspaceGroupPath(group)
+              }
+              Button("Reveal in Finder") {
+                store.revealWorkspaceGroupInFinder(group)
+              }
+            }
           }
         } header: {
           HStack {
