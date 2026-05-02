@@ -67,7 +67,19 @@ private struct DetailHeaderView: View {
 
   @ViewBuilder
   private var titleView: some View {
-    if let commit = store.selectedCommit, store.mainMode == .history {
+    if let entry = store.selectedTreeEntry, let commit = store.selectedCommit, store.mainMode == .history {
+      Text(entry.path)
+        .font(.headline)
+        .lineLimit(2)
+      HStack(spacing: 8) {
+        Text(commit.shortHash)
+          .monospaced()
+        Text(entry.kind.rawValue)
+        Text(entry.mode)
+      }
+      .font(.caption)
+      .foregroundStyle(.secondary)
+    } else if let commit = store.selectedCommit, store.mainMode == .history {
       Text(commit.subject)
         .font(.headline)
         .lineLimit(2)
@@ -109,7 +121,9 @@ private struct DiffView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      if store.diffText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      if let entry = store.selectedTreeEntry {
+        TreeBlobPreview(path: entry.path, text: store.treeBlobText)
+      } else if store.diffText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
         ContentUnavailableView(
           "No Diff Selected",
           systemImage: "doc.text.magnifyingglass",
@@ -160,6 +174,28 @@ private struct DiffView: View {
 
   private var shouldShowHunks: Bool {
     store.selectedStatusEntry != nil && !store.diffHunks.isEmpty
+  }
+}
+
+private struct TreeBlobPreview: View {
+  var path: String
+  var text: String
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 0) {
+      HStack {
+        Image(systemName: "doc.text")
+        Text(path)
+          .lineLimit(1)
+        Spacer()
+      }
+      .font(.caption)
+      .foregroundStyle(.secondary)
+      .padding(.horizontal, 12)
+      .padding(.vertical, 8)
+
+      RichDiffTextView(text: text)
+    }
   }
 }
 

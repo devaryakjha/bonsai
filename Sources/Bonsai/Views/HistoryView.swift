@@ -106,50 +106,121 @@ private struct CommitRow: View {
 
 private struct ChangedFilesView: View {
   let store: RepositoryStore
+  @State private var mode: CommitFilePanelMode = .changed
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       HStack {
-        Text("Changed Files")
-          .font(.headline)
+        Picker("Commit Panel", selection: $mode) {
+          ForEach(CommitFilePanelMode.allCases) { mode in
+            Text(mode.title).tag(mode)
+          }
+        }
+        .pickerStyle(.segmented)
+        .controlSize(.small)
+        .frame(width: 190)
         Spacer()
-        Text(store.snapshot.changedFiles.count.formatted())
+        Text(countText)
           .foregroundStyle(.secondary)
           .monospacedDigit()
       }
       .padding(.horizontal, 12)
       .padding(.vertical, 8)
 
-      List(selection: Binding(
-        get: { store.selectedChangedFile?.id },
-        set: { id in
-          store.selectChangedFile(store.snapshot.changedFiles.first(where: { $0.id == id }))
+      switch mode {
+      case .changed:
+        List(selection: Binding(
+          get: { store.selectedChangedFile?.id },
+          set: { id in
+            store.selectChangedFile(store.snapshot.changedFiles.first(where: { $0.id == id }))
+          }
+        )) {
+          ForEach(store.snapshot.changedFiles) { file in
+            HStack {
+              Text(file.status)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(width: 34, alignment: .leading)
+              Text(file.path)
+                .lineLimit(1)
+              Spacer()
+            }
+            .tag(file.id)
+            .contextMenu {
+              Button("Blame") {
+                store.selectChangedFile(file)
+                Task { await store.showBlameForSelection() }
+              }
+              Button("File History") {
+                store.selectChangedFile(file)
+                Task { await store.showFileHistoryForSelection() }
+              }
+            }
+          }
         }
-      )) {
-        ForEach(store.snapshot.changedFiles) { file in
-          HStack {
-            Text(file.status)
+        .listStyle(.plain)
+      case .tree:
+        VStack(spacing: 0) {
+          HStack(spacing: 8) {
+            Button {
+              store.navigateTreeUp()
+            } label: {
+              Label("Up", systemImage: "chevron.up")
+            }
+            .buttonStyle(.borderless)
+            .disabled(store.commitTreePath.isEmpty)
+
+            Text(store.commitTreePath.isEmpty ? "/" : store.commitTreePath)
               .font(.caption)
               .foregroundStyle(.secondary)
-              .frame(width: 34, alignment: .leading)
-            Text(file.path)
               .lineLimit(1)
             Spacer()
           }
-          .tag(file.id)
-          .contextMenu {
-            Button("Blame") {
-              store.selectChangedFile(file)
-              Task { await store.showBlameForSelection() }
+          .padding(.horizontal, 12)
+          .padding(.bottom, 6)
+
+          List(selection: Binding(
+            get: { store.selectedTreeEntry?.id },
+            set: { id in
+              guard let entry = store.commitTreeEntries.first(where: { $0.id == id }) else { return }
+              store.openTreeEntry(entry)
             }
-            Button("File History") {
-              store.selectChangedFile(file)
-              Task { await store.showFileHistoryForSelection() }
+          )) {
+            ForEach(store.commitTreeEntries) { entry in
+              HStack(spacing: 8) {
+                Image(systemName: entry.isDirectory ? "folder" : "doc.text")
+                  .foregroundStyle(entry.isDirectory ? .blue : .secondary)
+                  .frame(width: 16)
+                Text(entry.name)
+                  .lineLimit(1)
+                Spacer()
+              }
+              .tag(entry.id)
+              .onTapGesture {
+                store.openTreeEntry(entry)
+              }
             }
           }
+          .listStyle(.plain)
         }
       }
-      .listStyle(.plain)
     }
   }
+
+  private var countText: String {
+    switch mode {
+    case .changed:
+      return store.snapshot.changedFiles.count.formatted()
+    case .tree:
+      return store.commitTreeEntries.count.formatted()
+    }
+  }
+}
+
+private enum CommitFilePanelMode: String, CaseIterable, Identifiable {
+  case changed
+  case tree
+
+  var id: String { rawValue }
+  var title: String { self == .changed ? "Changed" : "Tree" }
 }

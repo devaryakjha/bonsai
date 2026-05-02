@@ -131,6 +131,21 @@ struct GitClient {
     return GitParsers.parseChangedFiles(output.stdout)
   }
 
+  func treeEntries(in repository: GitRepository, commit: GitCommit?, path: String = "") async throws -> [GitTreeEntry] {
+    guard let commit else { return [] }
+    let target = path.isEmpty ? commit.hash : "\(commit.hash):\(path)"
+    let output = try await git(["ls-tree", "-z", target], in: repository.url)
+    return GitParsers.parseTreeEntries(output.stdout, basePath: path)
+  }
+
+  func blobText(path: String, commit: GitCommit, in repository: GitRepository) async throws -> String {
+    let output = try await gitData(["show", "\(commit.hash):\(path)"], in: repository.url)
+    if let text = String(data: output.stdout, encoding: .utf8) {
+      return text
+    }
+    return "Binary file preview is not available for \(path)."
+  }
+
   func diffForWorkingTreeFile(_ entry: GitStatusEntry, staged: Bool, algorithm: DiffAlgorithm, in repository: GitRepository) async throws -> String {
     let args = staged
       ? diffArguments(["--cached", "--", entry.path], algorithm: algorithm)

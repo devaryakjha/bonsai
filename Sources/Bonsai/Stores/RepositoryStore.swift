@@ -18,6 +18,7 @@ final class RepositoryStore {
   var selectedCommit: GitCommit?
   var selectedStatusEntry: GitStatusEntry?
   var selectedChangedFile: GitChangedFile?
+  var selectedTreeEntry: GitTreeEntry?
   var mainMode: MainMode = .history {
     didSet {
       guard oldValue != mainMode else { return }
@@ -28,6 +29,9 @@ final class RepositoryStore {
   var historySearchText = ""
   var diffText = ""
   var imageDiffSnapshot: ImageDiffSnapshot?
+  var commitTreeEntries: [GitTreeEntry] = []
+  var commitTreePath = ""
+  var treeBlobText = ""
   var commandResult: CommandResult?
   var gitHubNotifications: [GitHubNotification] = []
   var operationRequest: GitOperationRequest?
@@ -76,7 +80,7 @@ final class RepositoryStore {
   }
 
   var selectedPreviewPath: String? {
-    selectedStatusEntry?.path ?? selectedChangedFile?.path
+    selectedStatusEntry?.path ?? selectedChangedFile?.path ?? selectedTreeEntry?.path
   }
 
   var canRunSelectedFileLFSAction: Bool {
@@ -253,6 +257,9 @@ final class RepositoryStore {
       if selectedChangedFile == nil {
         selectedChangedFile = snapshot.changedFiles.first
       }
+      if mainMode == .history {
+        try await refreshCommitTreeEntries(resetPath: commitTreeEntries.isEmpty)
+      }
       await refreshDiff()
       errorMessage = nil
     } catch {
@@ -263,6 +270,9 @@ final class RepositoryStore {
   func selectCommit(_ commit: GitCommit?) {
     selectedCommit = commit
     selectedChangedFile = nil
+    selectedTreeEntry = nil
+    commitTreePath = ""
+    treeBlobText = ""
     Task {
       await refreshCommitFilesAndDiff()
     }
@@ -271,6 +281,8 @@ final class RepositoryStore {
   func selectChangedFile(_ file: GitChangedFile?) {
     selectedChangedFile = file
     selectedStatusEntry = nil
+    selectedTreeEntry = nil
+    treeBlobText = ""
     Task {
       await refreshDiff()
     }
@@ -279,8 +291,48 @@ final class RepositoryStore {
   func selectStatusEntry(_ entry: GitStatusEntry?) {
     selectedStatusEntry = entry
     selectedChangedFile = nil
+    selectedTreeEntry = nil
+    treeBlobText = ""
     Task {
       await refreshDiff()
+    }
+  }
+
+  func openTreeEntry(_ entry: GitTreeEntry) {
+    guard entry.isDirectory else {
+      selectTreeBlob(entry)
+      return
+    }
+
+    selectedTreeEntry = nil
+    treeBlobText = ""
+    commitTreePath = entry.path
+    Task {
+      await refreshCommitTree()
+    }
+  }
+
+  func navigateTreeUp() {
+    guard !commitTreePath.isEmpty else { return }
+    selectedTreeEntry = nil
+    treeBlobText = ""
+    var components = commitTreePath.split(separator: "/").map(String.init)
+    _ = components.popLast()
+    commitTreePath = components.joined(separator: "/")
+    Task {
+      await refreshCommitTree()
+    }
+  }
+
+  func selectTreeBlob(_ entry: GitTreeEntry) {
+    selectedTreeEntry = entry
+    selectedChangedFile = nil
+    selectedStatusEntry = nil
+    diffText = ""
+    imageDiffSnapshot = nil
+
+    Task {
+      await refreshTreeBlob()
     }
   }
 
@@ -745,9 +797,49 @@ final class RepositoryStore {
     guard let repository = selectedRepository else { return }
     do {
       snapshot.changedFiles = try await gitClient.changedFiles(in: repository, commit: selectedCommit)
+      try await refreshCommitTreeEntries(resetPath: true)
       selectedChangedFile = snapshot.changedFiles.first
       await refreshDiff()
     } catch {
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  private func refreshCommitTree() async {
+    do {
+      try await refreshCommitTreeEntries(resetPath: false)
+    } catch {
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  private func refreshCommitTreeEntries(resetPath: Bool) async throws {
+    guard let repository = selectedRepository else {
+      commitTreeEntries = []
+      commitTreePath = ""
+      return
+    }
+    if resetPath {
+      commitTreePath = ""
+      selectedTreeEntry = nil
+      treeBlobText = ""
+    }
+    commitTreeEntries = try await gitClient.treeEntries(in: repository, commit: selectedCommit, path: commitTreePath)
+  }
+
+  private func refreshTreeBlob() async {
+    guard let repository = selectedRepository,
+          let selectedCommit,
+          let selectedTreeEntry else {
+      treeBlobText = ""
+      return
+    }
+
+    do {
+      treeBlobText = try await gitClient.blobText(path: selectedTreeEntry.path, commit: selectedCommit, in: repository)
+      errorMessage = nil
+    } catch {
+      treeBlobText = ""
       errorMessage = error.localizedDescription
     }
   }

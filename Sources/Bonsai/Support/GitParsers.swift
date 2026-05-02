@@ -170,6 +170,27 @@ enum GitParsers {
       }
   }
 
+  static func parseTreeEntries(_ output: String, basePath: String = "") -> [GitTreeEntry] {
+    output
+      .split(separator: "\0", omittingEmptySubsequences: true)
+      .compactMap { record -> GitTreeEntry? in
+        let parts = record.split(separator: "\t", maxSplits: 1, omittingEmptySubsequences: false)
+        guard parts.count == 2 else { return nil }
+        let metadata = parts[0].split(separator: " ", omittingEmptySubsequences: true).map(String.init)
+        guard metadata.count >= 3 else { return nil }
+
+        let name = String(parts[1])
+        let path = basePath.isEmpty ? name : "\(basePath)/\(name)"
+        return GitTreeEntry(
+          mode: metadata[0],
+          kind: GitTreeEntry.EntryKind(rawValue: metadata[1]) ?? .unknown,
+          object: metadata[2],
+          path: path,
+          name: name
+        )
+      }
+  }
+
   static func parseDiffHunks(_ output: String) -> [DiffHunk] {
     let lines = output.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
     var fileHeader: [String] = []

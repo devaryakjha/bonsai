@@ -61,6 +61,24 @@ struct GitChangedFile: Identifiable, Hashable {
   var id: String { "\(status):\(oldPath ?? ""):\(path)" }
 }
 
+struct GitTreeEntry: Identifiable, Hashable {
+  enum EntryKind: String {
+    case tree
+    case blob
+    case commit
+    case unknown
+  }
+
+  var mode: String
+  var kind: EntryKind
+  var object: String
+  var path: String
+  var name: String
+
+  var id: String { "\(kind.rawValue):\(path)" }
+  var isDirectory: Bool { kind == .tree }
+}
+
 struct GitRef: Identifiable, Hashable {
   enum RefKind: String {
     case localBranch = "Local"

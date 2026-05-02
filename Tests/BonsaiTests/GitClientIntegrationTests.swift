@@ -243,6 +243,27 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(stashes.isEmpty)
   }
 
+  func testCommitTreeBrowsingReadsNestedBlobText() async throws {
+    let repo = try await makeRepository()
+    try write("root\n", to: repo.appending(path: "README.md"))
+    try write("nested\n", to: repo.appending(path: "Sources/App.swift"))
+    try await commitAll(in: repo, message: "Tree")
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let commits = try await client.commits(in: repository)
+    let commit = try XCTUnwrap(commits.first)
+    let rootEntries = try await client.treeEntries(in: repository, commit: commit)
+    let sources = try XCTUnwrap(rootEntries.first { $0.name == "Sources" })
+    XCTAssertTrue(sources.isDirectory)
+
+    let sourceEntries = try await client.treeEntries(in: repository, commit: commit, path: sources.path)
+    let appFile = try XCTUnwrap(sourceEntries.first { $0.name == "App.swift" })
+    let text = try await client.blobText(path: appFile.path, commit: commit, in: repository)
+
+    XCTAssertEqual(appFile.path, "Sources/App.swift")
+    XCTAssertEqual(text, "nested\n")
+  }
+
   func testCloneInteractiveRebaseAndConflictResolution() async throws {
     let remote = try await makeBareRepository()
     let source = try await makeRepository()

@@ -54,6 +54,21 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(remotes.first { $0.name == "origin" }?.pushURL, "git@github.com:example/bonsai.git")
   }
 
+  func testParseTreeEntriesKeepsNamesAndBasePath() {
+    let entries = GitParsers.parseTreeEntries(
+      "100644 blob abc123\tREADME.md\0" +
+      "040000 tree def456\tSources App\0",
+      basePath: "Root"
+    )
+
+    XCTAssertEqual(entries.count, 2)
+    XCTAssertEqual(entries[0].kind, .blob)
+    XCTAssertEqual(entries[0].name, "README.md")
+    XCTAssertEqual(entries[0].path, "Root/README.md")
+    XCTAssertTrue(entries[1].isDirectory)
+    XCTAssertEqual(entries[1].path, "Root/Sources App")
+  }
+
   func testParseDiffHunksReconstructsPatchPerHunk() {
     let hunks = GitParsers.parseDiffHunks("""
     diff --git a/file.txt b/file.txt
