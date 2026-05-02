@@ -589,6 +589,7 @@ private struct GitHubRepositorySheet: View {
   @State private var name: String
   @State private var description: String
   @State private var isPrivate: Bool
+  @State private var deleteConfirmation = ""
 
   init(
     request: GitHubRepositoryRequest,
@@ -616,23 +617,48 @@ private struct GitHubRepositorySheet: View {
       }
 
       if request.operation == .delete {
-        TextField("Owner", text: $owner)
+        VStack(alignment: .leading, spacing: 6) {
+          Text("Owner")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+          TextField("owner", text: $owner)
+            .textFieldStyle(.roundedBorder)
+        }
+      }
+
+      VStack(alignment: .leading, spacing: 6) {
+        Text("Repository name")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+        TextField("repository", text: $name)
           .textFieldStyle(.roundedBorder)
       }
 
-      TextField("Repository name", text: $name)
-        .textFieldStyle(.roundedBorder)
-
       if request.operation == .create {
-        TextField("Description", text: $description)
-          .textFieldStyle(.roundedBorder)
+        VStack(alignment: .leading, spacing: 6) {
+          Text("Description")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+          TextField("Optional", text: $description)
+            .textFieldStyle(.roundedBorder)
+        }
         Toggle("Private", isOn: $isPrivate)
+      }
+
+      if request.operation == .delete {
+        VStack(alignment: .leading, spacing: 6) {
+          Text("Type \(deleteTarget) to confirm")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+          TextField(deleteTarget, text: $deleteConfirmation)
+            .textFieldStyle(.roundedBorder)
+        }
       }
 
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
-        Button(request.operation.primaryActionTitle) {
+        Button(role: request.operation == .delete ? .destructive : nil) {
           onConfirm(GitHubRepositoryRequest(
             operation: request.operation,
             owner: owner,
@@ -640,6 +666,8 @@ private struct GitHubRepositorySheet: View {
             repositoryDescription: description,
             isPrivate: isPrivate
           ))
+        } label: {
+          Text(request.operation.primaryActionTitle)
         }
         .buttonStyle(.borderedProminent)
         .disabled(!canConfirm)
@@ -652,9 +680,15 @@ private struct GitHubRepositorySheet: View {
   private var canConfirm: Bool {
     let hasName = !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     if request.operation == .delete {
-      return hasName && !owner.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      return hasName
+        && !owner.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        && deleteConfirmation.trimmingCharacters(in: .whitespacesAndNewlines) == deleteTarget
     }
     return hasName
+  }
+
+  private var deleteTarget: String {
+    "\(owner.trimmingCharacters(in: .whitespacesAndNewlines))/\(name.trimmingCharacters(in: .whitespacesAndNewlines))"
   }
 }
 

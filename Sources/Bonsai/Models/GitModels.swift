@@ -180,6 +180,12 @@ struct GitRemote: Identifiable, Hashable {
   var pushURL: String?
 
   var id: String { name }
+  var githubRepositoryTarget: GitHubRepositoryTarget? {
+    [fetchURL, pushURL]
+      .compactMap { $0 }
+      .compactMap(GitHubRepositoryTarget.init(remoteURL:))
+      .first
+  }
 }
 
 struct GitStash: Identifiable, Hashable {
@@ -458,6 +464,43 @@ struct GitHubRepository: Identifiable, Hashable, Decodable {
     case cloneURL = "clone_url"
     case sshURL = "ssh_url"
     case isPrivate = "private"
+  }
+}
+
+struct GitHubRepositoryTarget: Hashable {
+  var owner: String
+  var name: String
+
+  var fullName: String { "\(owner)/\(name)" }
+
+  init(owner: String, name: String) {
+    self.owner = owner
+    self.name = name
+  }
+
+  init?(remoteURL: String) {
+    let trimmed = remoteURL.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return nil }
+
+    let path: String
+    if let url = URL(string: trimmed), url.host == "github.com" {
+      path = url.path
+    } else if trimmed.hasPrefix("git@github.com:") {
+      path = String(trimmed.dropFirst("git@github.com:".count))
+    } else {
+      return nil
+    }
+
+    let parts = path
+      .split(separator: "/", omittingEmptySubsequences: true)
+      .map(String.init)
+    guard parts.count >= 2 else { return nil }
+
+    let repository = parts[1].hasSuffix(".git") ? String(parts[1].dropLast(4)) : parts[1]
+    guard !parts[0].isEmpty, !repository.isEmpty else { return nil }
+
+    owner = parts[0]
+    name = repository
   }
 }
 

@@ -1233,10 +1233,12 @@ final class RepositoryStore {
   }
 
   func presentDeleteGitHubRepository() {
+    let target = snapshot.remotes.first(where: { $0.name == "origin" })?.githubRepositoryTarget
+      ?? snapshot.remotes.compactMap(\.githubRepositoryTarget).first
     gitHubRepositoryRequest = GitHubRepositoryRequest(
       operation: .delete,
-      owner: "",
-      name: selectedRepository?.name ?? "",
+      owner: target?.owner ?? "",
+      name: target?.name ?? selectedRepository?.name ?? "",
       repositoryDescription: "",
       isPrivate: false
     )

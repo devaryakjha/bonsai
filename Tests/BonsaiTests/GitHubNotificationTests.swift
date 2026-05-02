@@ -50,4 +50,30 @@ final class GitHubNotificationTests: XCTestCase {
     XCTAssertEqual(repository.cloneURL, "https://github.com/example/bonsai.git")
     XCTAssertTrue(repository.isPrivate)
   }
+
+  func testGitHubRepositoryTargetParsesCommonRemoteURLs() {
+    XCTAssertEqual(
+      GitHubRepositoryTarget(remoteURL: "https://github.com/example/bonsai.git"),
+      GitHubRepositoryTarget(owner: "example", name: "bonsai")
+    )
+    XCTAssertEqual(
+      GitHubRepositoryTarget(remoteURL: "git@github.com:example/bonsai.git"),
+      GitHubRepositoryTarget(owner: "example", name: "bonsai")
+    )
+    XCTAssertEqual(
+      GitHubRepositoryTarget(remoteURL: "ssh://git@github.com/example/bonsai"),
+      GitHubRepositoryTarget(owner: "example", name: "bonsai")
+    )
+    XCTAssertNil(GitHubRepositoryTarget(remoteURL: "git@gitlab.com:example/bonsai.git"))
+  }
+
+  func testRemoteExposesFirstGitHubRepositoryTarget() {
+    let remote = GitRemote(
+      name: "origin",
+      fetchURL: "git@gitlab.com:example/other.git",
+      pushURL: "git@github.com:example/bonsai.git"
+    )
+
+    XCTAssertEqual(remote.githubRepositoryTarget, GitHubRepositoryTarget(owner: "example", name: "bonsai"))
+  }
 }
