@@ -561,23 +561,35 @@ struct GitClient {
   }
 
   func createWorktree(at path: String, startPoint: String, branch: String? = nil, in repository: GitRepository) async throws -> String {
+    try await runRaw(Self.createWorktreeArguments(at: path, startPoint: startPoint, branch: branch), in: repository)
+  }
+
+  static func createWorktreeArguments(at path: String, startPoint: String, branch: String? = nil) -> [String] {
     if let branch, !branch.isEmpty {
-      return try await runRaw(["worktree", "add", "-b", branch, path, startPoint], in: repository)
+      return ["worktree", "add", "-b", branch, path, startPoint]
     }
-    return try await runRaw(["worktree", "add", "--detach", path, startPoint], in: repository)
+    return ["worktree", "add", "--detach", path, startPoint]
   }
 
   func removeWorktree(_ worktree: GitWorktree, force: Bool = false, in repository: GitRepository) async throws -> String {
+    try await runRaw(Self.removeWorktreeArguments(worktree, force: force), in: repository)
+  }
+
+  static func removeWorktreeArguments(_ worktree: GitWorktree, force: Bool = false) -> [String] {
     var args = ["worktree", "remove"]
     if force {
       args.append("--force")
     }
     args.append(worktree.path)
-    return try await runRaw(args, in: repository)
+    return args
   }
 
   func pruneWorktrees(in repository: GitRepository) async throws -> String {
-    try await runRaw(["worktree", "prune"], in: repository)
+    try await runRaw(Self.pruneWorktreesArguments(), in: repository)
+  }
+
+  static func pruneWorktreesArguments() -> [String] {
+    ["worktree", "prune"]
   }
 
   func stashPush(message: String?, includeUntracked: Bool = false, in repository: GitRepository) async throws -> String {

@@ -71,6 +71,54 @@ final class GitClientCommandArgumentsTests: XCTestCase {
     )
   }
 
+  func testCreateWorktreeArgumentsUseDetachedModeByDefault() {
+    XCTAssertEqual(
+      GitClient.createWorktreeArguments(
+        at: "/tmp/bonsai worktree",
+        startPoint: "HEAD"
+      ),
+      ["worktree", "add", "--detach", "/tmp/bonsai worktree", "HEAD"]
+    )
+  }
+
+  func testCreateWorktreeArgumentsKeepBranchNameAsSingleArgument() {
+    XCTAssertEqual(
+      GitClient.createWorktreeArguments(
+        at: "/tmp/bonsai worktree",
+        startPoint: "main",
+        branch: "feature/worktree branch"
+      ),
+      ["worktree", "add", "-b", "feature/worktree branch", "/tmp/bonsai worktree", "main"]
+    )
+  }
+
+  func testRemoveWorktreeArgumentsPreserveForceFlagOrder() {
+    let worktree = GitWorktree(
+      path: "/tmp/bonsai worktree",
+      head: "abc1234",
+      branch: nil,
+      isDetached: true,
+      isBare: false,
+      isPrunable: false
+    )
+
+    XCTAssertEqual(
+      GitClient.removeWorktreeArguments(worktree),
+      ["worktree", "remove", "/tmp/bonsai worktree"]
+    )
+    XCTAssertEqual(
+      GitClient.removeWorktreeArguments(worktree, force: true),
+      ["worktree", "remove", "--force", "/tmp/bonsai worktree"]
+    )
+  }
+
+  func testPruneWorktreesArgumentsUseGitWorktreePrune() {
+    XCTAssertEqual(
+      GitClient.pruneWorktreesArguments(),
+      ["worktree", "prune"]
+    )
+  }
+
   func testUpdateSubmodulesArgumentsUseRecursiveInitUpdate() {
     XCTAssertEqual(
       GitClient.updateSubmodulesArguments(),
