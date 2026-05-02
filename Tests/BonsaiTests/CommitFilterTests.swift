@@ -2,6 +2,42 @@ import XCTest
 @testable import Bonsai
 
 final class CommitFilterTests: XCTestCase {
+  func testHistoryGraphColumnUsesMinimumForSimpleHistories() {
+    let commits = [
+      GitCommit(
+        hash: "abcdef123456",
+        shortHash: "abcdef1",
+        authorName: "Ari",
+        authorEmail: "ari@example.test",
+        date: nil,
+        subject: "Linear commit",
+        decorations: [],
+        graph: "*"
+      )
+    ]
+
+    XCTAssertEqual(HistoryGraphColumn.characterWidth(for: commits), HistoryGraphColumn.minimumCharacters)
+    XCTAssertEqual(HistoryGraphColumn.pointWidth(for: commits), 42, accuracy: 0.001)
+    XCTAssertEqual(HistoryGraphColumn.characterWidth(for: []), HistoryGraphColumn.minimumCharacters)
+  }
+
+  func testHistoryGraphColumnExpandsForWiderGitGraphText() {
+    let commits = [
+      GitCommit(
+        hash: "abcdef123456",
+        shortHash: "abcdef1",
+        authorName: "Ari",
+        authorEmail: "ari@example.test",
+        date: nil,
+        subject: "Wide graph",
+        decorations: [],
+        graph: "| | | *"
+      )
+    ]
+
+    XCTAssertEqual(HistoryGraphColumn.characterWidth(for: commits), 7)
+  }
+
   func testFilterMatchesSubjectAuthorHashAndDecoration() {
     let commits = [
       GitCommit(

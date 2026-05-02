@@ -5,6 +5,8 @@ struct HistoryView: View {
   @AppStorage("bonsai.showCommitRowDetails") private var showCommitRowDetails = false
 
   var body: some View {
+    let graphColumnWidth = CGFloat(HistoryGraphColumn.pointWidth(for: store.filteredCommits))
+
     VStack(spacing: 0) {
       HStack {
         Image(systemName: "magnifyingglass")
@@ -54,7 +56,11 @@ struct HistoryView: View {
         }
 
         ForEach(store.filteredCommits) { commit in
-          CommitRow(commit: commit, showsDetails: showCommitRowDetails)
+          CommitRow(
+            commit: commit,
+            showsDetails: showCommitRowDetails,
+            graphColumnWidth: graphColumnWidth
+          )
             .tag(HistorySelectionKey.commit(commit.id))
             .contextMenu {
               Button("Checkout") {
@@ -195,6 +201,7 @@ private struct StashRow: View {
 private struct CommitRow: View {
   var commit: GitCommit
   var showsDetails: Bool
+  var graphColumnWidth: CGFloat
 
   var body: some View {
     VStack(alignment: .leading, spacing: showsDetails ? 6 : 0) {
@@ -203,7 +210,7 @@ private struct CommitRow: View {
           .font(.caption.monospaced())
           .foregroundStyle(.secondary)
           .lineLimit(1)
-          .frame(width: 42, alignment: .leading)
+          .frame(width: graphColumnWidth, alignment: .leading)
         Text(commit.subject)
           .lineLimit(1)
           .fontWeight(.medium)
@@ -217,7 +224,7 @@ private struct CommitRow: View {
       if showsDetails {
         HStack(spacing: 8) {
           Spacer()
-            .frame(width: 42)
+            .frame(width: graphColumnWidth)
           Text(commit.authorName)
           if let date = commit.date {
             Text(date, style: .relative)
