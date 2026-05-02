@@ -307,6 +307,16 @@ struct GitClient {
     return output.combinedOutput
   }
 
+  func discardHunk(_ hunk: DiffHunk, in repository: GitRepository) async throws -> String {
+    let output = try await git(["apply", "--reverse"], in: repository.url, standardInput: hunk.patch)
+    return output.combinedOutput
+  }
+
+  func discardLineChange(_ change: DiffLineChange, in repository: GitRepository) async throws -> String {
+    let output = try await git(["apply", "--reverse", "--unidiff-zero"], in: repository.url, standardInput: change.patch)
+    return output.combinedOutput
+  }
+
   func applyPatch(_ patch: String, in repository: GitRepository) async throws -> String {
     let output = try await git(["apply"], in: repository.url, standardInput: patch)
     return output.combinedOutput

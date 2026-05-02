@@ -692,6 +692,72 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(finalDiff.contains("line eighteen changed"))
   }
 
+  func testDiscardHunkLeavesOtherHunksInWorkingTree() async throws {
+    let repo = try await makeRepository()
+    let file = repo.appending(path: "file.txt")
+    try write((1...24).map { "line \($0)" }.joined(separator: "\n") + "\n", to: file)
+    try await commitAll(in: repo, message: "Initial file")
+
+    try write((1...24).map { index in
+      if index == 2 { return "line two changed" }
+      if index == 20 { return "line twenty changed" }
+      return "line \(index)"
+    }.joined(separator: "\n") + "\n", to: file)
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let status = try await client.status(in: repository)
+    let entry = try XCTUnwrap(status.first)
+    let diff = try await client.diffForWorkingTreeFile(entry, staged: false, algorithm: .histogram, in: repository)
+    let hunks = GitParsers.parseDiffHunks(diff)
+    XCTAssertGreaterThanOrEqual(hunks.count, 2)
+
+    _ = try await client.discardHunk(hunks[0], in: repository)
+
+    let text = try String(contentsOf: file, encoding: .utf8)
+    XCTAssertTrue(text.contains("line 2\n"))
+    XCTAssertFalse(text.contains("line two changed"))
+    XCTAssertTrue(text.contains("line twenty changed"))
+
+    let remainingStatus = try await client.status(in: repository)
+    let remainingEntry = try XCTUnwrap(remainingStatus.first)
+    let remainingDiff = try await client.diffForWorkingTreeFile(remainingEntry, staged: false, algorithm: .histogram, in: repository)
+    XCTAssertFalse(remainingDiff.contains("line two changed"))
+    XCTAssertTrue(remainingDiff.contains("line twenty changed"))
+  }
+
+  func testDiscardLineChangeLeavesOtherLineChangesInWorkingTree() async throws {
+    let repo = try await makeRepository()
+    let file = repo.appending(path: "file.txt")
+    try write((1...20).map { "line \($0)" }.joined(separator: "\n") + "\n", to: file)
+    try await commitAll(in: repo, message: "Initial file")
+
+    try write((1...20).map { index in
+      if index == 2 { return "line two changed" }
+      if index == 18 { return "line eighteen changed" }
+      return "line \(index)"
+    }.joined(separator: "\n") + "\n", to: file)
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let status = try await client.status(in: repository)
+    let entry = try XCTUnwrap(status.first)
+    let diff = try await client.diffForWorkingTreeFile(entry, staged: false, algorithm: .histogram, in: repository)
+    let firstHunk = try XCTUnwrap(GitParsers.parseDiffHunks(diff).first)
+    let firstLineChange = try XCTUnwrap(GitParsers.parseDiffLineChanges(firstHunk).first)
+
+    _ = try await client.discardLineChange(firstLineChange, in: repository)
+
+    let text = try String(contentsOf: file, encoding: .utf8)
+    XCTAssertTrue(text.contains("line 2\n"))
+    XCTAssertFalse(text.contains("line two changed"))
+    XCTAssertTrue(text.contains("line eighteen changed"))
+
+    let remainingStatus = try await client.status(in: repository)
+    let remainingEntry = try XCTUnwrap(remainingStatus.first)
+    let remainingDiff = try await client.diffForWorkingTreeFile(remainingEntry, staged: false, algorithm: .histogram, in: repository)
+    XCTAssertFalse(remainingDiff.contains("line two changed"))
+    XCTAssertTrue(remainingDiff.contains("line eighteen changed"))
+  }
+
   func testApplyPatchUsesGitPatchEngine() async throws {
     let repo = try await makeRepository()
     let file = repo.appending(path: "README.md")

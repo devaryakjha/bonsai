@@ -243,6 +243,12 @@ private struct DiffView: View {
             },
             onShowLineHistory: { change in
               Task { await store.showLineHistory(change) }
+            },
+            onDiscardHunk: { hunk in
+              store.presentDiscardHunk(hunk)
+            },
+            onDiscardLine: { change in
+              store.presentDiscardLineChange(change)
             }
           )
           Divider()
@@ -397,6 +403,8 @@ private struct HunkActionStrip: View {
   var onSelectHunk: (DiffHunk) -> Void
   var onSelectLine: (DiffLineChange) -> Void
   var onShowLineHistory: (DiffLineChange) -> Void
+  var onDiscardHunk: (DiffHunk) -> Void
+  var onDiscardLine: (DiffLineChange) -> Void
 
   var body: some View {
     ScrollView(.horizontal) {
@@ -439,6 +447,33 @@ private struct HunkActionStrip: View {
           }
           .menuStyle(.borderedButton)
           .controlSize(.small)
+        }
+
+        if !isStaged {
+          Menu {
+            Section("Hunks") {
+              ForEach(hunks) { hunk in
+                Button("Hunk \(hunk.id + 1)", role: .destructive) {
+                  onDiscardHunk(hunk)
+                }
+              }
+            }
+
+            if !lineChanges.isEmpty {
+              Section("Lines") {
+                ForEach(lineChanges) { change in
+                  Button(change.title, role: .destructive) {
+                    onDiscardLine(change)
+                  }
+                }
+              }
+            }
+          } label: {
+            Label("Discard", systemImage: "trash")
+          }
+          .menuStyle(.borderedButton)
+          .controlSize(.small)
+          .help("Discard part of this change")
         }
       }
       .padding(.horizontal, 10)

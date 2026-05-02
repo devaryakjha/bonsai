@@ -631,6 +631,17 @@ struct DiffLineChange: Identifiable, Hashable {
     }
   }
 
+  var discardDescription: String {
+    switch kind {
+    case .addition:
+      return "added line \(newStart)"
+    case .deletion:
+      return "removed line \(oldStart)"
+    case .replacement:
+      return "replacement at line \(oldStart)"
+    }
+  }
+
   var historyStartLine: Int {
     if newCount > 0 {
       return max(newStart, 1)
@@ -897,6 +908,52 @@ struct DiscardChangeRequest: Identifiable, Hashable {
   var entry: GitStatusEntry
 
   var id: String { entry.id }
+}
+
+enum DiscardPatchTarget: Hashable {
+  case hunk(DiffHunk)
+  case line(DiffLineChange)
+}
+
+struct DiscardPatchRequest: Identifiable, Hashable {
+  var target: DiscardPatchTarget
+  var path: String
+
+  var id: String {
+    switch target {
+    case let .hunk(hunk):
+      return "hunk:\(path):\(hunk.id)"
+    case let .line(change):
+      return "line:\(path):\(change.id)"
+    }
+  }
+
+  var title: String {
+    switch target {
+    case .hunk:
+      return "Discard hunk"
+    case .line:
+      return "Discard line change"
+    }
+  }
+
+  var message: String {
+    switch target {
+    case let .hunk(hunk):
+      return "Discard hunk \(hunk.id + 1) in \(path)."
+    case let .line(change):
+      return "Discard \(change.discardDescription) in \(path)."
+    }
+  }
+
+  var detail: String {
+    switch target {
+    case .hunk:
+      return "Only this unstaged hunk will be restored from Git."
+    case .line:
+      return "Only this unstaged line block will be restored from Git."
+    }
+  }
 }
 
 struct DropStashRequest: Identifiable, Hashable {

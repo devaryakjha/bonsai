@@ -48,6 +48,7 @@ final class RepositoryStore {
   var stashBranchSource: GitStash?
   var conflictResolutionRequest: ConflictResolutionRequest?
   var discardChangeRequest: DiscardChangeRequest?
+  var discardPatchRequest: DiscardPatchRequest?
   var dropStashRequest: DropStashRequest?
   var interactiveRebasePlan: InteractiveRebasePlan?
   var revisionCommandRequest: RevisionCommandRequest?
@@ -630,6 +631,29 @@ final class RepositoryStore {
     discardChangeRequest = nil
     await runMutation(title: "Discard \(request.entry.path)") {
       try await gitClient.discard(request.entry, in: requiredRepository())
+    }
+  }
+
+  func presentDiscardHunk(_ hunk: DiffHunk) {
+    guard let selectedStatusEntry, !selectedStatusEntry.isStaged else { return }
+    discardPatchRequest = DiscardPatchRequest(target: .hunk(hunk), path: selectedStatusEntry.path)
+  }
+
+  func presentDiscardLineChange(_ change: DiffLineChange) {
+    guard let selectedStatusEntry, !selectedStatusEntry.isStaged else { return }
+    discardPatchRequest = DiscardPatchRequest(target: .line(change), path: selectedStatusEntry.path)
+  }
+
+  func discardPatch() async {
+    guard let request = discardPatchRequest else { return }
+    discardPatchRequest = nil
+    await runMutation(title: request.title) {
+      switch request.target {
+      case let .hunk(hunk):
+        return try await gitClient.discardHunk(hunk, in: requiredRepository())
+      case let .line(change):
+        return try await gitClient.discardLineChange(change, in: requiredRepository())
+      }
     }
   }
 

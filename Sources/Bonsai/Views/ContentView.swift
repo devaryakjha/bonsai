@@ -125,6 +125,17 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.discardPatchRequest) { request in
+      DiscardPatchSheet(
+        request: request,
+        onCancel: {
+          store.discardPatchRequest = nil
+        },
+        onDiscard: {
+          Task { await store.discardPatch() }
+        }
+      )
+    }
     .sheet(item: $store.dropStashRequest) { request in
       DropStashSheet(
         request: request,
@@ -565,6 +576,36 @@ private struct DiscardChangeSheet: View {
         .lineLimit(2)
 
       Text(request.entry.isUntracked ? "This will remove the untracked file." : "This will restore the file from Git and discard local edits.")
+        .foregroundStyle(.secondary)
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button("Discard", role: .destructive, action: onDiscard)
+          .buttonStyle(.borderedProminent)
+      }
+    }
+    .padding(20)
+    .frame(width: 460)
+  }
+}
+
+private struct DiscardPatchSheet: View {
+  var request: DiscardPatchRequest
+  var onCancel: () -> Void
+  var onDiscard: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text(request.title)
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      Text(request.message)
+        .font(.body.monospaced())
+        .lineLimit(2)
+
+      Text(request.detail)
         .foregroundStyle(.secondary)
 
       HStack {
