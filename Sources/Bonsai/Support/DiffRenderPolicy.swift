@@ -5,6 +5,7 @@ enum DiffRenderPolicy {
   static let maxInlineHighlightTokenCount = 256
   static let maxInlineHighlightLineCount = 20_000
   static let maxSearchHighlightLineCount = 20_000
+  static let maxLineChangeActionLineCount = 5_000
   static let maxFindMatchCount = 999
   static let minPlaceholderColumns = 24
   static let maxPlaceholderColumns = 160
@@ -25,5 +26,9 @@ enum DiffRenderPolicy {
     let width = placeholderColumns(for: counterpart)
     guard splitPlaceholderText.count < width else { return splitPlaceholderText }
     return splitPlaceholderText + String(repeating: " ", count: width - splitPlaceholderText.count)
+  }
+
+  static func allowsLineChangeActions(diffLineCount: Int) -> Bool {
+    diffLineCount <= maxLineChangeActionLineCount
   }
 }

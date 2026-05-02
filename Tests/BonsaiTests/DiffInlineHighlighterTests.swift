@@ -77,6 +77,19 @@ final class DiffInlineHighlighterTests: XCTestCase {
     )
   }
 
+  func testRenderPolicySkipsLineChangeActionsForVeryLargeDiffs() {
+    XCTAssertTrue(
+      DiffRenderPolicy.allowsLineChangeActions(
+        diffLineCount: DiffRenderPolicy.maxLineChangeActionLineCount
+      )
+    )
+    XCTAssertFalse(
+      DiffRenderPolicy.allowsLineChangeActions(
+        diffLineCount: DiffRenderPolicy.maxLineChangeActionLineCount + 1
+      )
+    )
+  }
+
   func testRenderPolicyExposesInlineTokenBound() {
     XCTAssertEqual(DiffRenderPolicy.maxInlineHighlightTokenCount, 256)
   }

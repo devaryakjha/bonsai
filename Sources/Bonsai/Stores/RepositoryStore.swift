@@ -2336,10 +2336,13 @@ final class RepositoryStore {
       diffParseCache = .empty
       return
     }
+    let diffLineCount = diffText.split(separator: "\n", omittingEmptySubsequences: false).count
     let hunks = GitParsers.parseDiffHunks(diffText)
     diffParseCache = DiffParseCache(
       hunks: hunks,
-      lineChanges: hunks.flatMap(GitParsers.parseDiffLineChanges),
+      lineChanges: DiffRenderPolicy.allowsLineChangeActions(diffLineCount: diffLineCount)
+        ? hunks.flatMap(GitParsers.parseDiffLineChanges)
+        : [],
       splitDiff: GitParsers.parseSplitDiff(diffText)
     )
   }

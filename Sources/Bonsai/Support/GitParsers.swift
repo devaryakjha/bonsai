@@ -359,7 +359,6 @@ enum GitParsers {
   }
 
   static func parseDiffHunks(_ output: String) -> [DiffHunk] {
-    let lines = output.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
     var fileHeader: [String] = []
     var currentHeader: String?
     var currentLines: [String] = []
@@ -376,7 +375,8 @@ enum GitParsers {
       currentLines = []
     }
 
-    for line in lines {
+    for rawLine in output.split(separator: "\n", omittingEmptySubsequences: false) {
+      let line = String(rawLine)
       if line.hasPrefix("diff --git") {
         flush()
         fileHeader = [line]
@@ -430,7 +430,8 @@ enum GitParsers {
       pendingAdditions.removeAll(keepingCapacity: true)
     }
 
-    for line in output.split(separator: "\n", omittingEmptySubsequences: false).map(String.init) {
+    for rawLine in output.split(separator: "\n", omittingEmptySubsequences: false) {
+      let line = String(rawLine)
       if line.hasPrefix("diff --git") || line.hasPrefix("index ") || line.hasPrefix("--- ") || line.hasPrefix("+++ ") {
         continue
       }

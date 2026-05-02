@@ -21,7 +21,7 @@ covered by tests and the app verifier can still launch the bundle.
 | Core remote ops | Fetch, pull, push, force-push-with-lease, single-remote fetch, remote prune, and upstream-aware command builders in `GitClientCommandArgumentsTests` and integration tests | Verified |
 | Commit workflow | File, hunk, line, and bulk stage/unstage; commit, amend, signing, recent messages, and readiness checks in `GitClientIntegrationTests` | Verified |
 | History | Commit graph/list, commit details, search filtering, stashes in history, commit tree browsing, and commit context menus | Verified |
-| Diff viewer | AppKit-backed selectable unified/split renderers, histogram/patience/Myers/minimal algorithms, non-wrapping gutters, inline highlights, find, image before/after, and binary placeholders | Verified |
+| Diff viewer | AppKit-backed selectable unified/split renderers, histogram/patience/Myers/minimal algorithms, non-wrapping gutters, bounded large-diff actions, inline highlights, find, image before/after, and binary placeholders | Verified |
 | Branches and tags | Create, rename, delete, checkout, publish, pull/push selected refs, upstream management, web targets, and tag transfer actions | Verified |
 | Revision actions | Checkout revision, cherry-pick, revert, merge, rebase, reset, bisect, patch copy, and grouped context/toolbar command surfaces | Verified |
 | Stashes | Create, include untracked, apply, pop, drop, branch from stash, copy patch, and stash diff/image inspection | Verified |

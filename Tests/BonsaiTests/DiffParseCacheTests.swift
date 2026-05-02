@@ -43,4 +43,24 @@ final class DiffParseCacheTests: XCTestCase {
     XCTAssertTrue(store.splitDiff.oldLines.isEmpty)
     XCTAssertTrue(store.splitDiff.newLines.isEmpty)
   }
+
+  func testLargeDiffParseCacheKeepsHunksAndSplitButSkipsLineChangeActions() {
+    let store = RepositoryStore()
+    let addedLines = (0...DiffRenderPolicy.maxLineChangeActionLineCount)
+      .map { "+line \($0)" }
+      .joined(separator: "\n")
+
+    store.diffText = """
+    diff --git a/file.txt b/file.txt
+    index 1111111..2222222 100644
+    --- a/file.txt
+    +++ b/file.txt
+    @@ -1,0 +1,\(DiffRenderPolicy.maxLineChangeActionLineCount + 1) @@
+    \(addedLines)
+    """
+
+    XCTAssertEqual(store.diffHunks.count, 1)
+    XCTAssertTrue(store.diffLineChanges.isEmpty)
+    XCTAssertEqual(store.splitDiff.newLines.filter { $0.text.hasPrefix("+line") }.count, DiffRenderPolicy.maxLineChangeActionLineCount + 1)
+  }
 }
