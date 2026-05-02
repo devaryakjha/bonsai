@@ -763,6 +763,7 @@ private struct InteractiveRebaseSheet: View {
   let store: RepositoryStore
   var onCancel: () -> Void
   var onStart: () -> Void
+  @State private var showsTodoText = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
@@ -770,10 +771,15 @@ private struct InteractiveRebaseSheet: View {
         .font(.title3)
         .fontWeight(.semibold)
 
-      Text("Edit the todo plan before Git starts the rebase.")
+      if let plan = store.interactiveRebasePlan {
+        HStack(spacing: 8) {
+          Text("\(plan.items.count.formatted()) commits")
+          Text(plan.upstream)
+            .monospaced()
+        }
+        .font(.caption)
         .foregroundStyle(.secondary)
 
-      if let plan = store.interactiveRebasePlan {
         VStack(spacing: 0) {
           ForEach(plan.items) { item in
             InteractiveRebaseRow(
@@ -799,11 +805,15 @@ private struct InteractiveRebaseSheet: View {
             .stroke(.quaternary)
         }
 
-        Text(plan.todoText)
-          .font(.caption.monospaced())
-          .foregroundStyle(.secondary)
-          .lineLimit(6)
-          .textSelection(.enabled)
+        DisclosureGroup("Todo file", isExpanded: $showsTodoText) {
+          Text(plan.todoText)
+            .font(.caption.monospaced())
+            .foregroundStyle(.secondary)
+            .lineLimit(8)
+            .textSelection(.enabled)
+            .padding(.top, 4)
+        }
+        .font(.caption)
       }
 
       HStack {
