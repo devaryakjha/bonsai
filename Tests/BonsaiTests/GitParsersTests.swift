@@ -300,6 +300,7 @@ final class GitParsersTests: XCTestCase {
     let repository = GitRepository(path: "/Users/arya/projects/bonsai")
     let url = RepositoryFileLocator.fileURL(repository: repository, path: "Sources/Bonsai/App.swift")
 
+    XCTAssertEqual(RepositoryFileLocator.repositoryURL(repository).path(percentEncoded: false), "/Users/arya/projects/bonsai")
     XCTAssertEqual(url.path(percentEncoded: false), "/Users/arya/projects/bonsai/Sources/Bonsai/App.swift")
   }
 

@@ -21,6 +21,13 @@ struct BonsaiCommands: Commands {
 
       Divider()
 
+      Button("Reveal in Finder") {
+        store.revealRepositoryInFinder()
+      }
+      .disabled(store.selectedRepository == nil)
+
+      Divider()
+
       Button("Fetch") {
         Task { await store.runRepositoryAction(.fetch) }
       }

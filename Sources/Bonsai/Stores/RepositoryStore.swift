@@ -124,6 +124,13 @@ final class RepositoryStore {
     ])
   }
 
+  func revealRepositoryInFinder() {
+    guard let selectedRepository else { return }
+    NSWorkspace.shared.activateFileViewerSelecting([
+      RepositoryFileLocator.repositoryURL(selectedRepository)
+    ])
+  }
+
   var commitReadinessIssue: String? {
     if commitMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
       return "Commit message is required."

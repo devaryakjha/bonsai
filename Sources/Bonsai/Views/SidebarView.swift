@@ -15,6 +15,11 @@ struct SidebarView: View {
         if let repository = store.selectedRepository {
           Label(repository.name, systemImage: "externaldrive")
             .fontWeight(.semibold)
+            .contextMenu {
+              Button("Reveal in Finder") {
+                store.revealRepositoryInFinder()
+              }
+            }
           Text(repository.path)
             .font(.caption)
             .foregroundStyle(.secondary)

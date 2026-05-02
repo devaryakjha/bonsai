@@ -1,8 +1,11 @@
 import Foundation
 
 enum RepositoryFileLocator {
+  static func repositoryURL(_ repository: GitRepository) -> URL {
+    URL(filePath: repository.path)
+  }
+
   static func fileURL(repository: GitRepository, path: String) -> URL {
-    URL(filePath: repository.path, directoryHint: .isDirectory)
-      .appending(path: path)
+    repositoryURL(repository).appending(path: path)
   }
 }
