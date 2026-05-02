@@ -1,26 +1,67 @@
 # Bonsai
 
-Bonsai is a native macOS Git client intended to be a free, open-source alternative
-to Fork.
+<p align="center">
+  <img src="Assets/AppIcon/bonsai-worktree-topology.svg" width="96" alt="Bonsai worktree topology logo">
+</p>
 
-The v0 target is practical feature parity with Fork's public macOS surface:
-repository management, commit history, working tree staging, side-by-side diffs,
-branch/tag/remote workflows, stash management, merge/rebase/cherry-pick/revert,
-submodules, reflog recovery, file history, blame, merge-conflict assistance,
-Git-flow, Git LFS, GPG signing, and provider notifications.
+<p align="center">
+  <strong>A native macOS Git client, built in the open.</strong>
+</p>
 
-## Development
+<p align="center">
+  Bonsai is a free, open-source alternative to Fork for people who want fast
+  history, calm staging, rich diffs, and native macOS ergonomics.
+</p>
 
-Bonsai is built as a SwiftPM macOS app.
+<p align="center">
+  <img src="Docs/Images/bonsai-social-preview.png" alt="Bonsai product screenshot showing history, split diff, and repository sidebar">
+</p>
+
+## Status
+
+Bonsai is under highly active development. Expect frequent commits, fast-moving
+specs, and occasional rough edges while the v0 surface is completed.
+
+The v0 goal is practical feature parity with Fork's public macOS feature set:
+repository management, commit history, staging, rich unified and split diffs,
+branch/tag/remote workflows, stashes, merge/rebase/cherry-pick/revert,
+submodules, reflog recovery, file history, blame, conflict assistance, Git-flow,
+Git LFS, GPG signing, and provider notifications.
+
+## Highlights
+
+- Native SwiftUI macOS app, packaged from SwiftPM.
+- Split and unified diff views with Git diff algorithm controls.
+- Commit history with graph lanes, search, changed-file inspection, and revision
+  actions.
+- Working tree staging, unstaging, patch copy, discard, ignore, and conflict
+  flows.
+- Branches, tags, remotes, worktrees, submodules, stashes, Git LFS, and GitHub
+  repository/notification workflows.
+- Spec-driven development: every meaningful feature lands with a focused spec
+  in `Specs/`.
+
+## Build
+
+Requirements:
+
+- macOS 14 or newer
+- Xcode command line tools
+- Swift 5.9 or newer
+
+Build and launch Bonsai:
 
 ```sh
 ./script/build_and_run.sh
 ```
 
-Use `./script/build_and_run.sh --verify` to build, launch, and confirm the app
-process is running.
+Build, launch, and verify that the app process is running:
 
-Run the standard validation gates before code changes are submitted:
+```sh
+./script/build_and_run.sh --verify
+```
+
+Run the standard validation gates before submitting changes:
 
 ```sh
 git diff --check
@@ -28,15 +69,25 @@ swift test
 ./script/build_and_run.sh --verify
 ```
 
-## Specs
+## Development
 
-Specs live in `Specs/` and are the source of truth for implementation order and
-acceptance criteria.
+Bonsai is developed spec-first. Start with the relevant document in `Specs/`,
+keep implementation slices small, and commit checkpoints as work lands.
+
+Useful project paths:
+
+- `Sources/Bonsai/App` - app entry point, commands, and scenes
+- `Sources/Bonsai/Views` - native macOS SwiftUI interface
+- `Sources/Bonsai/Stores` - observable app state and Git operation flow
+- `Sources/Bonsai/Services` - Git, GitHub, and process execution services
+- `Sources/Bonsai/Support` - parsers, rendering helpers, launchers, and policies
+- `Tests/BonsaiTests` - focused parser, command, workflow, and integration tests
 
 ## Contributing
 
-See `CONTRIBUTING.md` for the local workflow, validation gates, and UI review
-standards.
+Contributions are welcome. Please read
+`CONTRIBUTING.md` before opening a pull request, and keep UI changes aligned with
+the interface standards and existing macOS conventions.
 
 ## Security
 
