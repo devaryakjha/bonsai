@@ -1411,11 +1411,22 @@ final class RepositoryStore {
 
   func openSubmodule(_ submodule: GitSubmodule) {
     guard let selectedRepository else { return }
-    let url = URL(filePath: selectedRepository.path, directoryHint: .isDirectory)
-      .appending(path: submodule.path, directoryHint: .isDirectory)
+    let url = submodule.directoryURL(in: selectedRepository)
     Task {
       await openRepository(at: url)
     }
+  }
+
+  func revealSubmoduleInFinder(_ submodule: GitSubmodule) {
+    guard let selectedRepository else { return }
+    NSWorkspace.shared.activateFileViewerSelecting([
+      submodule.directoryURL(in: selectedRepository)
+    ])
+  }
+
+  func openSubmoduleInTerminal(_ submodule: GitSubmodule) {
+    guard let selectedRepository else { return }
+    openDirectoryInTerminal(submodule.directoryURL(in: selectedRepository))
   }
 
   func lfsPull() async {

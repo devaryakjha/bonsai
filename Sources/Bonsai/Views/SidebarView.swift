@@ -578,6 +578,12 @@ struct SidebarView: View {
         Button("Open Submodule") {
           store.openSubmodule(submodule)
         }
+        Button("Reveal in Finder") {
+          store.revealSubmoduleInFinder(submodule)
+        }
+        Button("Open in Terminal") {
+          store.openSubmoduleInTerminal(submodule)
+        }
         Button("Update Submodule") {
           Task { await store.updateSubmodule(submodule) }
         }

@@ -199,6 +199,16 @@ final class GitParsersTests: XCTestCase {
     )
   }
 
+  func testSubmoduleDirectoryURLResolvesRelativeToRepository() {
+    let repository = GitRepository(path: "/Users/arya/projects/bonsai app")
+    let submodule = GitSubmodule(path: "Vendor/Shared Module", commit: "abc1234", status: " ")
+
+    XCTAssertEqual(
+      submodule.directoryURL(in: repository).path(percentEncoded: false),
+      "/Users/arya/projects/bonsai app/Vendor/Shared Module"
+    )
+  }
+
   func testParseReflogEntriesReadsRecoveryFields() {
     let entries = GitParsers.parseReflogEntries("""
     abcdef1234567890\u{1f}abcdef1\u{1f}HEAD@{0}\u{1f}commit: recover me\u{1f}2026-05-02T08:45:15+05:30

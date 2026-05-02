@@ -335,6 +335,10 @@ struct GitSubmodule: Identifiable, Hashable {
 
   var id: String { path }
   var shortCommit: String { String(commit.prefix(7)) }
+  func directoryURL(in repository: GitRepository) -> URL {
+    URL(filePath: repository.path).appending(path: path)
+  }
+
   var statusTitle: String {
     switch status {
     case "-":
