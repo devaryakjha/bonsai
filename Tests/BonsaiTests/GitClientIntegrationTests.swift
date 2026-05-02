@@ -222,6 +222,42 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(perCommitSigningAfterDisable)
   }
 
+  @MainActor
+  func testSelectedFileLFSActionReadinessFollowsAvailabilityAndSelection() {
+    let store = RepositoryStore()
+
+    XCTAssertFalse(store.canRunSelectedFileLFSAction)
+
+    store.selectedStatusEntry = GitStatusEntry(
+      path: "tracked.bin",
+      originalPath: nil,
+      indexStatus: " ",
+      workTreeStatus: "M",
+      kind: .modified
+    )
+    XCTAssertFalse(store.canRunSelectedFileLFSAction)
+
+    store.snapshot.integrations.lfsAvailable = true
+    XCTAssertTrue(store.canRunSelectedFileLFSAction)
+
+    store.selectedStatusEntry = nil
+    store.selectedChangedFile = GitChangedFile(status: "M", path: "history.bin", oldPath: nil)
+    XCTAssertTrue(store.canRunSelectedFileLFSAction)
+
+    store.selectedChangedFile = nil
+    store.selectedTreeEntry = GitTreeEntry(
+      mode: "100644",
+      kind: .blob,
+      object: "abcdef",
+      path: "tree.bin",
+      name: "tree.bin"
+    )
+    XCTAssertTrue(store.canRunSelectedFileLFSAction)
+
+    store.selectedTreeEntry = nil
+    XCTAssertFalse(store.canRunSelectedFileLFSAction)
+  }
+
   func testSelectedStatusEntryStageCommandsReconcileSelection() async throws {
     let hadAutoRefreshPreference = UserDefaults.standard.object(forKey: "bonsai.autoRefresh") != nil
     let previousAutoRefreshPreference = UserDefaults.standard.bool(forKey: "bonsai.autoRefresh")

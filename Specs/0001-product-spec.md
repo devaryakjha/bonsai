@@ -40,7 +40,7 @@ Current public Fork sources list these v0 parity surfaces:
 | Reflog | Show reflog and restore lost commits | User can inspect reflog and checkout/reset to entries |
 | File history/blame | File history and blame views | User can inspect a path across commits and line ownership |
 | Git-flow | Feature/release/hotfix start/finish actions | Git-flow commands are exposed when initialized |
-| Git LFS | Detect LFS, show LFS files, lock/unlock hooks later | LFS status appears and basic commands are available |
+| Git LFS | Detect LFS, show LFS files, pull, lock/unlock selected files | LFS status appears and basic commands are available |
 | GPG | Respect commit signing config | Commit flow exposes sign toggle/status |
 | Provider notifications | GitHub notifications without noise | GitHub account integration is spec'd before implementation |
 

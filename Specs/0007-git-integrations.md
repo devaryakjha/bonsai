@@ -12,6 +12,8 @@ signing, and Git-flow.
 
 - Detect whether Git LFS is available and list tracked LFS files when possible.
 - Expose a Git LFS pull action.
+- Expose Git LFS lock/unlock actions for selected files when Git LFS is
+  available.
 - Detect repository commit signing config and configured signing key.
 - Expose a commit signing toggle at repository config level.
 - Detect whether Git-flow is available and initialized for the repository.

@@ -12,11 +12,14 @@ LFS workflow.
 
 - User can lock the selected file when Git LFS is available.
 - User can unlock the selected file when Git LFS is available.
+- Selected-file actions remain disabled when Git LFS is unavailable or no file
+  preview is selected.
 - Locking commands run through `GitClient`.
 - Command output and failures appear in the command result area.
 
 ## Acceptance Checks
 
+- Store tests cover selected-file LFS action readiness.
 - Views do not shell out directly.
 - `swift test` passes.
 - `./script/build_and_run.sh --verify` passes.
