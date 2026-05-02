@@ -72,7 +72,8 @@ Fork 2.66 dated 10 Apr 2026 at the time of this refresh.
 
 - Run the credentialed Developer ID signing and notarization path before any
   public binary distribution. The local release packaging verifier proves bundle
-  structure and signability, not Apple notarization success.
+  structure and signability, not Apple notarization success. The live blocker is
+  recorded in `Specs/0259-v0-completion-audit.md`.
 
 ## Acceptance
 

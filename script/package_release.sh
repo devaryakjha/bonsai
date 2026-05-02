@@ -20,11 +20,12 @@ APP_MARK_SOURCE="$ROOT_DIR/Assets/AppIcon/bonsai-worktree-topology.svg"
 
 usage() {
   cat >&2 <<USAGE
-usage: script/package_release.sh [--verify|--archive|--notarize]
+usage: script/package_release.sh [--verify|--archive|--notarize|--check-credentials]
 
-  --verify    Build, stage, ad-hoc sign, and validate the release app bundle.
-  --archive   Build, Developer ID sign, validate, and write dist/release/Bonsai.zip.
-  --notarize  Build, Developer ID sign, archive, submit to notarytool, and staple.
+  --verify             Build, stage, ad-hoc sign, and validate the release app bundle.
+  --archive            Build, Developer ID sign, validate, and write dist/release/Bonsai.zip.
+  --notarize           Build, Developer ID sign, archive, submit to notarytool, and staple.
+  --check-credentials  Validate Developer ID and notarytool credentials without packaging.
 
 Environment:
   BONSAI_CODESIGN_IDENTITY  Required for --archive and --notarize.
@@ -157,6 +158,35 @@ notary_profile() {
   printf '%s' "$BONSAI_NOTARY_PROFILE"
 }
 
+check_developer_id_identity() {
+  local identity="$1"
+  if [[ "$identity" != Developer\ ID\ Application:* ]]; then
+    echo "BONSAI_CODESIGN_IDENTITY must be a Developer ID Application identity for public distribution: $identity" >&2
+    exit 1
+  fi
+
+  if ! security find-identity -p codesigning -v | grep -F -- "$identity" >/dev/null; then
+    echo "Developer ID identity is not available in the login keychain: $identity" >&2
+    exit 1
+  fi
+}
+
+check_notary_credentials() {
+  local profile="$1"
+  if ! xcrun notarytool history --keychain-profile "$profile" >/dev/null; then
+    echo "notarytool keychain profile could not be validated: $profile" >&2
+    exit 1
+  fi
+}
+
+check_distribution_credentials() {
+  local identity profile
+  identity="$(developer_id_identity)"
+  check_developer_id_identity "$identity"
+  profile="$(notary_profile)"
+  check_notary_credentials "$profile"
+}
+
 package_with_identity() {
   local identity="$1"
   build_release_binary
@@ -174,6 +204,7 @@ case "$MODE" in
     create_archive
     ;;
   --notarize|notarize)
+    check_distribution_credentials
     package_with_identity "$(developer_id_identity)"
     create_archive
     xcrun notarytool submit "$ARCHIVE_PATH" \
@@ -181,6 +212,10 @@ case "$MODE" in
       --wait
     xcrun stapler staple "$APP_BUNDLE"
     spctl -a -vv -t exec "$APP_BUNDLE"
+    ;;
+  --check-credentials|check-credentials)
+    check_distribution_credentials
+    echo "Developer ID and notarytool credentials are available"
     ;;
   --help|-h|help)
     usage
