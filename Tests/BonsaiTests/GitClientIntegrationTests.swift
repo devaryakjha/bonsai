@@ -895,6 +895,46 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(refs.contains { $0.shortName == "origin/feature/remote-merge" })
   }
 
+  func testStoreRebasesCurrentBranchOntoRemoteBranch() async throws {
+    let remote = try await makeBareRepository()
+    let source = try await makeRepository()
+    try write("base\n", to: source.appending(path: "README.md"))
+    try await commitAll(in: source, message: "Base")
+    _ = try await client.git(["remote", "add", "origin", remote.path(percentEncoded: false)], in: source)
+    _ = try await client.git(["push", "-u", "origin", "main"], in: source)
+    _ = try await client.git(["checkout", "-b", "feature/remote-rebase"], in: source)
+    try write("remote\n", to: source.appending(path: "remote.txt"))
+    try await commitAll(in: source, message: "Remote branch work")
+    _ = try await client.git(["push", "-u", "origin", "feature/remote-rebase"], in: source)
+    _ = try await client.git(["symbolic-ref", "HEAD", "refs/heads/main"], in: remote)
+
+    let clone = temporaryDirectory()
+    _ = try await client.cloneRepository(from: remote.path(percentEncoded: false), to: clone)
+    _ = try await client.git(["config", "user.name", "Bonsai Tests"], in: clone)
+    _ = try await client.git(["config", "user.email", "bonsai@example.test"], in: clone)
+    try write("main\n", to: clone.appending(path: "main.txt"))
+    try await commitAll(in: clone, message: "Main work")
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: clone)
+    let remoteBranches = await store.remoteBranches
+    let remoteBranch = try XCTUnwrap(remoteBranches.first { $0.shortName == "origin/feature/remote-rebase" })
+
+    await store.rebaseOntoBranch(remoteBranch)
+
+    let currentBranch = try await client.git(["branch", "--show-current"], in: clone).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let mergeBase = try await client.git(["merge-base", "main", "origin/feature/remote-rebase"], in: clone).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let remoteHash = try await client.git(["rev-parse", "origin/feature/remote-rebase"], in: clone).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let commandResult = await store.commandResult
+    XCTAssertEqual(currentBranch, "main")
+    XCTAssertEqual(mergeBase, remoteHash)
+    XCTAssertEqual(commandResult?.title, "Rebase onto origin/feature/remote-rebase")
+    XCTAssertEqual(commandResult?.isError, false)
+  }
+
   func testStoreFetchesSelectedRemoteBranch() async throws {
     let remote = try await makeBareRepository()
     let source = try await makeRepository()

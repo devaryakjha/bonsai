@@ -417,6 +417,10 @@ struct SidebarView: View {
             Task { await store.mergeBranch(branch) }
           }
           .disabled(store.currentBranch == nil || branch.remoteBranchName == nil)
+          Button("Rebase Current onto Branch") {
+            Task { await store.rebaseOntoBranch(branch) }
+          }
+          .disabled(store.currentBranch == nil || branch.remoteBranchName == nil)
           Divider()
           ReferenceCopyMenu(ref: branch)
           Divider()
