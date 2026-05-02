@@ -666,6 +666,7 @@ final class RepositoryStore {
   func commit() async {
     let message = commitMessage.trimmingCharacters(in: .whitespacesAndNewlines)
     if let commitReadinessIssue {
+      commandResult = CommandResult(title: amendCommit ? "Amend commit" : "Commit", output: commitReadinessIssue, isError: true)
       errorMessage = commitReadinessIssue
       return
     }

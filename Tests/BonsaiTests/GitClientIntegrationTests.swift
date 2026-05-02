@@ -468,7 +468,11 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertFalse(canCommitWithoutStagedChanges)
     await store.commit()
     let errorMessage = await store.errorMessage
+    let commandResult = await store.commandResult
     XCTAssertEqual(errorMessage, "Stage changes before committing.")
+    XCTAssertEqual(commandResult?.title, "Commit")
+    XCTAssertEqual(commandResult?.output, "Stage changes before committing.")
+    XCTAssertEqual(commandResult?.isError, true)
 
     let repository = GitRepository(path: repo.path(percentEncoded: false))
     let commits = try await client.commits(in: repository)
