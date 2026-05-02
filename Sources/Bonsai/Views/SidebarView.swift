@@ -72,6 +72,15 @@ struct SidebarView: View {
                   Label(repository.name, systemImage: "folder")
                 }
                 .buttonStyle(.plain)
+                .help(repository.path)
+                .contextMenu {
+                  Button("Copy Path") {
+                    store.copyRepositoryPath(repository)
+                  }
+                  Button("Reveal in Finder") {
+                    store.revealRepositoryInFinder(repository)
+                  }
+                }
               }
             } label: {
               HStack {
