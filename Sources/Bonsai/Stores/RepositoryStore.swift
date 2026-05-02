@@ -206,6 +206,16 @@ final class RepositoryStore {
     PasteboardWriter.copy(group.path)
   }
 
+  func revealWorktreeInFinder(_ worktree: GitWorktree) {
+    NSWorkspace.shared.activateFileViewerSelecting([
+      worktree.directoryURL
+    ])
+  }
+
+  func openWorktreeInTerminal(_ worktree: GitWorktree) {
+    openDirectoryInTerminal(worktree.directoryURL)
+  }
+
   private func openDirectoryInTerminal(_ directoryURL: URL) {
     do {
       try TerminalLauncher.openDirectory(directoryURL)

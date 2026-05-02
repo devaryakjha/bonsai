@@ -369,6 +369,7 @@ struct GitWorktree: Identifiable, Hashable {
 
   var id: String { path }
   var name: String { URL(filePath: path).lastPathComponent }
+  var directoryURL: URL { URL(filePath: path) }
   var displayState: String {
     if let branch {
       return branch.replacingOccurrences(of: "refs/heads/", with: "")

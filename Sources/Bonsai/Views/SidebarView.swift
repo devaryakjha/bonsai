@@ -508,6 +508,12 @@ struct SidebarView: View {
         Button("Open Worktree") {
           store.openRecent(GitRepository(path: worktree.path))
         }
+        Button("Reveal in Finder") {
+          store.revealWorktreeInFinder(worktree)
+        }
+        Button("Open in Terminal") {
+          store.openWorktreeInTerminal(worktree)
+        }
         Button("Copy Path") {
           PasteboardWriter.copy(worktree.path)
         }

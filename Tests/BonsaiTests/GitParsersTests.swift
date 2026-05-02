@@ -150,6 +150,19 @@ final class GitParsersTests: XCTestCase {
     XCTAssertTrue(worktrees[1].isPrunable)
   }
 
+  func testWorktreeDirectoryURLPreservesFullPath() {
+    let worktree = GitWorktree(
+      path: "/Users/arya/projects/bonsai worktrees/feature",
+      head: nil,
+      branch: "refs/heads/feature",
+      isDetached: false,
+      isBare: false,
+      isPrunable: false
+    )
+
+    XCTAssertEqual(worktree.directoryURL.path(percentEncoded: false), "/Users/arya/projects/bonsai worktrees/feature")
+  }
+
   func testParseSubmodulesKeepsStatusAndReadableState() {
     let submodules = GitParsers.parseSubmodules("""
      abc1234567890abcdef Vendor/Ready (heads/main)
