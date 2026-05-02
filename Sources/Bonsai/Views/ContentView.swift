@@ -1533,9 +1533,16 @@ private struct RepositorySetupSheet: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
-      Text(mode.title)
-        .font(.title3)
-        .fontWeight(.semibold)
+      HStack(spacing: 10) {
+        BonsaiLogoMark()
+          .frame(width: 24, height: 24)
+          .accessibilityHidden(true)
+
+        Text(mode.title)
+          .font(.title3)
+          .fontWeight(.semibold)
+          .lineLimit(1)
+      }
 
       if mode == .clone {
         VStack(alignment: .leading, spacing: 6) {
