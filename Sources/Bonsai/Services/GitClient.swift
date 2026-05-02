@@ -536,6 +536,21 @@ struct GitClient {
     try await runRaw(["stash", pop ? "pop" : "apply", stash.index], in: repository)
   }
 
+  func stashPatch(_ stash: GitStash, algorithm: DiffAlgorithm, in repository: GitRepository) async throws -> String {
+    let output = try await git([
+      "stash",
+      "show",
+      "--patch",
+      "--no-color",
+      "--find-renames",
+      "--find-copies",
+      "--include-untracked",
+      "--diff-algorithm=\(algorithm.rawValue)",
+      stash.index
+    ], in: repository.url)
+    return output.stdout
+  }
+
   func stashDrop(_ stash: GitStash, in repository: GitRepository) async throws -> String {
     try await runRaw(["stash", "drop", stash.index], in: repository)
   }

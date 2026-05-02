@@ -46,6 +46,9 @@ struct HistoryView: View {
                   }
                   Divider()
                   StashCopyMenu(stash: stash)
+                  Button("Copy Patch") {
+                    Task { await store.copyStashPatch(stash) }
+                  }
                   Divider()
                   Button("Drop", role: .destructive) {
                     store.presentDropStash(stash)
