@@ -260,7 +260,8 @@ private struct CommitComposerView: View {
             .lineLimit(1)
         }
         .buttonStyle(.borderedProminent)
-        .disabled(store.commitMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        .disabled(!store.canCommit)
+        .help(store.commitReadinessIssue ?? (store.amendCommit ? "Amend commit" : "Create commit"))
       }
     }
     .padding(12)

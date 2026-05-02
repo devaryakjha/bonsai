@@ -113,6 +113,20 @@ final class RepositoryStore {
     !diffText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
   }
 
+  var commitReadinessIssue: String? {
+    if commitMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      return "Commit message is required."
+    }
+    if !amendCommit && stagedChanges.isEmpty {
+      return "Stage changes before committing."
+    }
+    return nil
+  }
+
+  var canCommit: Bool {
+    commitReadinessIssue == nil
+  }
+
   var stagedChanges: [GitStatusEntry] {
     snapshot.status.filter(\.isStaged)
   }
@@ -514,8 +528,8 @@ final class RepositoryStore {
 
   func commit() async {
     let message = commitMessage.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !message.isEmpty else {
-      errorMessage = "Commit message is required."
+    if let commitReadinessIssue {
+      errorMessage = commitReadinessIssue
       return
     }
 

@@ -118,6 +118,34 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(mode, .history)
   }
 
+  func testStoreCommitRequiresStagedChangesUnlessAmending() async throws {
+    let repo = try await makeRepository()
+    try write("initial\n", to: repo.appending(path: "file.txt"))
+    try await commitAll(in: repo, message: "Initial")
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    await MainActor.run {
+      store.commitMessage = "No staged changes"
+    }
+
+    let canCommitWithoutStagedChanges = await store.canCommit
+    XCTAssertFalse(canCommitWithoutStagedChanges)
+    await store.commit()
+    let errorMessage = await store.errorMessage
+    XCTAssertEqual(errorMessage, "Stage changes before committing.")
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let commits = try await client.commits(in: repository)
+    XCTAssertFalse(commits.contains { $0.subject == "No staged changes" })
+
+    await MainActor.run {
+      store.amendCommit = true
+    }
+    let canAmendWithoutStagedChanges = await store.canCommit
+    XCTAssertTrue(canAmendWithoutStagedChanges)
+  }
+
   func testLineChangeStagingLeavesOtherChangesUnstaged() async throws {
     let repo = try await makeRepository()
     let file = repo.appending(path: "file.txt")
