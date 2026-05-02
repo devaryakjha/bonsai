@@ -61,14 +61,13 @@ surfaces that are not all represented in the older homepage matrix.
 | Conflict-resolved diffs after external merge tools | Verified |
 | Repository benchmark | Verified |
 | Repository treemap | Verified |
+| Large-repository history and diff performance pass | Verified through `Specs/0256-large-repository-performance-pass.md` |
 
 ## Remaining Completion Gates
 
 - Re-run a fresh parity scrape against current Fork public release notes before
   declaring v0 complete, then close or explicitly defer every open release-note
   delta above.
-- Run a large-repository performance pass on history loading and rich diff
-  rendering, including split diff and image diff paths.
 - Do visual QA on the actual running app for sidebar density, toolbar wrapping,
   sheet sizing, and split diff completeness at compact and wide window sizes.
 - Run the credentialed Developer ID signing and notarization path before any

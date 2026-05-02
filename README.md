@@ -74,6 +74,12 @@ Build and validate a release-style app bundle without Apple credentials:
 ./script/package_release.sh --verify
 ```
 
+Run the opt-in large repository performance smoke:
+
+```sh
+./script/perf_large_repo.sh
+```
+
 Run the standard validation gates before submitting changes:
 
 ```sh

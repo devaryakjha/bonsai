@@ -2,45 +2,47 @@ import Foundation
 
 enum GitParsers {
   static func parseStatus(_ output: String) -> [GitStatusEntry] {
-    output
-      .split(separator: "\n", omittingEmptySubsequences: true)
-      .flatMap { line -> [GitStatusEntry] in
-        guard line.count >= 4 else { return [] }
-        let index = line[line.startIndex]
-        let workTree = line[line.index(after: line.startIndex)]
-        let pathStart = line.index(line.startIndex, offsetBy: 3)
-        let rawPath = String(line[pathStart...])
-        let renameParts = rawPath.components(separatedBy: " -> ")
-        let path = renameParts.last ?? rawPath
-        let originalPath = renameParts.count > 1 ? renameParts.first : nil
+    var entries: [GitStatusEntry] = []
+    forEachLine(in: output, omittingEmptySubsequences: true) { line in
+      guard line.count >= 4 else { return }
+      let index = line[line.startIndex]
+      let workTree = line[line.index(after: line.startIndex)]
+      let pathStart = line.index(line.startIndex, offsetBy: 3)
+      let rawPath = String(line[pathStart...])
+      let renameParts = rawPath.components(separatedBy: " -> ")
+      let path = renameParts.last ?? rawPath
+      let originalPath = renameParts.count > 1 ? renameParts.first : nil
 
-        if shouldSplitStatus(index: index, workTree: workTree) {
-          return [
-            GitStatusEntry(
-              path: path,
-              originalPath: originalPath,
-              indexStatus: index,
-              workTreeStatus: " ",
-              kind: changeKind(index: index, workTree: " ")
-            ),
-            GitStatusEntry(
-              path: path,
-              originalPath: nil,
-              indexStatus: " ",
-              workTreeStatus: workTree,
-              kind: changeKind(index: " ", workTree: workTree)
-            )
-          ]
-        }
-
-        return [GitStatusEntry(
+      if shouldSplitStatus(index: index, workTree: workTree) {
+        entries.append(
+          GitStatusEntry(
+            path: path,
+            originalPath: originalPath,
+            indexStatus: index,
+            workTreeStatus: " ",
+            kind: changeKind(index: index, workTree: " ")
+          )
+        )
+        entries.append(
+          GitStatusEntry(
+            path: path,
+            originalPath: nil,
+            indexStatus: " ",
+            workTreeStatus: workTree,
+            kind: changeKind(index: " ", workTree: workTree)
+          )
+        )
+      } else {
+        entries.append(GitStatusEntry(
           path: path,
           originalPath: originalPath,
           indexStatus: index,
           workTreeStatus: workTree,
           kind: changeKind(index: index, workTree: workTree)
-        )]
+        ))
       }
+    }
+    return entries
   }
 
   static func parseCommits(_ output: String) -> [GitCommit] {
@@ -49,17 +51,17 @@ enum GitParsers {
     let fallbackFormatter = ISO8601DateFormatter()
     fallbackFormatter.formatOptions = [.withInternetDateTime]
 
-    return output
-      .split(separator: "\n", omittingEmptySubsequences: true)
-      .compactMap { line -> GitCommit? in
-        let parts = line.split(separator: "\u{1f}", omittingEmptySubsequences: false).map(String.init)
-        let offset = parts.count >= 8 ? 1 : 0
-        guard parts.count >= offset + 7 else { return nil }
-        let decorations = parts[offset + 6]
-          .split(separator: ",")
-          .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-          .filter { !$0.isEmpty }
-        return GitCommit(
+    var commits: [GitCommit] = []
+    forEachLine(in: output, omittingEmptySubsequences: true) { line in
+      let parts = line.split(separator: "\u{1f}", omittingEmptySubsequences: false).map(String.init)
+      let offset = parts.count >= 8 ? 1 : 0
+      guard parts.count >= offset + 7 else { return }
+      let decorations = parts[offset + 6]
+        .split(separator: ",")
+        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
+      commits.append(
+        GitCommit(
           hash: parts[offset],
           shortHash: parts[offset + 1],
           authorName: parts[offset + 2],
@@ -69,7 +71,9 @@ enum GitParsers {
           decorations: decorations,
           graph: offset == 1 ? parts[0] : ""
         )
-      }
+      )
+    }
+    return commits
   }
 
   static func parseRefs(_ output: String) -> [GitRef] {
@@ -375,7 +379,7 @@ enum GitParsers {
       currentLines = []
     }
 
-    for rawLine in output.split(separator: "\n", omittingEmptySubsequences: false) {
+    forEachLine(in: output, omittingEmptySubsequences: false) { rawLine in
       let line = String(rawLine)
       if line.hasPrefix("diff --git") {
         flush()
@@ -430,10 +434,10 @@ enum GitParsers {
       pendingAdditions.removeAll(keepingCapacity: true)
     }
 
-    for rawLine in output.split(separator: "\n", omittingEmptySubsequences: false) {
+    forEachLine(in: output, omittingEmptySubsequences: false) { rawLine in
       let line = String(rawLine)
       if line.hasPrefix("diff --git") || line.hasPrefix("index ") || line.hasPrefix("--- ") || line.hasPrefix("+++ ") {
-        continue
+        return
       }
       if line.hasPrefix("@@") {
         flushPendingChanges()
@@ -451,7 +455,7 @@ enum GitParsers {
       } else if line.hasPrefix("+") {
         pendingAdditions.append(line)
       } else if line.hasPrefix("\\ No newline") {
-        continue
+        return
       } else {
         flushPendingChanges()
         oldLines.append(SplitDiffLine(number: oldLineNumber, text: line))
@@ -564,6 +568,33 @@ enum GitParsers {
     guard index != " ", workTree != " " else { return false }
     guard index != "?", workTree != "?", index != "!", workTree != "!" else { return false }
     return !["DD", "AU", "UD", "UA", "DU", "AA", "UU"].contains("\(index)\(workTree)")
+  }
+
+  private static func forEachLine(
+    in output: String,
+    omittingEmptySubsequences: Bool,
+    _ body: (Substring) -> Void
+  ) {
+    guard !output.isEmpty else { return }
+
+    var lineStart = output.startIndex
+    while lineStart < output.endIndex {
+      if let newline = output[lineStart...].firstIndex(of: "\n") {
+        if !omittingEmptySubsequences || lineStart < newline {
+          body(output[lineStart..<newline])
+        }
+        lineStart = output.index(after: newline)
+      } else {
+        if !omittingEmptySubsequences || lineStart < output.endIndex {
+          body(output[lineStart..<output.endIndex])
+        }
+        return
+      }
+    }
+
+    if !omittingEmptySubsequences {
+      body(output[output.endIndex..<output.endIndex])
+    }
   }
 
   private static func parseTracking(_ value: String?) -> (ahead: Int, behind: Int, gone: Bool) {
