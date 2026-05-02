@@ -2099,11 +2099,14 @@ final class GitClientIntegrationTests: XCTestCase {
 
     let repository = GitRepository(path: repo.path(percentEncoded: false))
     let worktreeURL = temporaryDirectory()
-    let worktreePath = canonicalPath(worktreeURL)
     _ = try await client.createWorktree(at: worktreeURL.path(percentEncoded: false), startPoint: "HEAD", in: repository)
+    let worktreePath = canonicalPath(worktreeURL)
 
     var worktrees = try await client.worktrees(in: repository)
-    let created = try XCTUnwrap(worktrees.first { canonicalPath($0.path) == worktreePath })
+    let created = try XCTUnwrap(
+      worktrees.first { canonicalPath($0.path) == worktreePath },
+      "Expected \(worktreePath) in \(worktrees.map { canonicalPath($0.path) })"
+    )
     XCTAssertTrue(created.isDetached)
 
     _ = try await client.removeWorktree(created, in: repository)
@@ -2111,13 +2114,13 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertFalse(worktrees.contains { canonicalPath($0.path) == worktreePath })
 
     let branchWorktreeURL = temporaryDirectory()
-    let branchWorktreePath = canonicalPath(branchWorktreeURL)
     _ = try await client.createWorktree(
       at: branchWorktreeURL.path(percentEncoded: false),
       startPoint: "HEAD",
       branch: "feature/worktree",
       in: repository
     )
+    let branchWorktreePath = canonicalPath(branchWorktreeURL)
     let branch = try await client.git(["branch", "--show-current"], in: branchWorktreeURL).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
     XCTAssertEqual(branch, "feature/worktree")
     worktrees = try await client.worktrees(in: repository)
@@ -2129,8 +2132,8 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertFalse(worktrees.contains { canonicalPath($0.path) == branchWorktreePath })
 
     let dirtyWorktreeURL = temporaryDirectory()
-    let dirtyWorktreePath = canonicalPath(dirtyWorktreeURL)
     _ = try await client.createWorktree(at: dirtyWorktreeURL.path(percentEncoded: false), startPoint: "HEAD", in: repository)
+    let dirtyWorktreePath = canonicalPath(dirtyWorktreeURL)
     try write("dirty\n", to: dirtyWorktreeURL.appending(path: "dirty.txt"))
     worktrees = try await client.worktrees(in: repository)
     let dirty = try XCTUnwrap(worktrees.first { canonicalPath($0.path) == dirtyWorktreePath })
@@ -2267,7 +2270,6 @@ final class GitClientIntegrationTests: XCTestCase {
     await store.openRepository(at: repo)
 
     let worktreeURL = temporaryDirectory()
-    let worktreePath = canonicalPath(worktreeURL)
     await MainActor.run {
       store.presentCreateWorktree()
       store.createWorktreeDestinationPath = worktreeURL.path(percentEncoded: false)
@@ -2275,9 +2277,13 @@ final class GitClientIntegrationTests: XCTestCase {
     }
 
     await store.createRequestedWorktree()
+    let worktreePath = canonicalPath(worktreeURL)
 
     let snapshot = await store.snapshot
-    XCTAssertTrue(snapshot.worktrees.contains { canonicalPath($0.path) == worktreePath })
+    XCTAssertTrue(
+      snapshot.worktrees.contains { canonicalPath($0.path) == worktreePath },
+      "Expected \(worktreePath) in \(snapshot.worktrees.map { canonicalPath($0.path) })"
+    )
     let branch = try await client.git(["branch", "--show-current"], in: worktreeURL).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
     XCTAssertEqual(branch, "feature/store-worktree")
   }
@@ -2399,10 +2405,15 @@ final class GitClientIntegrationTests: XCTestCase {
   }
 
   private func canonicalPath(_ url: URL) -> String {
-    url.resolvingSymlinksInPath().path(percentEncoded: false)
+    canonicalPathString(url.resolvingSymlinksInPath().path(percentEncoded: false))
   }
 
   private func canonicalPath(_ path: String) -> String {
-    URL(filePath: path).resolvingSymlinksInPath().path(percentEncoded: false)
+    canonicalPathString(URL(filePath: path).resolvingSymlinksInPath().path(percentEncoded: false))
+  }
+
+  private func canonicalPathString(_ path: String) -> String {
+    guard path.count > 1 else { return path }
+    return path.hasSuffix("/") ? String(path.dropLast()) : path
   }
 }
