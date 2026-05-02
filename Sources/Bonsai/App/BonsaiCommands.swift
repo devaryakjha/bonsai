@@ -210,6 +210,7 @@ struct BonsaiCommands: Commands {
       Button("Apply Patch from Clipboard") {
         store.presentApplyPatchFromClipboard()
       }
+      .keyboardShortcut("v", modifiers: [.command])
       .disabled(store.selectedRepository == nil)
 
       Button("Open Selected File") {

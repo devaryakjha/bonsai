@@ -12,10 +12,12 @@ implementation evidence.
 - Fork homepage feature overview, refreshed 2026-05-03:
   https://www.fork.dev/
 - Fork Mac release notes, refreshed 2026-05-03. Current page lists Fork 2.66 and
-  includes recent Mac items such as Claude branch review, multiple source code
-  directories, hunk history from the file tree, file history for selected code,
-  worktree branch icons, external editor additions, conflict-resolved diffs,
-  repository treemap, repository benchmark, and SVG/TGA image support:
+  includes recent Mac items such as collapsible commit details, keyboard sidebar
+  navigation, conflict-readiness indicators for cherry-pick/revert, Claude and
+  Codex AI integrations, multiple source code directories, hunk history from the
+  file tree, file history for selected code, worktree branch icons, external
+  editor additions, conflict-resolved diffs, repository treemap, repository
+  benchmark, `Cmd+V` apply-patch support, and SVG/TGA image support:
   https://fork.dev/releasenotes
 
 ## Requirements
@@ -38,6 +40,11 @@ implementation evidence.
 | SVG and TGA image diffs | Covered by this spec |
 | External editor reveal/open-in additions | Covered by `Specs/0244-external-editor-open-in.md` |
 | Claude branch review and generated commit messages | Covered by `Specs/0251-claude-generated-commit-message.md` and `Specs/0252-claude-branch-review.md` |
+| Codex AI commit messages and code review | Claude-compatible installed-agent flow is covered; Codex CLI provider parity remains a design candidate |
+| Cmd+V to apply patch from clipboard | Covered by `Specs/0253-apply-patch-clipboard-shortcut.md` |
+| Collapsible commit details | Covered by `Specs/0222-commit-details-shortcut.md` |
+| Copy repository path from sidebar repository menu | Covered by `Specs/0095-calm-repository-header-actions.md` |
+| .gitignore template picker | Covered by `Specs/0223-gitignore-template-picker.md` |
 | Conflict-resolved diffs after external merge tools | Covered by `Specs/0245-conflict-resolved-diff.md` |
 | Repository benchmark | Covered by `Specs/0246-repository-benchmark.md` |
 | Repository treemap | Covered by `Specs/0247-repository-treemap.md` |
