@@ -386,6 +386,7 @@ private struct FileHistoryRow: View {
       }
       .buttonStyle(.borderless)
       .help("Show commit")
+      .accessibilityLabel("Show commit \(entry.shortHash)")
 
       Text(entry.shortHash)
         .font(.caption.monospaced())
@@ -1304,6 +1305,7 @@ private struct InteractiveRebaseRow: View {
       .disabled(!canMoveUp)
       .buttonStyle(.borderless)
       .help("Move up")
+      .accessibilityLabel("Move \(item.shortHash) up")
 
       Button {
         onMoveDown()
@@ -1313,6 +1315,7 @@ private struct InteractiveRebaseRow: View {
       .disabled(!canMoveDown)
       .buttonStyle(.borderless)
       .help("Move down")
+      .accessibilityLabel("Move \(item.shortHash) down")
     }
     .padding(.horizontal, 10)
     .padding(.vertical, 8)
@@ -1401,6 +1404,7 @@ private struct RepositorySetupSheet: View {
             Image(systemName: "folder")
           }
           .help("Choose folder")
+          .accessibilityLabel("Choose folder")
         }
       }
 

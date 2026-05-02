@@ -114,6 +114,7 @@ struct SidebarView: View {
             }
             .buttonStyle(.borderless)
             .help("Rescan ~/projects")
+            .accessibilityLabel("Rescan ~/projects")
           }
         }
       }

@@ -121,6 +121,7 @@ private struct StatusRow: View {
         }
         .buttonStyle(.borderless)
         .help("Resolve conflict")
+        .accessibilityLabel("Resolve conflict for \(entry.path)")
       }
 
       Button {
@@ -130,6 +131,7 @@ private struct StatusRow: View {
       }
       .buttonStyle(.borderless)
       .help(entry.isStaged ? "Unstage" : "Stage")
+      .accessibilityLabel(entry.isStaged ? "Unstage \(entry.path)" : "Stage \(entry.path)")
 
       Menu {
         Button("Blame") {
