@@ -276,6 +276,16 @@ struct GitSubmodule: Identifiable, Hashable {
       return "Ready"
     }
   }
+  var statusColorToken: GitChangeStatusColorToken {
+    switch status {
+    case "+":
+      return .amber
+    case "U":
+      return .orange
+    default:
+      return .neutral
+    }
+  }
 }
 
 struct GitWorktree: Identifiable, Hashable {

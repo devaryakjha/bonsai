@@ -450,6 +450,9 @@ struct SidebarView: View {
         Button("Copy Path") {
           PasteboardWriter.copy(submodule.path)
         }
+        Button("Copy Commit Hash") {
+          PasteboardWriter.copy(submodule.commit)
+        }
       }
     }
   }
@@ -633,11 +636,31 @@ private struct SubmoduleSidebarRow: View {
   var body: some View {
     AdvancedSidebarRow(
       title: submodule.path,
-      detail: "\(submodule.statusTitle) - \(submodule.shortCommit)",
+      detail: submodule.statusTitle,
       tertiary: nil,
       systemImage: "shippingbox",
-      iconStyle: submodule.status == "U" ? .orange : .secondary
+      iconStyle: iconStyle
     )
+    .help(helpText)
+  }
+
+  private var iconStyle: Color {
+    switch submodule.statusColorToken {
+    case .amber:
+      return .yellow
+    case .orange:
+      return .orange
+    default:
+      return .secondary
+    }
+  }
+
+  private var helpText: String {
+    """
+    Status: \(submodule.statusTitle)
+    Commit: \(submodule.commit)
+    Path: \(submodule.path)
+    """
   }
 }
 

@@ -132,6 +132,25 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(submodules[3].statusTitle, "Conflicted")
   }
 
+  func testSubmoduleStatusColorTokensHighlightAttentionStates() {
+    XCTAssertEqual(
+      GitSubmodule(path: "Vendor/Ready", commit: "abc1234", status: " ").statusColorToken,
+      .neutral
+    )
+    XCTAssertEqual(
+      GitSubmodule(path: "Vendor/Missing", commit: "abc1234", status: "-").statusColorToken,
+      .neutral
+    )
+    XCTAssertEqual(
+      GitSubmodule(path: "Vendor/Changed", commit: "abc1234", status: "+").statusColorToken,
+      .amber
+    )
+    XCTAssertEqual(
+      GitSubmodule(path: "Vendor/Conflict", commit: "abc1234", status: "U").statusColorToken,
+      .orange
+    )
+  }
+
   func testParseReflogEntriesReadsRecoveryFields() {
     let entries = GitParsers.parseReflogEntries("""
     abcdef1234567890\u{1f}abcdef1\u{1f}HEAD@{0}\u{1f}commit: recover me\u{1f}2026-05-02T08:45:15+05:30
