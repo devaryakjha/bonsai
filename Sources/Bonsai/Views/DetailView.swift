@@ -633,11 +633,18 @@ private struct CommandResultView: View {
           VStack(alignment: .leading, spacing: 2) {
             Text(result.title)
               .font(.subheadline.weight(.semibold))
-            Text(summary)
+              .lineLimit(1)
+              .truncationMode(.middle)
+              .help(result.title)
+              .accessibilityLabel(result.title)
+            Text(result.summary)
               .font(.caption)
               .foregroundStyle(.secondary)
               .lineLimit(1)
+              .truncationMode(.tail)
+              .help(result.summary)
           }
+          .frame(maxWidth: .infinity, alignment: .leading)
         }
 
         Spacer(minLength: 8)
@@ -662,11 +669,5 @@ private struct CommandResultView: View {
     Image(systemName: result.isError ? "exclamationmark.triangle" : "checkmark.circle")
       .foregroundStyle(result.isError ? .orange : .green)
       .frame(width: 16)
-  }
-
-  private var summary: String {
-    let trimmed = result.output.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmed.isEmpty else { return result.isError ? "Failed" : "Completed" }
-    return trimmed.components(separatedBy: .newlines).first ?? trimmed
   }
 }

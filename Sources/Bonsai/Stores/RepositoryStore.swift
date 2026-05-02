@@ -509,7 +509,7 @@ final class RepositoryStore {
       }
 
       await openRepository(at: destination)
-      commandResult = CommandResult(title: mode.title, output: output.isEmpty ? "Completed." : output, isError: false)
+      commandResult = CommandResult(title: mode.title, output: output.isEmpty ? CommandResult.completedOutput : output, isError: false)
       rescanProjectsDirectory()
     } catch {
       commandResult = CommandResult(title: mode.title, output: error.localizedDescription, isError: true)
@@ -2143,7 +2143,7 @@ final class RepositoryStore {
   private func runMutation(title: String, operation: () async throws -> String) async -> Bool {
     do {
       let output = try await operation()
-      commandResult = CommandResult(title: title, output: output.isEmpty ? "Completed." : output, isError: false)
+      commandResult = CommandResult(title: title, output: output.isEmpty ? CommandResult.completedOutput : output, isError: false)
       if autoRefreshAfterMutations {
         await refreshAll()
       }
@@ -2165,7 +2165,7 @@ final class RepositoryStore {
   private func runReadOnlyCommand(title: String, operation: () async throws -> String) async {
     do {
       let output = try await operation()
-      commandResult = CommandResult(title: title, output: output.isEmpty ? "No output." : output, isError: false)
+      commandResult = CommandResult(title: title, output: output.isEmpty ? CommandResult.noOutput : output, isError: false)
     } catch {
       commandResult = CommandResult(title: title, output: error.localizedDescription, isError: true)
       errorMessage = error.localizedDescription

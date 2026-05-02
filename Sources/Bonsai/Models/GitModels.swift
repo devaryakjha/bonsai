@@ -868,6 +868,15 @@ struct CommandResult: Identifiable, Hashable {
   var title: String
   var output: String
   var isError: Bool
+
+  var summary: String {
+    let trimmed = output.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return isError ? "Failed" : Self.completedOutput }
+    return trimmed.components(separatedBy: .newlines).first ?? trimmed
+  }
+
+  static let completedOutput = "Completed"
+  static let noOutput = "No output"
 }
 
 struct DiffHunk: Identifiable, Hashable {
