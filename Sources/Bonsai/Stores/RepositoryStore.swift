@@ -60,6 +60,9 @@ final class RepositoryStore {
   var remoteEditorRequest: RemoteEditorRequest?
   var removeRemoteRequest: RemoveRemoteRequest?
   var removeWorktreeRequest: RemoveWorktreeRequest?
+  var createWorktreeRequest: CreateWorktreeRequest?
+  var createWorktreeDestinationPath = ""
+  var createWorktreeBranchName = ""
   var removeWorktreeForce = false
   var gitHubRepositoryRequest: GitHubRepositoryRequest?
   var repositorySetupMode: RepositorySetupMode?
@@ -886,14 +889,11 @@ final class RepositoryStore {
       defaultPath = ""
     }
 
-    operationInput = defaultPath
-    operationRequest = GitOperationRequest(
-      kind: .createWorktree,
-      title: "Create worktree",
-      message: selectedCommit.map { "Create a worktree at \($0.shortHash)." } ?? "Create a worktree from HEAD.",
-      placeholder: "~/projects/repository-worktree",
-      defaultValue: defaultPath,
-      primaryActionTitle: "Create"
+    createWorktreeDestinationPath = defaultPath
+    createWorktreeBranchName = ""
+    createWorktreeRequest = CreateWorktreeRequest(
+      startPointTitle: selectedCommit?.shortHash ?? "HEAD",
+      defaultPath: defaultPath
     )
   }
 
@@ -985,11 +985,6 @@ final class RepositoryStore {
       await runMutation(title: "Create tag \(value)") {
         try await gitClient.createTag(named: value, target: tagTarget, in: requiredRepository())
       }
-    case .createWorktree:
-      guard !value.isEmpty else { return }
-      await runMutation(title: "Create worktree") {
-        try await gitClient.createWorktree(at: value, startPoint: selectedCommit?.hash ?? "HEAD", in: requiredRepository())
-      }
     case .stashPush:
       await runMutation(title: "Create stash") {
         try await gitClient.stashPush(message: value.isEmpty ? nil : value, in: requiredRepository())
@@ -1045,6 +1040,25 @@ final class RepositoryStore {
     guard let selectedCommit else { return }
     await runMutation(title: "Checkout \(selectedCommit.shortHash)") {
       try await gitClient.checkout(selectedCommit.hash, in: requiredRepository())
+    }
+  }
+
+  func createRequestedWorktree() async {
+    guard createWorktreeRequest != nil else { return }
+    let destination = createWorktreeDestinationPath.trimmingCharacters(in: .whitespacesAndNewlines)
+    let branch = createWorktreeBranchName.trimmingCharacters(in: .whitespacesAndNewlines)
+    createWorktreeRequest = nil
+    createWorktreeDestinationPath = ""
+    createWorktreeBranchName = ""
+    guard !destination.isEmpty else { return }
+
+    await runMutation(title: "Create worktree") {
+      try await gitClient.createWorktree(
+        at: destination,
+        startPoint: selectedCommit?.hash ?? "HEAD",
+        branch: branch.isEmpty ? nil : branch,
+        in: requiredRepository()
+      )
     }
   }
 
@@ -1664,6 +1678,9 @@ final class RepositoryStore {
     blameDocument = nil
     fileHistoryDocument = nil
     lineHistoryDocument = nil
+    createWorktreeRequest = nil
+    createWorktreeDestinationPath = ""
+    createWorktreeBranchName = ""
   }
 
   private func saveRecents() {

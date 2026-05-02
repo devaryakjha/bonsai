@@ -1219,6 +1219,24 @@ final class GitClientIntegrationTests: XCTestCase {
     worktrees = try await client.worktrees(in: repository)
     XCTAssertFalse(worktrees.contains { canonicalPath($0.path) == worktreePath })
 
+    let branchWorktreeURL = temporaryDirectory()
+    let branchWorktreePath = canonicalPath(branchWorktreeURL)
+    _ = try await client.createWorktree(
+      at: branchWorktreeURL.path(percentEncoded: false),
+      startPoint: "HEAD",
+      branch: "feature/worktree",
+      in: repository
+    )
+    let branch = try await client.git(["branch", "--show-current"], in: branchWorktreeURL).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+    XCTAssertEqual(branch, "feature/worktree")
+    worktrees = try await client.worktrees(in: repository)
+    let branchWorktree = try XCTUnwrap(worktrees.first { canonicalPath($0.path) == branchWorktreePath })
+    XCTAssertEqual(branchWorktree.displayState, "feature/worktree")
+
+    _ = try await client.removeWorktree(branchWorktree, in: repository)
+    worktrees = try await client.worktrees(in: repository)
+    XCTAssertFalse(worktrees.contains { canonicalPath($0.path) == branchWorktreePath })
+
     let dirtyWorktreeURL = temporaryDirectory()
     let dirtyWorktreePath = canonicalPath(dirtyWorktreeURL)
     _ = try await client.createWorktree(at: dirtyWorktreeURL.path(percentEncoded: false), startPoint: "HEAD", in: repository)
@@ -1234,6 +1252,30 @@ final class GitClientIntegrationTests: XCTestCase {
     }
     worktrees = try await client.worktrees(in: repository)
     XCTAssertFalse(worktrees.contains { canonicalPath($0.path) == dirtyWorktreePath })
+  }
+
+  func testStoreCreatesBranchWorktreeAndRefreshesSnapshot() async throws {
+    let repo = try await makeRepository()
+    try write("root\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Initial")
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+
+    let worktreeURL = temporaryDirectory()
+    let worktreePath = canonicalPath(worktreeURL)
+    await MainActor.run {
+      store.presentCreateWorktree()
+      store.createWorktreeDestinationPath = worktreeURL.path(percentEncoded: false)
+      store.createWorktreeBranchName = "feature/store-worktree"
+    }
+
+    await store.createRequestedWorktree()
+
+    let snapshot = await store.snapshot
+    XCTAssertTrue(snapshot.worktrees.contains { canonicalPath($0.path) == worktreePath })
+    let branch = try await client.git(["branch", "--show-current"], in: worktreeURL).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+    XCTAssertEqual(branch, "feature/store-worktree")
   }
 
   func testCloneInteractiveRebaseAndConflictResolution() async throws {

@@ -987,6 +987,15 @@ struct RemoveWorktreeRequest: Identifiable, Hashable {
   var detail: String { worktree.path }
 }
 
+struct CreateWorktreeRequest: Identifiable, Hashable {
+  var startPointTitle: String
+  var defaultPath: String
+
+  var id: String { startPointTitle }
+  var title: String { "Create worktree" }
+  var message: String { "Create a worktree from \(startPointTitle)." }
+}
+
 enum RemoteEditorMode: String, Identifiable {
   case add
   case edit
@@ -1048,7 +1057,6 @@ enum GitOperationKind: String, Identifiable {
   case createBranch
   case renameBranch
   case createTag
-  case createWorktree
   case stashPush
   case stashPushIncludeUntracked
   case stashBranch

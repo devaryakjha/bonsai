@@ -296,6 +296,21 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.createWorktreeRequest) { request in
+      CreateWorktreeSheet(
+        request: request,
+        destinationPath: $store.createWorktreeDestinationPath,
+        branchName: $store.createWorktreeBranchName,
+        onCancel: {
+          store.createWorktreeRequest = nil
+          store.createWorktreeDestinationPath = ""
+          store.createWorktreeBranchName = ""
+        },
+        onConfirm: {
+          Task { await store.createRequestedWorktree() }
+        }
+      )
+    }
     .sheet(item: $store.gitHubRepositoryRequest) { request in
       GitHubRepositorySheet(
         request: request,
@@ -912,6 +927,56 @@ private struct RemoveWorktreeSheet: View {
     }
     .padding(20)
     .frame(width: 520)
+  }
+}
+
+private struct CreateWorktreeSheet: View {
+  var request: CreateWorktreeRequest
+  @Binding var destinationPath: String
+  @Binding var branchName: String
+  var onCancel: () -> Void
+  var onConfirm: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text(request.title)
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      Text(request.message)
+        .foregroundStyle(.secondary)
+
+      VStack(alignment: .leading, spacing: 6) {
+        Text("Destination")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+        TextField("~/projects/repository-worktree", text: $destinationPath)
+          .textFieldStyle(.roundedBorder)
+      }
+
+      VStack(alignment: .leading, spacing: 6) {
+        Text("New branch")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+        TextField("Optional branch name", text: $branchName)
+          .textFieldStyle(.roundedBorder)
+      }
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button("Create", action: onConfirm)
+          .buttonStyle(.borderedProminent)
+          .disabled(destinationPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+      }
+    }
+    .padding(20)
+    .frame(width: 520)
+    .onAppear {
+      if destinationPath.isEmpty {
+        destinationPath = request.defaultPath
+      }
+    }
   }
 }
 

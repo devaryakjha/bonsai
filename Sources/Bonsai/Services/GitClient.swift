@@ -409,8 +409,11 @@ struct GitClient {
     try await runRaw(["tag", "-d", name], in: repository)
   }
 
-  func createWorktree(at path: String, startPoint: String, in repository: GitRepository) async throws -> String {
-    try await runRaw(["worktree", "add", "--detach", path, startPoint], in: repository)
+  func createWorktree(at path: String, startPoint: String, branch: String? = nil, in repository: GitRepository) async throws -> String {
+    if let branch, !branch.isEmpty {
+      return try await runRaw(["worktree", "add", "-b", branch, path, startPoint], in: repository)
+    }
+    return try await runRaw(["worktree", "add", "--detach", path, startPoint], in: repository)
   }
 
   func removeWorktree(_ worktree: GitWorktree, force: Bool = false, in repository: GitRepository) async throws -> String {
