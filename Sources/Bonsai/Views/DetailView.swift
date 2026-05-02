@@ -113,11 +113,8 @@ private struct DetailHeaderView: View {
         }
       }
     } else {
-      Text("Diff")
+      Text(DiffEmptyStateCopy.title)
         .font(.headline)
-      Text("Select a commit file or working tree change")
-        .font(.caption)
-        .foregroundStyle(.secondary)
     }
   }
 
@@ -292,9 +289,8 @@ private struct DiffView: View {
         TreeBlobPreview(path: entry.path, text: store.treeBlobText)
       } else if store.diffText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
         ContentUnavailableView(
-          "No diff selected",
-          systemImage: "doc.text.magnifyingglass",
-          description: Text("Choose a file or working tree change to inspect it here.")
+          DiffEmptyStateCopy.title,
+          systemImage: DiffEmptyStateCopy.systemImage
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
       } else {
