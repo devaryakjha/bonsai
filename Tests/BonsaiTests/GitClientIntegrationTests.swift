@@ -822,6 +822,39 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(commandResult?.isError, false)
   }
 
+  func testStoreRebasesCurrentBranchOntoLocalBranch() async throws {
+    let repo = try await makeRepository()
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    try write("base\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Base")
+    _ = try await client.createBranch(named: "feature/rebase-target", startPoint: nil, in: repository)
+    _ = try await client.checkout("feature/rebase-target", in: repository)
+    try write("target\n", to: repo.appending(path: "target.txt"))
+    try await commitAll(in: repo, message: "Target work")
+    _ = try await client.checkout("main", in: repository)
+    try write("main\n", to: repo.appending(path: "main.txt"))
+    try await commitAll(in: repo, message: "Main work")
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    let branches = await store.localBranches
+    let targetBranch = try XCTUnwrap(branches.first { $0.shortName == "feature/rebase-target" })
+
+    await store.rebaseOntoBranch(targetBranch)
+
+    let currentBranch = try await client.git(["branch", "--show-current"], in: repo).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let mergeBase = try await client.git(["merge-base", "main", "feature/rebase-target"], in: repo).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let targetHash = try await client.git(["rev-parse", "feature/rebase-target"], in: repo).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let commandResult = await store.commandResult
+    XCTAssertEqual(currentBranch, "main")
+    XCTAssertEqual(mergeBase, targetHash)
+    XCTAssertEqual(commandResult?.title, "Rebase onto feature/rebase-target")
+    XCTAssertEqual(commandResult?.isError, false)
+  }
+
   func testStoreFetchesSelectedRemoteBranch() async throws {
     let remote = try await makeBareRepository()
     let source = try await makeRepository()

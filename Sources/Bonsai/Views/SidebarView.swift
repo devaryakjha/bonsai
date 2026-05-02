@@ -180,6 +180,10 @@ struct SidebarView: View {
                 Task { await store.mergeBranch(branch) }
               }
               .disabled(branch.isHead)
+              Button("Rebase Current onto Branch") {
+                Task { await store.rebaseOntoBranch(branch) }
+              }
+              .disabled(branch.isHead)
               if branch.upstream != nil {
                 Button(branch.pullTitle) {
                   Task { await store.pullBranch(branch) }

@@ -1250,6 +1250,13 @@ final class RepositoryStore {
     }
   }
 
+  func rebaseOntoBranch(_ branch: GitRef) async {
+    guard branch.kind == .localBranch, !branch.isHead else { return }
+    await runMutation(title: "Rebase onto \(branch.shortName)") {
+      try await gitClient.rebaseOntoBranch(branch, in: requiredRepository())
+    }
+  }
+
   func unsetUpstream(_ branch: GitRef) async {
     await runMutation(title: "Unset upstream \(branch.shortName)") {
       try await gitClient.unsetUpstream(for: branch.shortName, in: requiredRepository())
