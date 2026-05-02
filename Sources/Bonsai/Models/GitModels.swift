@@ -118,6 +118,19 @@ struct GitTreeEntry: Identifiable, Hashable {
     case blob
     case commit
     case unknown
+
+    var title: String {
+      switch self {
+      case .tree:
+        return "Folder"
+      case .blob:
+        return "File"
+      case .commit:
+        return "Submodule"
+      case .unknown:
+        return "Unknown"
+      }
+    }
   }
 
   var mode: String
@@ -128,6 +141,7 @@ struct GitTreeEntry: Identifiable, Hashable {
 
   var id: String { "\(kind.rawValue):\(path)" }
   var isDirectory: Bool { kind == .tree }
+  var kindTitle: String { kind.title }
 }
 
 struct GitRef: Identifiable, Hashable {

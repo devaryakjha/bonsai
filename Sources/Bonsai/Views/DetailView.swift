@@ -80,7 +80,7 @@ private struct DetailHeaderView: View {
       HStack(spacing: 8) {
         Text(commit.shortHash)
           .monospaced()
-        Text(entry.kind.rawValue)
+        Text(entry.kindTitle)
         Text(entry.mode)
       }
       .font(.caption)

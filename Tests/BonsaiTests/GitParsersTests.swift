@@ -125,10 +125,14 @@ final class GitParsersTests: XCTestCase {
 
     XCTAssertEqual(entries.count, 2)
     XCTAssertEqual(entries[0].kind, .blob)
+    XCTAssertEqual(entries[0].kindTitle, "File")
     XCTAssertEqual(entries[0].name, "README.md")
     XCTAssertEqual(entries[0].path, "Root/README.md")
     XCTAssertTrue(entries[1].isDirectory)
+    XCTAssertEqual(entries[1].kindTitle, "Folder")
     XCTAssertEqual(entries[1].path, "Root/Sources App")
+    XCTAssertEqual(GitTreeEntry.EntryKind.commit.title, "Submodule")
+    XCTAssertEqual(GitTreeEntry.EntryKind.unknown.title, "Unknown")
   }
 
   func testParseWorktreesReadsBranchAndDetachedEntries() {
