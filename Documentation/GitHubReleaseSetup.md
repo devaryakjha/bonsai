@@ -60,6 +60,8 @@ xcrun notarytool store-credentials
 ```
 
 The temporary profile name is `bonsai-ci-notary`; it is not a secret.
+The workflow deletes the temporary keychain at the end of the job, including
+failure paths.
 
 ## Workflow Run
 

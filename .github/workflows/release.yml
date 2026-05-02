@@ -138,3 +138,10 @@ jobs:
             dist/release/Bonsai.release.plist
           if-no-files-found: error
           retention-days: 30
+
+      - name: Clean up signing keychain
+        if: always()
+        run: |
+          if [[ -n "${BONSAI_NOTARY_KEYCHAIN:-}" && -f "$BONSAI_NOTARY_KEYCHAIN" ]]; then
+            security delete-keychain "$BONSAI_NOTARY_KEYCHAIN"
+          fi
