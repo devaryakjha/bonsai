@@ -10,20 +10,28 @@ struct SettingsView: View {
 
   var body: some View {
     Form {
-      Toggle("Show toolbar labels", isOn: $showToolbarLabels)
-      Toggle("Show commit row details", isOn: $showCommitRowDetails)
-      Toggle("Refresh after Git operations", isOn: $autoRefresh)
-      Picker("Diff algorithm", selection: $diffAlgorithm) {
-        ForEach(DiffAlgorithm.allCases) { algorithm in
-          Text(algorithm.title).tag(algorithm.rawValue)
+      Section("General") {
+        Toggle("Show toolbar labels", isOn: $showToolbarLabels)
+        Toggle("Show commit row details", isOn: $showCommitRowDetails)
+        Toggle("Refresh after Git operations", isOn: $autoRefresh)
+      }
+
+      Section("Diff") {
+        Picker("Diff algorithm", selection: $diffAlgorithm) {
+          ForEach(DiffAlgorithm.allCases) { algorithm in
+            Text(algorithm.title).tag(algorithm.rawValue)
+          }
+        }
+        Picker("Diff view", selection: $diffDisplayMode) {
+          ForEach(DiffDisplayMode.allCases) { mode in
+            Text(mode.title).tag(mode.rawValue)
+          }
         }
       }
-      Picker("Diff view", selection: $diffDisplayMode) {
-        ForEach(DiffDisplayMode.allCases) { mode in
-          Text(mode.title).tag(mode.rawValue)
-        }
+
+      Section("Integrations") {
+        SecureField("GitHub token", text: $githubToken)
       }
-      SecureField("GitHub token", text: $githubToken)
     }
     .formStyle(.grouped)
     .padding()
