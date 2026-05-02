@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MainContentView: View {
   @Bindable var store: RepositoryStore
+  let navigationFocus: FocusState<NavigationFocusTarget?>.Binding
 
   var body: some View {
     VStack(spacing: 0) {
@@ -23,7 +24,7 @@ struct MainContentView: View {
       } else {
         switch store.mainMode {
         case .history:
-          HistoryView(store: store)
+          HistoryView(store: store, navigationFocus: navigationFocus)
         case .changes:
           WorkingTreeView(store: store)
         }

@@ -3,17 +3,25 @@ import SwiftUI
 struct ContentView: View {
   @Bindable var store: RepositoryStore
   @AppStorage("bonsai.showToolbarLabels") private var showToolbarLabels = false
+  @FocusState private var navigationFocus: NavigationFocusTarget?
 
   var body: some View {
     NavigationSplitView {
-      SidebarView(store: store)
+      SidebarView(store: store, navigationFocus: $navigationFocus)
         .navigationSplitViewColumnWidth(min: 240, ideal: 280, max: 360)
     } content: {
-      MainContentView(store: store)
+      MainContentView(store: store, navigationFocus: $navigationFocus)
         .navigationSplitViewColumnWidth(min: 420, ideal: 560)
     } detail: {
       DetailView(store: store)
         .navigationSplitViewColumnWidth(min: 360, ideal: 520)
+    }
+    .onKeyPress(.tab) {
+      guard NavigationFocusTarget.canHandleTabShortcut else {
+        return .ignored
+      }
+      navigationFocus = NavigationFocusTarget.tabDestination(from: navigationFocus)
+      return .handled
     }
     .toolbar {
       ToolbarItemGroup {

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HistoryView: View {
   @Bindable var store: RepositoryStore
+  let navigationFocus: FocusState<NavigationFocusTarget?>.Binding
   @AppStorage("bonsai.showCommitRowDetails") private var showCommitRowDetails = false
 
   var body: some View {
@@ -128,6 +129,8 @@ struct HistoryView: View {
         }
       }
       .listStyle(.plain)
+      .focusable()
+      .focused(navigationFocus, equals: .history)
 
       Divider()
 

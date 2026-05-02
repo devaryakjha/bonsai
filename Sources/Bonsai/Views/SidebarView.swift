@@ -2,6 +2,8 @@ import SwiftUI
 
 struct SidebarView: View {
   let store: RepositoryStore
+  let navigationFocus: FocusState<NavigationFocusTarget?>.Binding
+  @State private var navigationSelection: String?
   @AppStorage("bonsai.sidebar.repositoryDetailsExpanded") private var repositoryDetailsExpanded = false
   @AppStorage("bonsai.sidebar.referencesExpanded") private var referencesExpanded = false
   @AppStorage("bonsai.sidebar.showAllReferences") private var showAllReferences = false
@@ -12,7 +14,7 @@ struct SidebarView: View {
   @AppStorage("bonsai.sidebar.githubNotificationsExpanded") private var gitHubNotificationsExpanded = false
 
   var body: some View {
-    List {
+    List(selection: $navigationSelection) {
       Section("Repository") {
         if let repository = store.selectedRepository {
           RepositoryHeaderRow(
@@ -20,6 +22,7 @@ struct SidebarView: View {
             detail: repositoryHeaderDetail,
             path: repository.path
           )
+            .tag(SidebarNavigationSelection.repository)
             .contextMenu {
               Button("Copy Path") {
                 store.copyRepositoryPath()
@@ -37,6 +40,7 @@ struct SidebarView: View {
           } label: {
             Label("Open repository", systemImage: "folder.badge.plus")
           }
+          .tag(SidebarNavigationSelection.openRepository)
         }
       }
 
@@ -50,6 +54,7 @@ struct SidebarView: View {
             }
             .buttonStyle(.plain)
             .help(repository.path)
+            .tag(SidebarNavigationSelection.recent(repository.id))
             .contextMenu {
               Button("Copy Path") {
                 store.copyRepositoryPath(repository)
@@ -81,6 +86,7 @@ struct SidebarView: View {
                 }
                 .buttonStyle(.plain)
                 .help(repository.path)
+                .tag(SidebarNavigationSelection.sourceRepository(repository.id))
                 .contextMenu {
                   Button("Copy Path") {
                     store.copyRepositoryPath(repository)
@@ -170,6 +176,7 @@ struct SidebarView: View {
               )
             )
               .help(branchHelpText(branch))
+              .tag(SidebarNavigationSelection.localBranch(branch.id))
             .contextMenu {
               Button("Checkout") {
                 Task { await store.checkout(branch) }
@@ -298,6 +305,11 @@ struct SidebarView: View {
       }
     }
     .listStyle(.sidebar)
+    .focusable()
+    .focused(navigationFocus, equals: .sidebar)
+    .onAppear {
+      navigationSelection = navigationSelection ?? initialNavigationSelection
+    }
     .overlay {
       if store.isRefreshing {
         ProgressView()
@@ -306,6 +318,10 @@ struct SidebarView: View {
           .padding(.bottom, 12)
       }
     }
+  }
+
+  private var initialNavigationSelection: String {
+    store.selectedRepository == nil ? SidebarNavigationSelection.openRepository : SidebarNavigationSelection.repository
   }
 
   @ViewBuilder
@@ -735,6 +751,23 @@ struct SidebarView: View {
     }
     lines.append(branch.upstream.map { "Upstream: \($0)" } ?? "No upstream configured")
     return lines.joined(separator: "\n")
+  }
+}
+
+private enum SidebarNavigationSelection {
+  static let repository = "repository"
+  static let openRepository = "repository.open"
+
+  static func recent(_ id: String) -> String {
+    "recent.\(id)"
+  }
+
+  static func sourceRepository(_ id: String) -> String {
+    "source.\(id)"
+  }
+
+  static func localBranch(_ id: String) -> String {
+    "branch.\(id)"
   }
 }
 
