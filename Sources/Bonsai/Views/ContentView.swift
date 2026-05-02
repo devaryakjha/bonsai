@@ -140,6 +140,17 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.discardUnstagedChangesRequest) { request in
+      DiscardUnstagedChangesSheet(
+        request: request,
+        onCancel: {
+          store.discardUnstagedChangesRequest = nil
+        },
+        onDiscard: {
+          Task { await store.discardUnstagedChanges() }
+        }
+      )
+    }
     .sheet(item: $store.gitIgnoreTemplateRequest) { request in
       GitIgnoreTemplateSheet(
         request: request,
@@ -747,6 +758,49 @@ private struct DiscardChangeSheet: View {
     }
     .padding(20)
     .frame(width: 460)
+  }
+}
+
+private struct DiscardUnstagedChangesSheet: View {
+  var request: DiscardUnstagedChangesRequest
+  var onCancel: () -> Void
+  var onDiscard: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text("Discard unstaged changes")
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      Text("\(request.changeCount.formatted()) changes")
+        .font(.body.monospaced())
+        .lineLimit(1)
+
+      Text(detail)
+        .foregroundStyle(.secondary)
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button("Discard", role: .destructive, action: onDiscard)
+          .buttonStyle(.borderedProminent)
+      }
+    }
+    .padding(20)
+    .frame(width: 460)
+  }
+
+  private var detail: String {
+    let summary = request.summary.isEmpty ? "unstaged changes" : request.summary
+    let action: String
+    if request.trackedCount > 0 && request.untrackedCount > 0 {
+      action = "This will restore tracked files from Git and remove untracked files."
+    } else if request.trackedCount > 0 {
+      action = "This will restore tracked files from Git."
+    } else {
+      action = "This will remove untracked files."
+    }
+    return "\(action) Includes: \(summary)."
   }
 }
 

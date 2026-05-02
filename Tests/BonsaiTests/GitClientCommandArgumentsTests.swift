@@ -717,15 +717,25 @@ final class GitClientCommandArgumentsTests: XCTestCase {
 
   func testDiscardArgumentsSeparateUntrackedAndTrackedPaths() {
     let untracked = statusEntry(path: "scratch file.txt", indexStatus: "?", workTreeStatus: "?")
+    let secondUntracked = statusEntry(path: "notes/todo.txt", indexStatus: "?", workTreeStatus: "?")
     let modified = statusEntry(path: "Sources/App View.swift", indexStatus: " ", workTreeStatus: "M")
+    let deleted = statusEntry(path: "Docs/Old Guide.md", indexStatus: " ", workTreeStatus: "D")
 
     XCTAssertEqual(
       GitClient.discardUntrackedArguments(untracked),
       ["clean", "-f", "--", "scratch file.txt"]
     )
     XCTAssertEqual(
+      GitClient.discardUntrackedArguments([untracked, secondUntracked]),
+      ["clean", "-f", "--", "scratch file.txt", "notes/todo.txt"]
+    )
+    XCTAssertEqual(
       GitClient.discardWorktreeArguments(modified),
       ["restore", "--worktree", "--", "Sources/App View.swift"]
+    )
+    XCTAssertEqual(
+      GitClient.discardWorktreeArguments([modified, deleted]),
+      ["restore", "--worktree", "--", "Sources/App View.swift", "Docs/Old Guide.md"]
     )
   }
 

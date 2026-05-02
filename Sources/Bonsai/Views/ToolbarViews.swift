@@ -142,6 +142,11 @@ struct RepositoryToolbarActionsMenu: View {
           store.copySelectedFileAbsolutePath()
         }
         .disabled(!store.canCopySelectedFileAbsolutePath)
+        Button("Discard Unstaged Changes…", role: .destructive) {
+          store.presentDiscardUnstagedChanges()
+        }
+        .disabled(!store.canDiscardUnstagedChanges)
+        Divider()
         Button("Update Submodules") {
           Task { await store.updateSubmodules() }
         }

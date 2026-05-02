@@ -138,6 +138,11 @@ struct BonsaiCommands: Commands {
       }
       .disabled(store.selectedRepository == nil || !store.canUnstageAll)
 
+      Button("Discard Unstaged Changes…", role: .destructive) {
+        store.presentDiscardUnstagedChanges()
+      }
+      .disabled(store.selectedRepository == nil || !store.canDiscardUnstagedChanges)
+
       Divider()
 
       Button("Create Branch…") {

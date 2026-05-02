@@ -1345,6 +1345,37 @@ struct DiscardChangeRequest: Identifiable, Hashable {
   var id: String { entry.id }
 }
 
+struct DiscardUnstagedChangesRequest: Identifiable, Hashable {
+  var entries: [GitStatusEntry]
+
+  var id: String {
+    entries.map(\.id).joined(separator: "|")
+  }
+
+  var changeCount: Int {
+    entries.count
+  }
+
+  var trackedCount: Int {
+    entries.filter { !$0.isUntracked }.count
+  }
+
+  var untrackedCount: Int {
+    entries.filter(\.isUntracked).count
+  }
+
+  var summary: String {
+    var parts: [String] = []
+    if trackedCount > 0 {
+      parts.append("\(trackedCount.formatted()) tracked")
+    }
+    if untrackedCount > 0 {
+      parts.append("\(untrackedCount.formatted()) untracked")
+    }
+    return parts.joined(separator: ", ")
+  }
+}
+
 struct GitIgnoreTemplateRequest: Identifiable, Hashable {
   var repositoryName: String
   var templates: [GitIgnoreTemplate]

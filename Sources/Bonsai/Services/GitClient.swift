@@ -503,12 +503,35 @@ struct GitClient {
     return outputs.filter { !$0.isEmpty }.joined(separator: "\n")
   }
 
+  func discardUnstaged(_ entries: [GitStatusEntry], in repository: GitRepository) async throws -> String {
+    let tracked = entries.filter { !$0.isUntracked }
+    let untracked = entries.filter(\.isUntracked)
+    guard !tracked.isEmpty || !untracked.isEmpty else { return "" }
+
+    var outputs: [String] = []
+    if !tracked.isEmpty {
+      outputs.append(try await runRaw(Self.discardWorktreeArguments(tracked), in: repository))
+    }
+    if !untracked.isEmpty {
+      outputs.append(try await runRaw(Self.discardUntrackedArguments(untracked), in: repository))
+    }
+    return outputs.filter { !$0.isEmpty }.joined(separator: "\n")
+  }
+
   static func discardUntrackedArguments(_ entry: GitStatusEntry) -> [String] {
     ["clean", "-f", "--", entry.path]
   }
 
+  static func discardUntrackedArguments(_ entries: [GitStatusEntry]) -> [String] {
+    ["clean", "-f", "--"] + entries.map(\.path)
+  }
+
   static func discardWorktreeArguments(_ entry: GitStatusEntry) -> [String] {
     ["restore", "--worktree", "--", entry.path]
+  }
+
+  static func discardWorktreeArguments(_ entries: [GitStatusEntry]) -> [String] {
+    ["restore", "--worktree", "--"] + entries.map(\.path)
   }
 
   func ignorePath(_ path: String, in repository: GitRepository) throws -> String {

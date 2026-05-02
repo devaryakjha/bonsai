@@ -70,6 +70,7 @@ final class RepositoryStore {
   var stashBranchSource: GitStash?
   var conflictResolutionRequest: ConflictResolutionRequest?
   var discardChangeRequest: DiscardChangeRequest?
+  var discardUnstagedChangesRequest: DiscardUnstagedChangesRequest?
   var gitIgnoreTemplateRequest: GitIgnoreTemplateRequest?
   var selectedGitIgnoreTemplateID = GitIgnoreTemplateCatalog.defaultTemplateID
   var discardPatchRequest: DiscardPatchRequest?
@@ -331,6 +332,10 @@ final class RepositoryStore {
 
   var canUnstageAll: Bool {
     !stagedChanges.isEmpty
+  }
+
+  var canDiscardUnstagedChanges: Bool {
+    !unstagedChanges.isEmpty
   }
 
   var stagedChanges: [GitStatusEntry] {
@@ -803,6 +808,20 @@ final class RepositoryStore {
     discardChangeRequest = nil
     await runMutation(title: "Discard \(request.entry.path)") {
       try await gitClient.discard(request.entry, in: requiredRepository())
+    }
+  }
+
+  func presentDiscardUnstagedChanges() {
+    let entries = unstagedChanges
+    guard !entries.isEmpty else { return }
+    discardUnstagedChangesRequest = DiscardUnstagedChangesRequest(entries: entries)
+  }
+
+  func discardUnstagedChanges() async {
+    guard let request = discardUnstagedChangesRequest else { return }
+    discardUnstagedChangesRequest = nil
+    await runMutation(title: "Discard unstaged changes") {
+      try await gitClient.discardUnstaged(request.entries, in: requiredRepository())
     }
   }
 

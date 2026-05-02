@@ -1420,6 +1420,55 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(status.isEmpty)
   }
 
+  func testStoreDiscardsAllUnstagedChangesAfterConfirmation() async throws {
+    let repo = try await makeRepository()
+    let trackedFile = repo.appending(path: "file.txt")
+    let stagedFile = repo.appending(path: "staged.txt")
+    let scratch = repo.appending(path: "scratch.txt")
+    let ignored = repo.appending(path: "ignored.log")
+    try write("*.log\n", to: repo.appending(path: ".gitignore"))
+    try write("original\n", to: trackedFile)
+    try write("staged original\n", to: stagedFile)
+    try await commitAll(in: repo, message: "Initial files")
+
+    try write("changed\n", to: trackedFile)
+    try write("staged changed\n", to: stagedFile)
+    try write("scratch\n", to: scratch)
+    try write("ignored\n", to: ignored)
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let stagedStatus = try await client.status(in: repository).first { $0.path == "staged.txt" }
+    _ = try await client.stage(try XCTUnwrap(stagedStatus), in: repository)
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    await MainActor.run {
+      store.presentDiscardUnstagedChanges()
+    }
+
+    let requestValue = await store.discardUnstagedChangesRequest
+    let request = try XCTUnwrap(requestValue)
+    XCTAssertEqual(request.changeCount, 2)
+    XCTAssertEqual(request.trackedCount, 1)
+    XCTAssertEqual(request.untrackedCount, 1)
+    XCTAssertTrue(request.entries.contains { $0.path == "file.txt" })
+    XCTAssertTrue(request.entries.contains { $0.path == "scratch.txt" })
+    XCTAssertFalse(request.entries.contains { $0.path == "staged.txt" })
+    XCTAssertFalse(request.entries.contains { $0.path == "ignored.log" })
+
+    await store.discardUnstagedChanges()
+
+    XCTAssertEqual(try String(contentsOf: trackedFile, encoding: .utf8), "original\n")
+    XCTAssertFalse(FileManager.default.fileExists(atPath: scratch.path(percentEncoded: false)))
+    XCTAssertTrue(FileManager.default.fileExists(atPath: ignored.path(percentEncoded: false)))
+
+    let status = try await client.status(in: repository, includeIgnoredFiles: true)
+    XCTAssertTrue(status.contains { $0.path == "staged.txt" && $0.isStaged })
+    XCTAssertTrue(status.contains { $0.path == "ignored.log" && $0.isIgnored })
+    XCTAssertFalse(status.contains { $0.path == "file.txt" })
+    XCTAssertFalse(status.contains { $0.path == "scratch.txt" })
+  }
+
   func testStoreIgnoresUntrackedFile() async throws {
     let repo = try await makeRepository()
     try write("tracked\n", to: repo.appending(path: "tracked.txt"))
