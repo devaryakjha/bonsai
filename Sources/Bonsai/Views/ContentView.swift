@@ -162,8 +162,10 @@ struct ContentView: View {
     .sheet(item: $store.deleteRefRequest) { request in
       DeleteRefSheet(
         request: request,
+        forceDelete: $store.deleteRefForce,
         onCancel: {
           store.deleteRefRequest = nil
+          store.deleteRefForce = false
         },
         onDelete: {
           Task { await store.deleteRequestedRef() }
@@ -840,6 +842,7 @@ private struct ReflogResetSheet: View {
 
 private struct DeleteRefSheet: View {
   var request: DeleteRefRequest
+  @Binding var forceDelete: Bool
   var onCancel: () -> Void
   var onDelete: () -> Void
 
@@ -855,6 +858,10 @@ private struct DeleteRefSheet: View {
 
       Text(request.detail)
         .foregroundStyle(.secondary)
+
+      if request.allowsForceDelete {
+        Toggle("Force delete unmerged branch", isOn: $forceDelete)
+      }
 
       HStack {
         Spacer()

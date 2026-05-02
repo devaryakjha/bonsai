@@ -401,6 +401,20 @@ final class GitClientIntegrationTests: XCTestCase {
     _ = try await client.checkout("main", in: repository)
     _ = try await client.deleteBranch("feature/renamed", force: false, in: repository)
 
+    _ = try await client.createBranch(named: "feature/unmerged", startPoint: nil, in: repository)
+    _ = try await client.checkout("feature/unmerged", in: repository)
+    try write("unmerged\n", to: repo.appending(path: "unmerged.txt"))
+    try await commitAll(in: repo, message: "Unmerged branch")
+    _ = try await client.checkout("main", in: repository)
+    do {
+      _ = try await client.deleteBranch("feature/unmerged", force: false, in: repository)
+      XCTFail("Expected safe branch deletion to reject an unmerged branch")
+    } catch {
+      _ = try await client.deleteBranch("feature/unmerged", force: true, in: repository)
+    }
+    refs = try await client.refs(in: repository)
+    XCTAssertFalse(refs.contains { $0.shortName == "feature/unmerged" })
+
     _ = try await client.createTag(named: "v0.1.0", target: nil, in: repository)
     refs = try await client.refs(in: repository)
     XCTAssertTrue(refs.contains { $0.shortName == "v0.1.0" })

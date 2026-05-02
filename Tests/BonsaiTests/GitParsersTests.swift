@@ -232,10 +232,13 @@ final class GitParsersTests: XCTestCase {
 
     XCTAssertEqual(DeleteRefRequest(ref: local).title, "Delete branch")
     XCTAssertEqual(DeleteRefRequest(ref: local).message, "Delete local branch feature.")
+    XCTAssertTrue(DeleteRefRequest(ref: local).allowsForceDelete)
     XCTAssertEqual(DeleteRefRequest(ref: remote).title, "Delete remote branch")
     XCTAssertEqual(DeleteRefRequest(ref: remote).detail, "The branch reference will be deleted from its remote.")
+    XCTAssertFalse(DeleteRefRequest(ref: remote).allowsForceDelete)
     XCTAssertEqual(DeleteRefRequest(ref: tag).title, "Delete tag")
     XCTAssertEqual(DeleteRefRequest(ref: tag).message, "Delete tag v0.1.0.")
+    XCTAssertFalse(DeleteRefRequest(ref: tag).allowsForceDelete)
   }
 
   func testDropStashRequestCopyNamesStashAndMessage() {

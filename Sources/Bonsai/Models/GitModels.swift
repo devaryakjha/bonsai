@@ -694,6 +694,7 @@ struct DeleteRefRequest: Identifiable, Hashable {
   var ref: GitRef
 
   var id: String { ref.id }
+  var allowsForceDelete: Bool { ref.kind == .localBranch }
   var title: String {
     switch ref.kind {
     case .localBranch:

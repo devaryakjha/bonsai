@@ -48,6 +48,7 @@ final class RepositoryStore {
   var interactiveRebasePlan: InteractiveRebasePlan?
   var resetRequest: ResetRequest?
   var deleteRefRequest: DeleteRefRequest?
+  var deleteRefForce = false
   var reflogEntries: [GitReflogEntry] = []
   var reflogResetRequest: ReflogResetRequest?
   var remoteEditorRequest: RemoteEditorRequest?
@@ -805,20 +806,23 @@ final class RepositoryStore {
 
   func presentDelete(_ ref: GitRef) {
     guard !ref.isHead else { return }
+    deleteRefForce = false
     deleteRefRequest = DeleteRefRequest(ref: ref)
   }
 
   func deleteRequestedRef() async {
     guard let request = deleteRefRequest else { return }
+    let force = deleteRefForce
     deleteRefRequest = nil
-    await delete(request.ref)
+    deleteRefForce = false
+    await delete(request.ref, force: force)
   }
 
-  private func delete(_ ref: GitRef) async {
+  private func delete(_ ref: GitRef, force: Bool) async {
     await runMutation(title: "Delete \(ref.shortName)") {
       switch ref.kind {
       case .localBranch:
-        return try await gitClient.deleteBranch(ref.shortName, force: false, in: requiredRepository())
+        return try await gitClient.deleteBranch(ref.shortName, force: force, in: requiredRepository())
       case .remoteBranch:
         let parts = ref.shortName.split(separator: "/", maxSplits: 1).map(String.init)
         let remote = parts.first ?? "origin"
