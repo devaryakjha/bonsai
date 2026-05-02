@@ -14,40 +14,58 @@ struct SplitDiffPaneContext: Hashable {
   )
 
   static func workingTree(entry: GitStatusEntry) -> SplitDiffPaneContext {
-    let oldTitle: String
-    let oldDetail: String?
-    let newTitle: String
+    let oldHasFile = entry.kind != .added && !entry.isUntracked
+    let newHasFile = entry.kind != .deleted
 
     if entry.isStaged {
-      oldTitle = "HEAD"
-      oldDetail = entry.originalPath ?? entry.path
-      newTitle = "Index"
-    } else if entry.isUntracked {
-      oldTitle = "No file"
-      oldDetail = nil
-      newTitle = "Working tree"
-    } else {
-      oldTitle = "HEAD"
-      oldDetail = entry.originalPath ?? entry.path
-      newTitle = "Working tree"
+      return SplitDiffPaneContext(
+        old: SplitDiffPaneDescriptor(
+          title: oldHasFile ? "HEAD" : "No file",
+          detail: oldHasFile ? entry.originalPath ?? entry.path : nil,
+          systemImage: "minus.line.diagonal"
+        ),
+        new: SplitDiffPaneDescriptor(
+          title: newHasFile ? "Index" : "No file",
+          detail: newHasFile ? entry.path : nil,
+          systemImage: "plus.line.diagonal"
+        )
+      )
+    }
+
+    if entry.isUntracked {
+      return SplitDiffPaneContext(
+        old: SplitDiffPaneDescriptor(title: "No file", detail: nil, systemImage: "minus.line.diagonal"),
+        new: SplitDiffPaneDescriptor(title: "Working tree", detail: entry.path, systemImage: "plus.line.diagonal")
+      )
     }
 
     return SplitDiffPaneContext(
-      old: SplitDiffPaneDescriptor(title: oldTitle, detail: oldDetail, systemImage: "minus.line.diagonal"),
-      new: SplitDiffPaneDescriptor(title: newTitle, detail: entry.path, systemImage: "plus.line.diagonal")
+      old: SplitDiffPaneDescriptor(
+        title: oldHasFile ? "HEAD" : "No file",
+        detail: oldHasFile ? entry.originalPath ?? entry.path : nil,
+        systemImage: "minus.line.diagonal"
+      ),
+      new: SplitDiffPaneDescriptor(
+        title: newHasFile ? "Working tree" : "No file",
+        detail: newHasFile ? entry.path : nil,
+        systemImage: "plus.line.diagonal"
+      )
     )
   }
 
   static func changedFile(_ file: GitChangedFile, oldTitle: String, newTitle: String) -> SplitDiffPaneContext {
-    SplitDiffPaneContext(
+    let oldHasFile = file.statusCode != "A"
+    let newHasFile = file.statusCode != "D"
+
+    return SplitDiffPaneContext(
       old: SplitDiffPaneDescriptor(
-        title: oldTitle,
-        detail: file.oldPath ?? file.path,
+        title: oldHasFile ? oldTitle : "No file",
+        detail: oldHasFile ? file.oldPath ?? file.path : nil,
         systemImage: "minus.line.diagonal"
       ),
       new: SplitDiffPaneDescriptor(
-        title: newTitle,
-        detail: file.statusCode == "D" ? nil : file.path,
+        title: newHasFile ? newTitle : "No file",
+        detail: newHasFile ? file.path : nil,
         systemImage: "plus.line.diagonal"
       )
     )
