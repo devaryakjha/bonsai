@@ -5,19 +5,31 @@ struct GitClient {
   private let gitExecutable = "/usr/bin/env"
 
   func validateRepository(at url: URL) async throws {
-    _ = try await git(["rev-parse", "--show-toplevel"], in: url)
+    _ = try await git(Self.validateRepositoryArguments(), in: url)
+  }
+
+  static func validateRepositoryArguments() -> [String] {
+    ["rev-parse", "--show-toplevel"]
   }
 
   func cloneRepository(from remoteURL: String, to destination: URL) async throws -> String {
     let parent = destination.deletingLastPathComponent()
-    let output = try await git(["clone", remoteURL, destination.path(percentEncoded: false)], in: parent)
+    let output = try await git(Self.cloneRepositoryArguments(remoteURL: remoteURL, destination: destination), in: parent)
     return output.combinedOutput
+  }
+
+  static func cloneRepositoryArguments(remoteURL: String, destination: URL) -> [String] {
+    ["clone", remoteURL, destination.path(percentEncoded: false)]
   }
 
   func initializeRepository(at destination: URL) async throws -> String {
     try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
-    let output = try await git(["init"], in: destination)
+    let output = try await git(Self.initializeRepositoryArguments(), in: destination)
     return output.combinedOutput
+  }
+
+  static func initializeRepositoryArguments() -> [String] {
+    ["init"]
   }
 
   func snapshot(for repository: GitRepository, selectedCommit: GitCommit?) async throws -> RepositorySnapshot {
@@ -50,31 +62,51 @@ struct GitClient {
   }
 
   func status(in repository: GitRepository) async throws -> [GitStatusEntry] {
-    let output = try await git(["status", "--porcelain=v1", "--untracked-files=all"], in: repository.url)
+    let output = try await git(Self.statusArguments(), in: repository.url)
     return GitParsers.parseStatus(output.stdout)
   }
 
+  static func statusArguments() -> [String] {
+    ["status", "--porcelain=v1", "--untracked-files=all"]
+  }
+
   func commits(in repository: GitRepository) async throws -> [GitCommit] {
-    guard await commandSucceeds(["rev-parse", "--verify", "HEAD"], in: repository) else {
+    guard await commandSucceeds(Self.headVerificationArguments(), in: repository) else {
       return []
     }
 
+    let output = try await git(Self.commitListArguments(limit: 300), in: repository.url)
+    return GitParsers.parseCommits(output.stdout)
+  }
+
+  static func headVerificationArguments() -> [String] {
+    ["rev-parse", "--verify", "HEAD"]
+  }
+
+  static func commitListArguments(limit: Int) -> [String] {
     let format = "%x1f%H%x1f%h%x1f%an%x1f%ae%x1f%ad%x1f%s%x1f%D"
-    let output = try await git([
+    return [
       "log",
       "--graph",
       "--date=iso-strict",
       "--decorate=short",
       "--pretty=format:\(format)",
       "-n",
-      "300"
-    ], in: repository.url)
-    return GitParsers.parseCommits(output.stdout)
+      "\(limit)"
+    ]
   }
 
   func commit(revision: String, in repository: GitRepository) async throws -> GitCommit {
+    let output = try await git(Self.commitArguments(revision: revision), in: repository.url)
+    guard let commit = GitParsers.parseCommits(output.stdout).first else {
+      throw GitClientError.commitNotFound(revision)
+    }
+    return commit
+  }
+
+  static func commitArguments(revision: String) -> [String] {
     let format = "%H%x1f%h%x1f%an%x1f%ae%x1f%aI%x1f%s%x1f%D"
-    let output = try await git([
+    return [
       "log",
       "--date=iso-strict",
       "--decorate=short",
@@ -82,28 +114,32 @@ struct GitClient {
       "-n",
       "1",
       revision
-    ], in: repository.url)
-    guard let commit = GitParsers.parseCommits(output.stdout).first else {
-      throw GitClientError.commitNotFound(revision)
-    }
-    return commit
+    ]
   }
 
   func refs(in repository: GitRepository) async throws -> [GitRef] {
+    let output = try await git(Self.refsArguments(), in: repository.url)
+    return GitParsers.parseRefs(output.stdout)
+  }
+
+  static func refsArguments() -> [String] {
     let format = "%(refname)%1f%(objectname:short)%1f%(upstream:short)%1f%(HEAD)%1f%(upstream:track)"
-    let output = try await git([
+    return [
       "for-each-ref",
       "refs/heads",
       "refs/remotes",
       "refs/tags",
       "--format=\(format)"
-    ], in: repository.url)
-    return GitParsers.parseRefs(output.stdout)
+    ]
   }
 
   func remotes(in repository: GitRepository) async throws -> [GitRemote] {
-    let output = try await git(["remote", "-v"], in: repository.url)
+    let output = try await git(Self.remotesArguments(), in: repository.url)
     return GitParsers.parseRemotes(output.stdout)
+  }
+
+  static func remotesArguments() -> [String] {
+    ["remote", "-v"]
   }
 
   func addRemote(name: String, url: String, in repository: GitRepository) async throws -> String {
@@ -167,23 +203,35 @@ struct GitClient {
   }
 
   func stashes(in repository: GitRepository) async throws -> [GitStash] {
-    let output = try? await git(["stash", "list"], in: repository.url)
+    let output = try? await git(Self.stashListArguments(), in: repository.url)
     return GitParsers.parseStashes(output?.stdout ?? "")
   }
 
+  static func stashListArguments() -> [String] {
+    ["stash", "list"]
+  }
+
   func submodules(in repository: GitRepository) async throws -> [GitSubmodule] {
-    let output = try? await git(["submodule", "status", "--recursive"], in: repository.url)
+    let output = try? await git(Self.submoduleStatusArguments(), in: repository.url)
     return GitParsers.parseSubmodules(output?.stdout ?? "")
   }
 
+  static func submoduleStatusArguments() -> [String] {
+    ["submodule", "status", "--recursive"]
+  }
+
   func worktrees(in repository: GitRepository) async throws -> [GitWorktree] {
-    let output = try? await git(["worktree", "list", "--porcelain"], in: repository.url)
+    let output = try? await git(Self.worktreeListArguments(), in: repository.url)
     return GitParsers.parseWorktrees(output?.stdout ?? "")
   }
 
+  static func worktreeListArguments() -> [String] {
+    ["worktree", "list", "--porcelain"]
+  }
+
   func integrations(in repository: GitRepository) async -> GitIntegrationStatus {
-    async let lfsAvailable = commandSucceeds(["lfs", "version"], in: repository)
-    async let gitFlowAvailable = commandSucceeds(["flow", "version"], in: repository)
+    async let lfsAvailable = commandSucceeds(Self.lfsVersionArguments(), in: repository)
+    async let gitFlowAvailable = commandSucceeds(Self.gitFlowVersionArguments(), in: repository)
     async let lfsFiles = lfsFiles(in: repository)
     async let gpgSigning = configValue("commit.gpgsign", in: repository)
     async let signingKey = configValue("user.signingkey", in: repository)
@@ -206,31 +254,55 @@ struct GitClient {
     )
   }
 
+  static func lfsVersionArguments() -> [String] {
+    ["lfs", "version"]
+  }
+
+  static func gitFlowVersionArguments() -> [String] {
+    ["flow", "version"]
+  }
+
   func changedFiles(in repository: GitRepository, commit: GitCommit?) async throws -> [GitChangedFile] {
     guard let commit else { return [] }
-    let output = try await git(["show", "--format=", "--name-status", commit.hash], in: repository.url)
+    let output = try await git(Self.changedFilesArguments(commit: commit), in: repository.url)
     return GitParsers.parseChangedFiles(output.stdout)
+  }
+
+  static func changedFilesArguments(commit: GitCommit) -> [String] {
+    ["show", "--format=", "--name-status", commit.hash]
   }
 
   func changedFiles(in repository: GitRepository, stash: GitStash?) async throws -> [GitChangedFile] {
     guard let stash else { return [] }
-    let output = try await git(["stash", "show", "--name-status", stash.index], in: repository.url)
+    let output = try await git(Self.changedFilesArguments(stash: stash), in: repository.url)
     return GitParsers.parseChangedFiles(output.stdout)
+  }
+
+  static func changedFilesArguments(stash: GitStash) -> [String] {
+    ["stash", "show", "--name-status", stash.index]
   }
 
   func treeEntries(in repository: GitRepository, commit: GitCommit?, path: String = "") async throws -> [GitTreeEntry] {
     guard let commit else { return [] }
-    let target = path.isEmpty ? commit.hash : "\(commit.hash):\(path)"
-    let output = try await git(["ls-tree", "-z", target], in: repository.url)
+    let output = try await git(Self.treeEntriesArguments(commit: commit, path: path), in: repository.url)
     return GitParsers.parseTreeEntries(output.stdout, basePath: path)
   }
 
+  static func treeEntriesArguments(commit: GitCommit, path: String = "") -> [String] {
+    let target = path.isEmpty ? commit.hash : "\(commit.hash):\(path)"
+    return ["ls-tree", "-z", target]
+  }
+
   func blobText(path: String, commit: GitCommit, in repository: GitRepository) async throws -> String {
-    let output = try await gitData(["show", "\(commit.hash):\(path)"], in: repository.url)
+    let output = try await gitData(Self.blobTextArguments(path: path, commit: commit), in: repository.url)
     if let text = String(data: output.stdout, encoding: .utf8) {
       return text
     }
     return "Binary file preview is not available for \(path)."
+  }
+
+  static func blobTextArguments(path: String, commit: GitCommit) -> [String] {
+    ["show", "\(commit.hash):\(path)"]
   }
 
   func diffForWorkingTreeFile(
@@ -240,11 +312,24 @@ struct GitClient {
     whitespaceMode: DiffWhitespaceMode,
     in repository: GitRepository
   ) async throws -> String {
-    let args = staged
-      ? diffArguments(["--cached", "--", entry.path], algorithm: algorithm, whitespaceMode: whitespaceMode)
-      : diffArguments(["--", entry.path], algorithm: algorithm, whitespaceMode: whitespaceMode)
+    let args = Self.diffForWorkingTreeFileArguments(
+      entry,
+      staged: staged,
+      algorithm: algorithm,
+      whitespaceMode: whitespaceMode
+    )
     let output = try await git(args, in: repository.url)
     return output.stdout
+  }
+
+  static func diffForWorkingTreeFileArguments(
+    _ entry: GitStatusEntry,
+    staged: Bool,
+    algorithm: DiffAlgorithm,
+    whitespaceMode: DiffWhitespaceMode
+  ) -> [String] {
+    let suffix = staged ? ["--cached", "--", entry.path] : ["--", entry.path]
+    return diffArguments(suffix, algorithm: algorithm, whitespaceMode: whitespaceMode)
   }
 
   func diffForCommitFile(
@@ -254,7 +339,20 @@ struct GitClient {
     whitespaceMode: DiffWhitespaceMode,
     in repository: GitRepository
   ) async throws -> String {
-    let output = try await git([
+    let output = try await git(
+      Self.diffForCommitFileArguments(file, commit: commit, algorithm: algorithm, whitespaceMode: whitespaceMode),
+      in: repository.url
+    )
+    return output.stdout
+  }
+
+  static func diffForCommitFileArguments(
+    _ file: GitChangedFile,
+    commit: GitCommit,
+    algorithm: DiffAlgorithm,
+    whitespaceMode: DiffWhitespaceMode
+  ) -> [String] {
+    [
       "show",
       "--format=",
       "--no-ext-diff",
@@ -267,8 +365,7 @@ struct GitClient {
       commit.hash,
       "--",
       file.path
-    ], in: repository.url)
-    return output.stdout
+    ]
   }
 
   func diffForStashFile(
@@ -279,18 +376,27 @@ struct GitClient {
     in repository: GitRepository
   ) async throws -> String {
     let output = try await git(
-      diffArguments(["\(stash.index)^1", stash.index, "--", file.path], algorithm: algorithm, whitespaceMode: whitespaceMode),
+      Self.diffForStashFileArguments(file, stash: stash, algorithm: algorithm, whitespaceMode: whitespaceMode),
       in: repository.url
     )
     return output.stdout
   }
 
+  static func diffForStashFileArguments(
+    _ file: GitChangedFile,
+    stash: GitStash,
+    algorithm: DiffAlgorithm,
+    whitespaceMode: DiffWhitespaceMode
+  ) -> [String] {
+    diffArguments(["\(stash.index)^1", stash.index, "--", file.path], algorithm: algorithm, whitespaceMode: whitespaceMode)
+  }
+
   func imageDiffForWorkingTreeFile(_ entry: GitStatusEntry, in repository: GitRepository) async -> ImageDiffSnapshot {
     let oldPath = entry.originalPath ?? entry.path
-    let oldData = entry.isUntracked ? nil : try? await gitData(["show", "HEAD:\(oldPath)"], in: repository.url).stdout
+    let oldData = entry.isUntracked ? nil : try? await gitData(Self.workingTreeImageOldArguments(path: oldPath), in: repository.url).stdout
     let newData: Data?
     if entry.isStaged {
-      newData = try? await gitData(["show", ":\(entry.path)"], in: repository.url).stdout
+      newData = try? await gitData(Self.workingTreeImageIndexArguments(path: entry.path), in: repository.url).stdout
     } else if entry.kind == .deleted {
       newData = nil
     } else {
@@ -299,18 +405,42 @@ struct GitClient {
     return ImageDiffSnapshot(path: entry.path, oldData: oldData, newData: newData)
   }
 
+  static func workingTreeImageOldArguments(path: String) -> [String] {
+    ["show", "HEAD:\(path)"]
+  }
+
+  static func workingTreeImageIndexArguments(path: String) -> [String] {
+    ["show", ":\(path)"]
+  }
+
   func imageDiffForCommitFile(_ file: GitChangedFile, commit: GitCommit, in repository: GitRepository) async -> ImageDiffSnapshot {
-    let oldPath = file.oldPath ?? file.path
-    let oldData = try? await gitData(["show", "\(commit.hash)^:\(oldPath)"], in: repository.url).stdout
-    let newData = file.status.hasPrefix("D") ? nil : try? await gitData(["show", "\(commit.hash):\(file.path)"], in: repository.url).stdout
+    let oldData = try? await gitData(Self.commitImageOldArguments(file: file, commit: commit), in: repository.url).stdout
+    let newData = file.status.hasPrefix("D") ? nil : try? await gitData(Self.commitImageNewArguments(file: file, commit: commit), in: repository.url).stdout
     return ImageDiffSnapshot(path: file.path, oldData: oldData, newData: newData)
   }
 
-  func imageDiffForStashFile(_ file: GitChangedFile, stash: GitStash, in repository: GitRepository) async -> ImageDiffSnapshot {
+  static func commitImageOldArguments(file: GitChangedFile, commit: GitCommit) -> [String] {
     let oldPath = file.oldPath ?? file.path
-    let oldData = file.status.hasPrefix("A") ? nil : try? await gitData(["show", "\(stash.index)^1:\(oldPath)"], in: repository.url).stdout
-    let newData = file.status.hasPrefix("D") ? nil : try? await gitData(["show", "\(stash.index):\(file.path)"], in: repository.url).stdout
+    return ["show", "\(commit.hash)^:\(oldPath)"]
+  }
+
+  static func commitImageNewArguments(file: GitChangedFile, commit: GitCommit) -> [String] {
+    ["show", "\(commit.hash):\(file.path)"]
+  }
+
+  func imageDiffForStashFile(_ file: GitChangedFile, stash: GitStash, in repository: GitRepository) async -> ImageDiffSnapshot {
+    let oldData = file.status.hasPrefix("A") ? nil : try? await gitData(Self.stashImageOldArguments(file: file, stash: stash), in: repository.url).stdout
+    let newData = file.status.hasPrefix("D") ? nil : try? await gitData(Self.stashImageNewArguments(file: file, stash: stash), in: repository.url).stdout
     return ImageDiffSnapshot(path: file.path, oldData: oldData, newData: newData)
+  }
+
+  static func stashImageOldArguments(file: GitChangedFile, stash: GitStash) -> [String] {
+    let oldPath = file.oldPath ?? file.path
+    return ["show", "\(stash.index)^1:\(oldPath)"]
+  }
+
+  static func stashImageNewArguments(file: GitChangedFile, stash: GitStash) -> [String] {
+    ["show", "\(stash.index):\(file.path)"]
   }
 
   func stage(_ entry: GitStatusEntry, in repository: GitRepository) async throws -> String {
@@ -340,7 +470,7 @@ struct GitClient {
 
   func unstageAll(_ entries: [GitStatusEntry], in repository: GitRepository) async throws -> String {
     guard !entries.isEmpty else { return "" }
-    let hasHead = await commandSucceeds(["rev-parse", "--verify", "HEAD"], in: repository)
+    let hasHead = await commandSucceeds(Self.headVerificationArguments(), in: repository)
     return try await runRaw(Self.unstageAllArguments(entries, hasHead: hasHead), in: repository)
   }
 
@@ -774,7 +904,16 @@ struct GitClient {
     whitespaceMode: DiffWhitespaceMode,
     in repository: GitRepository
   ) async throws -> String {
-    let output = try await git([
+    let output = try await git(Self.stashPatchArguments(stash, algorithm: algorithm, whitespaceMode: whitespaceMode), in: repository.url)
+    return output.stdout
+  }
+
+  static func stashPatchArguments(
+    _ stash: GitStash,
+    algorithm: DiffAlgorithm,
+    whitespaceMode: DiffWhitespaceMode
+  ) -> [String] {
+    [
       "stash",
       "show",
       "--patch",
@@ -785,8 +924,7 @@ struct GitClient {
       "--diff-algorithm=\(algorithm.rawValue)",
     ] + whitespaceMode.gitArguments + [
       stash.index
-    ], in: repository.url)
-    return output.stdout
+    ]
   }
 
   func stashDrop(_ stash: GitStash, in repository: GitRepository) async throws -> String {
@@ -980,14 +1118,7 @@ struct GitClient {
   }
 
   func interactiveRebasePlan(in repository: GitRepository, count: Int = 10) async throws -> InteractiveRebasePlan {
-    let format = "%H%x1f%h%x1f%s"
-    let output = try await git([
-      "log",
-      "--reverse",
-      "--pretty=format:\(format)",
-      "-n",
-      "\(count)"
-    ], in: repository.url)
+    let output = try await git(Self.interactiveRebasePlanArguments(count: count), in: repository.url)
 
     let items = output.stdout
       .split(separator: "\n", omittingEmptySubsequences: true)
@@ -1001,8 +1132,23 @@ struct GitClient {
       throw GitClientError.notEnoughCommitsForInteractiveRebase
     }
 
-    let upstream = try? await git(["rev-parse", "--verify", "\(first.hash)^"], in: repository.url)
+    let upstream = try? await git(Self.rebaseUpstreamVerificationArguments(firstHash: first.hash), in: repository.url)
     return InteractiveRebasePlan(upstream: upstream == nil ? "--root" : "\(first.hash)^", items: items)
+  }
+
+  static func interactiveRebasePlanArguments(count: Int) -> [String] {
+    let format = "%H%x1f%h%x1f%s"
+    return [
+      "log",
+      "--reverse",
+      "--pretty=format:\(format)",
+      "-n",
+      "\(count)"
+    ]
+  }
+
+  static func rebaseUpstreamVerificationArguments(firstHash: String) -> [String] {
+    ["rev-parse", "--verify", "\(firstHash)^"]
   }
 
   func startInteractiveRebase(_ plan: InteractiveRebasePlan, in repository: GitRepository) async throws -> String {
@@ -1032,45 +1178,66 @@ struct GitClient {
   }
 
   func reflog(in repository: GitRepository) async throws -> String {
-    try await runRaw(["reflog", "--date=iso"], in: repository)
+    try await runRaw(Self.reflogArguments(), in: repository)
+  }
+
+  static func reflogArguments() -> [String] {
+    ["reflog", "--date=iso"]
   }
 
   func reflogEntries(in repository: GitRepository) async throws -> [GitReflogEntry] {
-    let output = try await git([
+    let output = try await git(Self.reflogEntriesArguments(), in: repository.url)
+    return GitParsers.parseReflogEntries(output.stdout)
+  }
+
+  static func reflogEntriesArguments() -> [String] {
+    [
       "log",
       "-g",
       "--pretty=format:%H%x1f%h%x1f%gd%x1f%gs%x1f%aI",
       "-n",
       "100"
-    ], in: repository.url)
-    return GitParsers.parseReflogEntries(output.stdout)
+    ]
   }
 
   func blame(path: String, in repository: GitRepository) async throws -> String {
-    let output = try await git(["blame", "--line-porcelain", "--", path], in: repository.url)
+    let output = try await git(Self.blameArguments(path: path), in: repository.url)
     return output.stdout
   }
 
   func blameLines(path: String, in repository: GitRepository) async throws -> [GitBlameLine] {
-    let output = try await git(["blame", "--line-porcelain", "--", path], in: repository.url)
+    let output = try await git(Self.blameArguments(path: path), in: repository.url)
     return GitParsers.parseBlameLines(output.stdout)
   }
 
+  static func blameArguments(path: String) -> [String] {
+    ["blame", "--line-porcelain", "--", path]
+  }
+
   func fileHistory(path: String, in repository: GitRepository) async throws -> String {
-    let output = try await git([
+    let output = try await git(Self.fileHistoryArguments(path: path), in: repository.url)
+    return output.stdout
+  }
+
+  static func fileHistoryArguments(path: String) -> [String] {
+    [
       "log",
       "--follow",
       "--date=iso",
       "--stat",
       "--",
       path
-    ], in: repository.url)
-    return output.stdout
+    ]
   }
 
   func fileHistoryEntries(path: String, in repository: GitRepository) async throws -> [GitFileHistoryEntry] {
+    let output = try await git(Self.fileHistoryEntriesArguments(path: path), in: repository.url)
+    return GitParsers.parseFileHistoryEntries(output.stdout)
+  }
+
+  static func fileHistoryEntriesArguments(path: String) -> [String] {
     let format = "%x1e%H%x1f%h%x1f%an%x1f%ae%x1f%aI%x1f%s"
-    let output = try await git([
+    return [
       "log",
       "--follow",
       "--date=iso-strict",
@@ -1078,21 +1245,24 @@ struct GitClient {
       "--name-status",
       "--",
       path
-    ], in: repository.url)
-    return GitParsers.parseFileHistoryEntries(output.stdout)
+    ]
   }
 
   func lineHistoryEntries(path: String, startLine: Int, endLine: Int, in repository: GitRepository) async throws -> [GitFileHistoryEntry] {
+    let output = try await git(Self.lineHistoryEntriesArguments(path: path, startLine: startLine, endLine: endLine), in: repository.url)
+    return GitParsers.parseLineHistoryEntries(output.stdout)
+  }
+
+  static func lineHistoryEntriesArguments(path: String, startLine: Int, endLine: Int) -> [String] {
     let format = "%x1e%H%x1f%h%x1f%an%x1f%ae%x1f%aI%x1f%s"
     let range = "\(max(startLine, 1)),\(max(endLine, startLine)):\(path)"
-    let output = try await git([
+    return [
       "log",
       "-L",
       range,
       "--date=iso-strict",
       "--pretty=format:\(format)"
-    ], in: repository.url)
-    return GitParsers.parseLineHistoryEntries(output.stdout)
+    ]
   }
 
   func git(_ arguments: [String], in directory: URL?, standardInput: String? = nil, environment: [String: String]? = nil) async throws -> ProcessOutput {
@@ -1103,7 +1273,7 @@ struct GitClient {
     try await runner.runData(gitExecutable, arguments: ["git"] + arguments, currentDirectory: directory)
   }
 
-  private func diffArguments(_ suffix: [String], algorithm: DiffAlgorithm, whitespaceMode: DiffWhitespaceMode) -> [String] {
+  private static func diffArguments(_ suffix: [String], algorithm: DiffAlgorithm, whitespaceMode: DiffWhitespaceMode) -> [String] {
     [
       "diff",
       "--no-ext-diff",
@@ -1126,7 +1296,7 @@ struct GitClient {
 
   private func conflictStageText(stage: Int, side: ConflictPreviewSide, path: String, in repository: GitRepository) async -> String {
     do {
-      let output = try await gitData(["show", ":\(stage):\(path)"], in: repository.url)
+      let output = try await gitData(Self.conflictStageTextArguments(stage: stage, path: path), in: repository.url)
       guard let text = String(data: output.stdout, encoding: .utf8) else {
         return "\(side.title) is not UTF-8 text."
       }
@@ -1134,6 +1304,10 @@ struct GitClient {
     } catch {
       return side.unavailableText
     }
+  }
+
+  static func conflictStageTextArguments(stage: Int, path: String) -> [String] {
+    ["show", ":\(stage):\(path)"]
   }
 
   private func limitedConflictPreview(_ text: String) -> String {
@@ -1147,9 +1321,13 @@ struct GitClient {
   }
 
   private func configValue(_ key: String, in repository: GitRepository) async -> String? {
-    guard let output = try? await git(["config", "--get", key], in: repository.url) else { return nil }
+    guard let output = try? await git(Self.configValueArguments(key), in: repository.url) else { return nil }
     let value = output.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
     return value.isEmpty ? nil : value
+  }
+
+  static func configValueArguments(_ key: String) -> [String] {
+    ["config", "--get", key]
   }
 
   private func inProgressOperation(in repository: GitRepository) async -> GitInProgressOperationStatus {
@@ -1171,7 +1349,7 @@ struct GitClient {
   }
 
   private func gitPathExists(_ path: String, in repository: GitRepository) async -> Bool {
-    guard let output = try? await git(["rev-parse", "--git-path", path], in: repository.url) else { return false }
+    guard let output = try? await git(Self.gitPathArguments(path), in: repository.url) else { return false }
     let resolvedPath = output.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !resolvedPath.isEmpty else { return false }
     let url: URL
@@ -1183,12 +1361,12 @@ struct GitClient {
     return FileManager.default.fileExists(atPath: url.path(percentEncoded: false))
   }
 
+  static func gitPathArguments(_ path: String) -> [String] {
+    ["rev-parse", "--git-path", path]
+  }
+
   private func bisectStatus(in repository: GitRepository) async -> GitBisectStatus {
-    guard let refs = try? await git([
-      "for-each-ref",
-      "refs/bisect",
-      "--format=%(refname)%1f%(objectname)%1f%(objectname:short)"
-    ], in: repository.url) else {
+    guard let refs = try? await git(Self.bisectRefsArguments(), in: repository.url) else {
       return GitBisectStatus()
     }
 
@@ -1209,8 +1387,8 @@ struct GitClient {
     status.active = status.badRevision != nil || !status.goodRevisions.isEmpty || !status.skippedRevisions.isEmpty
     guard status.active else { return status }
 
-    if let head = try? await git(["rev-parse", "HEAD"], in: repository.url),
-       let shortHead = try? await git(["rev-parse", "--short", "HEAD"], in: repository.url) {
+    if let head = try? await git(Self.headRevisionArguments(short: false), in: repository.url),
+       let shortHead = try? await git(Self.headRevisionArguments(short: true), in: repository.url) {
       status.currentHash = head.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
       status.currentShortHash = shortHead.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -1219,9 +1397,25 @@ struct GitClient {
     return status
   }
 
+  static func bisectRefsArguments() -> [String] {
+    [
+      "for-each-ref",
+      "refs/bisect",
+      "--format=%(refname)%1f%(objectname)%1f%(objectname:short)"
+    ]
+  }
+
+  static func headRevisionArguments(short: Bool) -> [String] {
+    short ? ["rev-parse", "--short", "HEAD"] : ["rev-parse", "HEAD"]
+  }
+
   private func lfsFiles(in repository: GitRepository) async -> [GitLFSFile] {
-    guard let output = try? await git(["lfs", "ls-files"], in: repository.url) else { return [] }
+    guard let output = try? await git(Self.lfsFilesArguments(), in: repository.url) else { return [] }
     return GitParsers.parseLFSFiles(output.stdout)
+  }
+
+  static func lfsFilesArguments() -> [String] {
+    ["lfs", "ls-files"]
   }
 }
 

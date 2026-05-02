@@ -2,6 +2,226 @@ import XCTest
 @testable import Bonsai
 
 final class GitClientCommandArgumentsTests: XCTestCase {
+  func testRepositorySetupAndRefreshReadArgumentsAreStable() {
+    let destination = URL(filePath: "/tmp/bonsai clone")
+
+    XCTAssertEqual(GitClient.validateRepositoryArguments(), ["rev-parse", "--show-toplevel"])
+    XCTAssertEqual(
+      GitClient.cloneRepositoryArguments(remoteURL: "git@example.com:mobile apps/bonsai.git", destination: destination),
+      ["clone", "git@example.com:mobile apps/bonsai.git", "/tmp/bonsai clone"]
+    )
+    XCTAssertEqual(GitClient.initializeRepositoryArguments(), ["init"])
+    XCTAssertEqual(GitClient.statusArguments(), ["status", "--porcelain=v1", "--untracked-files=all"])
+    XCTAssertEqual(GitClient.headVerificationArguments(), ["rev-parse", "--verify", "HEAD"])
+    XCTAssertEqual(
+      GitClient.commitListArguments(limit: 300),
+      [
+        "log",
+        "--graph",
+        "--date=iso-strict",
+        "--decorate=short",
+        "--pretty=format:%x1f%H%x1f%h%x1f%an%x1f%ae%x1f%ad%x1f%s%x1f%D",
+        "-n",
+        "300"
+      ]
+    )
+    XCTAssertEqual(
+      GitClient.commitArguments(revision: "feature/local branch"),
+      [
+        "log",
+        "--date=iso-strict",
+        "--decorate=short",
+        "--pretty=format:%H%x1f%h%x1f%an%x1f%ae%x1f%aI%x1f%s%x1f%D",
+        "-n",
+        "1",
+        "feature/local branch"
+      ]
+    )
+    XCTAssertEqual(
+      GitClient.refsArguments(),
+      [
+        "for-each-ref",
+        "refs/heads",
+        "refs/remotes",
+        "refs/tags",
+        "--format=%(refname)%1f%(objectname:short)%1f%(upstream:short)%1f%(HEAD)%1f%(upstream:track)"
+      ]
+    )
+    XCTAssertEqual(GitClient.remotesArguments(), ["remote", "-v"])
+    XCTAssertEqual(GitClient.stashListArguments(), ["stash", "list"])
+    XCTAssertEqual(GitClient.submoduleStatusArguments(), ["submodule", "status", "--recursive"])
+    XCTAssertEqual(GitClient.worktreeListArguments(), ["worktree", "list", "--porcelain"])
+  }
+
+  func testIntegrationReadArgumentsAreStable() {
+    XCTAssertEqual(GitClient.lfsVersionArguments(), ["lfs", "version"])
+    XCTAssertEqual(GitClient.gitFlowVersionArguments(), ["flow", "version"])
+    XCTAssertEqual(GitClient.configValueArguments("commit.gpgsign"), ["config", "--get", "commit.gpgsign"])
+    XCTAssertEqual(GitClient.gitPathArguments("rebase-merge"), ["rev-parse", "--git-path", "rebase-merge"])
+    XCTAssertEqual(
+      GitClient.bisectRefsArguments(),
+      [
+        "for-each-ref",
+        "refs/bisect",
+        "--format=%(refname)%1f%(objectname)%1f%(objectname:short)"
+      ]
+    )
+    XCTAssertEqual(GitClient.headRevisionArguments(short: false), ["rev-parse", "HEAD"])
+    XCTAssertEqual(GitClient.headRevisionArguments(short: true), ["rev-parse", "--short", "HEAD"])
+    XCTAssertEqual(GitClient.lfsFilesArguments(), ["lfs", "ls-files"])
+  }
+
+  func testInspectionReadArgumentsPreservePathsAndDiffModes() {
+    let commit = GitCommit(
+      hash: "abc123456789",
+      shortHash: "abc1234",
+      authorName: "Bonsai Tests",
+      authorEmail: "tests@example.com",
+      date: nil,
+      subject: "Polish diff",
+      decorations: []
+    )
+    let file = GitChangedFile(status: "R100", path: "Sources/New File.swift", oldPath: "Sources/Old File.swift")
+    let entry = statusEntry(path: "Sources/App View.swift", indexStatus: "M", workTreeStatus: " ")
+    let stash = GitStash(index: "stash@{2}", branch: "main", message: "WIP on main")
+
+    XCTAssertEqual(GitClient.changedFilesArguments(commit: commit), ["show", "--format=", "--name-status", "abc123456789"])
+    XCTAssertEqual(GitClient.changedFilesArguments(stash: stash), ["stash", "show", "--name-status", "stash@{2}"])
+    XCTAssertEqual(GitClient.treeEntriesArguments(commit: commit), ["ls-tree", "-z", "abc123456789"])
+    XCTAssertEqual(GitClient.treeEntriesArguments(commit: commit, path: "Sources/Bonsai"), ["ls-tree", "-z", "abc123456789:Sources/Bonsai"])
+    XCTAssertEqual(GitClient.blobTextArguments(path: "Sources/New File.swift", commit: commit), ["show", "abc123456789:Sources/New File.swift"])
+    XCTAssertEqual(
+      GitClient.diffForWorkingTreeFileArguments(entry, staged: true, algorithm: .histogram, whitespaceMode: .show),
+      [
+        "diff",
+        "--no-ext-diff",
+        "--no-color",
+        "--find-renames",
+        "--find-copies",
+        "--submodule=diff",
+        "--indent-heuristic",
+        "--diff-algorithm=histogram",
+        "--cached",
+        "--",
+        "Sources/App View.swift"
+      ]
+    )
+    XCTAssertEqual(
+      GitClient.diffForCommitFileArguments(file, commit: commit, algorithm: .patience, whitespaceMode: .ignoreChanges),
+      [
+        "show",
+        "--format=",
+        "--no-ext-diff",
+        "--no-color",
+        "--find-renames",
+        "--find-copies",
+        "--diff-algorithm=patience",
+        "--indent-heuristic",
+        "--ignore-space-change",
+        "abc123456789",
+        "--",
+        "Sources/New File.swift"
+      ]
+    )
+    XCTAssertEqual(
+      GitClient.diffForStashFileArguments(file, stash: stash, algorithm: .minimal, whitespaceMode: .ignoreAll),
+      [
+        "diff",
+        "--no-ext-diff",
+        "--no-color",
+        "--find-renames",
+        "--find-copies",
+        "--submodule=diff",
+        "--indent-heuristic",
+        "--diff-algorithm=minimal",
+        "--ignore-all-space",
+        "stash@{2}^1",
+        "stash@{2}",
+        "--",
+        "Sources/New File.swift"
+      ]
+    )
+    XCTAssertEqual(
+      GitClient.stashPatchArguments(stash, algorithm: .myers, whitespaceMode: .show),
+      [
+        "stash",
+        "show",
+        "--patch",
+        "--no-color",
+        "--find-renames",
+        "--find-copies",
+        "--include-untracked",
+        "--diff-algorithm=myers",
+        "stash@{2}"
+      ]
+    )
+  }
+
+  func testInspectionHistoryAndBlobReadArgumentsAreStable() {
+    let commit = GitCommit(
+      hash: "abc123456789",
+      shortHash: "abc1234",
+      authorName: "Bonsai Tests",
+      authorEmail: "tests@example.com",
+      date: nil,
+      subject: "Polish diff",
+      decorations: []
+    )
+    let file = GitChangedFile(status: "R100", path: "Sources/New File.swift", oldPath: "Sources/Old File.swift")
+    let stash = GitStash(index: "stash@{2}", branch: "main", message: "WIP on main")
+
+    XCTAssertEqual(GitClient.workingTreeImageOldArguments(path: "Assets/Logo.png"), ["show", "HEAD:Assets/Logo.png"])
+    XCTAssertEqual(GitClient.workingTreeImageIndexArguments(path: "Assets/Logo.png"), ["show", ":Assets/Logo.png"])
+    XCTAssertEqual(GitClient.commitImageOldArguments(file: file, commit: commit), ["show", "abc123456789^:Sources/Old File.swift"])
+    XCTAssertEqual(GitClient.commitImageNewArguments(file: file, commit: commit), ["show", "abc123456789:Sources/New File.swift"])
+    XCTAssertEqual(GitClient.stashImageOldArguments(file: file, stash: stash), ["show", "stash@{2}^1:Sources/Old File.swift"])
+    XCTAssertEqual(GitClient.stashImageNewArguments(file: file, stash: stash), ["show", "stash@{2}:Sources/New File.swift"])
+    XCTAssertEqual(GitClient.conflictStageTextArguments(stage: 2, path: "Sources/App View.swift"), ["show", ":2:Sources/App View.swift"])
+    XCTAssertEqual(GitClient.reflogArguments(), ["reflog", "--date=iso"])
+    XCTAssertEqual(
+      GitClient.reflogEntriesArguments(),
+      ["log", "-g", "--pretty=format:%H%x1f%h%x1f%gd%x1f%gs%x1f%aI", "-n", "100"]
+    )
+    XCTAssertEqual(GitClient.blameArguments(path: "Sources/App View.swift"), ["blame", "--line-porcelain", "--", "Sources/App View.swift"])
+    XCTAssertEqual(
+      GitClient.fileHistoryArguments(path: "Sources/App View.swift"),
+      ["log", "--follow", "--date=iso", "--stat", "--", "Sources/App View.swift"]
+    )
+    XCTAssertEqual(
+      GitClient.fileHistoryEntriesArguments(path: "Sources/App View.swift"),
+      [
+        "log",
+        "--follow",
+        "--date=iso-strict",
+        "--pretty=format:%x1e%H%x1f%h%x1f%an%x1f%ae%x1f%aI%x1f%s",
+        "--name-status",
+        "--",
+        "Sources/App View.swift"
+      ]
+    )
+    XCTAssertEqual(
+      GitClient.lineHistoryEntriesArguments(path: "Sources/App View.swift", startLine: 12, endLine: 18),
+      [
+        "log",
+        "-L",
+        "12,18:Sources/App View.swift",
+        "--date=iso-strict",
+        "--pretty=format:%x1e%H%x1f%h%x1f%an%x1f%ae%x1f%aI%x1f%s"
+      ]
+    )
+    XCTAssertEqual(
+      GitClient.interactiveRebasePlanArguments(count: 10),
+      [
+        "log",
+        "--reverse",
+        "--pretty=format:%H%x1f%h%x1f%s",
+        "-n",
+        "10"
+      ]
+    )
+    XCTAssertEqual(GitClient.rebaseUpstreamVerificationArguments(firstHash: "abc123456789"), ["rev-parse", "--verify", "abc123456789^"])
+  }
+
   func testBranchPublishAndForcePushArgumentsPreserveRefs() throws {
     let branch = GitRef(
       name: "refs/heads/feature/local branch",
