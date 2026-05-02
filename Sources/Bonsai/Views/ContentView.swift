@@ -345,6 +345,8 @@ private struct FileHistorySheet: View {
   var onCancel: () -> Void
   var onSelectCommit: (GitFileHistoryEntry) -> Void
 
+  @State private var searchText = ""
+
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       HStack {
@@ -358,17 +360,31 @@ private struct FileHistorySheet: View {
             .lineLimit(1)
         }
         Spacer()
+        InspectionSearchField(text: $searchText, accessibilityLabel: "Search file history")
         Button("Close", action: onCancel)
       }
 
-      List(entries) { entry in
-        FileHistoryRow(path: path, entry: entry, onSelectCommit: onSelectCommit)
+      if filteredEntries.isEmpty {
+        ContentUnavailableView(emptyTitle, systemImage: "magnifyingglass")
+          .frame(minHeight: 420)
+      } else {
+        List(filteredEntries) { entry in
+          FileHistoryRow(path: path, entry: entry, onSelectCommit: onSelectCommit)
+        }
+        .listStyle(.inset)
+        .frame(minHeight: 420)
       }
-      .listStyle(.inset)
-      .frame(minHeight: 420)
     }
     .padding(20)
     .frame(minWidth: 840, minHeight: 540)
+  }
+
+  private var filteredEntries: [GitFileHistoryEntry] {
+    InspectionFilter.fileHistory(entries, matching: searchText)
+  }
+
+  private var emptyTitle: String {
+    searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "No entries" : "No matches"
   }
 }
 
@@ -476,6 +492,8 @@ private struct BlameSheet: View {
   var onCancel: () -> Void
   var onSelectCommit: (GitBlameLine) -> Void
 
+  @State private var searchText = ""
+
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       HStack {
@@ -489,13 +507,20 @@ private struct BlameSheet: View {
             .lineLimit(1)
         }
         Spacer()
+        InspectionSearchField(text: $searchText, accessibilityLabel: "Search blame")
         Button("Close", action: onCancel)
       }
 
       ScrollView([.horizontal, .vertical]) {
         LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
           Section {
-            ForEach(document.lines) { line in
+            if filteredLines.isEmpty {
+              Text(emptyTitle)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(minWidth: 820, minHeight: 360)
+            }
+            ForEach(filteredLines) { line in
               BlameRow(path: document.path, line: line, onSelectCommit: onSelectCommit)
               Divider()
             }
@@ -513,6 +538,27 @@ private struct BlameSheet: View {
     }
     .padding(20)
     .frame(minWidth: 900, minHeight: 560)
+  }
+
+  private var filteredLines: [GitBlameLine] {
+    InspectionFilter.blameLines(document.lines, matching: searchText)
+  }
+
+  private var emptyTitle: String {
+    searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "No blame lines" : "No matches"
+  }
+}
+
+private struct InspectionSearchField: View {
+  @Binding var text: String
+  var accessibilityLabel: String
+
+  var body: some View {
+    TextField("Search", text: $text)
+      .textFieldStyle(.roundedBorder)
+      .controlSize(.small)
+      .frame(width: 220)
+      .accessibilityLabel(accessibilityLabel)
   }
 }
 
