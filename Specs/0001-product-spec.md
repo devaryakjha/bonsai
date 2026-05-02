@@ -89,7 +89,7 @@ does not replace a fresh completion audit against Fork before declaring v0 done.
 
 ## Source Notes
 
-- Fork public homepage feature overview, accessed 2026-05-02:
+- Fork public homepage feature overview, refreshed 2026-05-03:
   https://www.fork.dev/
-- Fork public macOS release notes, accessed 2026-05-02:
+- Fork public macOS release notes, refreshed 2026-05-03:
   https://fork.dev/releasenotes

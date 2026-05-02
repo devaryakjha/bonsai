@@ -5,6 +5,8 @@ final class FilePreviewSupportTests: XCTestCase {
   func testImagePathDetectionIsCaseInsensitive() {
     XCTAssertTrue(FilePreviewSupport.isImagePath("Assets/Icon.PNG"))
     XCTAssertTrue(FilePreviewSupport.isImagePath("photo.heic"))
+    XCTAssertTrue(FilePreviewSupport.isImagePath("diagram.SVG"))
+    XCTAssertTrue(FilePreviewSupport.isImagePath("texture.tga"))
     XCTAssertFalse(FilePreviewSupport.isImagePath("Sources/App.swift"))
   }
 

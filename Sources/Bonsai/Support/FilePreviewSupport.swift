@@ -2,7 +2,7 @@ import Foundation
 
 enum FilePreviewSupport {
   private static let imageExtensions: Set<String> = [
-    "png", "jpg", "jpeg", "gif", "tif", "tiff", "bmp", "webp", "heic", "heif", "ico"
+    "png", "jpg", "jpeg", "gif", "tif", "tiff", "tga", "bmp", "webp", "heic", "heif", "ico", "svg"
   ]
 
   static func isImagePath(_ path: String) -> Bool {

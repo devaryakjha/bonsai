@@ -36,10 +36,28 @@ covered by tests and the app verifier can still launch the bundle.
 | Provider notifications | Token-gated GitHub notifications, mark-read, browser targets, repository create/delete sheets, and provider error copy | Verified |
 | App identity and OSS shape | MIT license, contribution/security docs, README logo, bundled app icon, About panel branding, specs, and tests | Verified |
 
+## Latest Fork Release-Note Delta
+
+The parity target was refreshed against the Fork homepage and Mac release notes
+on 2026-05-03. The current public release-note page lists Fork 2.66 and newer
+surfaces that are not all represented in the older homepage matrix.
+
+| Release-note surface | Bonsai status |
+| --- | --- |
+| Multiple source code directories | Verified |
+| Hunk history from the file tree / selected-code history | Verified |
+| Worktree branch icon | Verified |
+| SVG and TGA image support | Verified |
+| Claude branch review and generated commit messages | Open |
+| External editor reveal/open-in integrations | Open |
+| Conflict-resolved diffs after external merge tools | Open |
+| Repository treemap and repository benchmark | Open |
+
 ## Remaining Completion Gates
 
 - Re-run a fresh parity scrape against current Fork public release notes before
-  declaring v0 complete.
+  declaring v0 complete, then close or explicitly defer every open release-note
+  delta above.
 - Run a large-repository performance pass on history loading and rich diff
   rendering, including split diff and image diff paths.
 - Do visual QA on the actual running app for sidebar density, toolbar wrapping,
