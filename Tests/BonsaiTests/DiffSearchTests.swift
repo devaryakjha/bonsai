@@ -25,6 +25,10 @@ final class DiffSearchTests: XCTestCase {
     XCTAssertEqual(DiffSearch.matchLabel(for: 0, query: "needle"), "No matches")
     XCTAssertEqual(DiffSearch.matchLabel(for: 1, query: "needle"), "1 match")
     XCTAssertEqual(DiffSearch.matchLabel(for: 2, query: "needle"), "2 matches")
+    XCTAssertEqual(
+      DiffSearch.matchLabel(for: DiffSearch.MatchSummary(count: 999, isLimited: true), query: "needle"),
+      "999+ matches"
+    )
   }
 
   func testMatchLabelSkipsVisibleTextForEmptyQueries() {
@@ -47,6 +51,18 @@ final class DiffSearchTests: XCTestCase {
     XCTAssertEqual(label, "2 matches")
   }
 
+  func testMatchLabelSkipsVisibleSummaryForEmptyQueries() {
+    var didEvaluateVisibleSummary = false
+
+    let label = DiffSearch.matchLabel(query: "  \n ") {
+      didEvaluateVisibleSummary = true
+      return DiffSearch.MatchSummary(count: 1, isLimited: false)
+    }
+
+    XCTAssertNil(label)
+    XCTAssertFalse(didEvaluateVisibleSummary)
+  }
+
   func testDiffSearchRangeLimitBoundsWork() {
     XCTAssertEqual(DiffSearch.ranges(in: "abc abc abc", query: "abc", limit: 2).count, 2)
   }
@@ -66,6 +82,38 @@ final class DiffSearchTests: XCTestCase {
     XCTAssertTrue(DiffSearch.visibleUnifiedText(from: text).contains("+new"))
   }
 
+  func testVisibleUnifiedMatchSummarySkipsHiddenPatchMetadata() {
+    let text = """
+    diff --git a/needle.swift b/needle.swift
+    index needle..needle 100644
+    --- a/needle.swift
+    +++ b/needle.swift
+    @@ -1 +1 @@
+    -needle
+    +needle
+    """
+
+    XCTAssertEqual(
+      DiffSearch.visibleUnifiedMatchSummary(from: text, query: "needle"),
+      DiffSearch.MatchSummary(count: 2, isLimited: false)
+    )
+  }
+
+  func testVisibleUnifiedMatchSummaryStopsAtLimit() {
+    let text = """
+    diff --git a/App.swift b/App.swift
+    @@ -1,4 +1,4 @@
+    +needle
+    +needle
+    +needle
+    """
+
+    XCTAssertEqual(
+      DiffSearch.visibleUnifiedMatchSummary(from: text, query: "needle", limit: 2),
+      DiffSearch.MatchSummary(count: 2, isLimited: true)
+    )
+  }
+
   func testVisibleSplitTextUsesDisplayedLineContent() {
     let split = SplitDiff(
       oldLines: [
@@ -78,5 +126,22 @@ final class DiffSearchTests: XCTestCase {
 
     XCTAssertEqual(DiffSearch.matchCount(in: DiffSearch.visibleSplitText(from: split), query: "value"), 2)
     XCTAssertEqual(DiffSearch.matchCount(in: DiffSearch.visibleSplitText(from: split), query: "1"), 0)
+  }
+
+  func testVisibleSplitMatchSummaryStopsAtLimit() {
+    let split = SplitDiff(
+      oldLines: [
+        SplitDiffLine(number: 1, text: "-needle value"),
+        SplitDiffLine(number: 2, text: "-needle value")
+      ],
+      newLines: [
+        SplitDiffLine(number: 1, text: "+needle value")
+      ]
+    )
+
+    XCTAssertEqual(
+      DiffSearch.visibleSplitMatchSummary(from: split, query: "needle", limit: 2),
+      DiffSearch.MatchSummary(count: 2, isLimited: true)
+    )
   }
 }

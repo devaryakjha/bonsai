@@ -5,6 +5,7 @@ enum DiffRenderPolicy {
   static let maxInlineHighlightTokenCount = 256
   static let maxInlineHighlightLineCount = 20_000
   static let maxSearchHighlightLineCount = 20_000
+  static let maxFindMatchCount = 999
   static let minPlaceholderColumns = 24
   static let maxPlaceholderColumns = 160
   static let splitPlaceholderText = "No line"

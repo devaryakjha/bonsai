@@ -270,16 +270,12 @@ private struct DiffHeaderControls: View {
 
   private var matchLabel: String? {
     DiffSearch.matchLabel(query: searchText) {
-      searchableText
-    }
-  }
-
-  private var searchableText: String {
-    switch store.diffDisplayMode {
-    case .unified:
-      return DiffSearch.visibleUnifiedText(from: store.diffText)
-    case .split:
-      return DiffSearch.visibleSplitText(from: store.splitDiff)
+      switch store.diffDisplayMode {
+      case .unified:
+        return DiffSearch.visibleUnifiedMatchSummary(from: store.diffText, query: searchText)
+      case .split:
+        return DiffSearch.visibleSplitMatchSummary(from: store.splitDiff, query: searchText)
+      }
     }
   }
 }
