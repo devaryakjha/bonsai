@@ -705,6 +705,43 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(commandResult?.isError, false)
   }
 
+  func testStoreFetchesSelectedRemoteBranch() async throws {
+    let remote = try await makeBareRepository()
+    let source = try await makeRepository()
+    try write("seed\n", to: source.appending(path: "README.md"))
+    try await commitAll(in: source, message: "Seed")
+    _ = try await client.git(["remote", "add", "origin", remote.path(percentEncoded: false)], in: source)
+    _ = try await client.git(["push", "-u", "origin", "main"], in: source)
+    _ = try await client.git(["symbolic-ref", "HEAD", "refs/heads/main"], in: remote)
+
+    let clone = temporaryDirectory()
+    _ = try await client.cloneRepository(from: remote.path(percentEncoded: false), to: clone)
+    let cloneRepository = GitRepository(path: clone.path(percentEncoded: false))
+    let refsBefore = try await client.refs(in: cloneRepository)
+    let oldRemoteMain = try XCTUnwrap(refsBefore.first { $0.shortName == "origin/main" && $0.kind == .remoteBranch })
+
+    try write("remote update\n", to: source.appending(path: "remote.txt"))
+    try await commitAll(in: source, message: "Remote update")
+    _ = try await client.git(["push", "origin", "main"], in: source)
+    let newHash = try await client.git(["rev-parse", "--short", "HEAD"], in: source).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: clone)
+    let remoteBranches = await store.remoteBranches
+    let remoteMain = try XCTUnwrap(remoteBranches.first { $0.shortName == "origin/main" })
+
+    await store.fetchRemoteBranch(remoteMain)
+
+    let refsAfter = try await client.refs(in: cloneRepository)
+    let updatedRemoteMain = try XCTUnwrap(refsAfter.first { $0.shortName == "origin/main" && $0.kind == .remoteBranch })
+    let commandResult = await store.commandResult
+    XCTAssertNotEqual(updatedRemoteMain.objectName, oldRemoteMain.objectName)
+    XCTAssertEqual(updatedRemoteMain.objectName, newHash)
+    XCTAssertEqual(commandResult?.title, "Fetch origin/main")
+    XCTAssertEqual(commandResult?.isError, false)
+  }
+
   func testLineChangeStagingLeavesOtherChangesUnstaged() async throws {
     let repo = try await makeRepository()
     let file = repo.appending(path: "file.txt")

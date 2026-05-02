@@ -52,6 +52,39 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(refs[3].kind, .tag)
   }
 
+  func testRemoteBranchRefsExposeRemoteAndBranchNames() {
+    let branch = GitRef(
+      name: "refs/remotes/origin/feature/dashboard",
+      shortName: "origin/feature/dashboard",
+      objectName: "abc123",
+      isHead: false,
+      kind: .remoteBranch
+    )
+    let remoteHead = GitRef(
+      name: "refs/remotes/origin/HEAD",
+      shortName: "origin/HEAD",
+      objectName: "def456",
+      isHead: false,
+      kind: .remoteBranch
+    )
+    let localBranch = GitRef(
+      name: "refs/heads/main",
+      shortName: "main",
+      objectName: "fed789",
+      isHead: true,
+      kind: .localBranch
+    )
+
+    XCTAssertEqual(branch.remoteName, "origin")
+    XCTAssertEqual(branch.remoteBranchName, "feature/dashboard")
+    XCTAssertEqual(branch.remoteTrackingLocalName, "feature/dashboard")
+    XCTAssertNil(remoteHead.remoteName)
+    XCTAssertNil(remoteHead.remoteBranchName)
+    XCTAssertNil(remoteHead.remoteTrackingLocalName)
+    XCTAssertNil(localBranch.remoteName)
+    XCTAssertNil(localBranch.remoteBranchName)
+  }
+
   func testParseCommitsKeepsGraphLaneAndSkipsContinuationRows() {
     let commits = GitParsers.parseCommits("""
     *   \u{1f}abc123456789\u{1f}abc1234\u{1f}Asha\u{1f}asha@example.test\u{1f}2026-05-02T08:50:16+05:30\u{1f}Merge branch\u{1f}HEAD -> main

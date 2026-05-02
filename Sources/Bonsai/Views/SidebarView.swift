@@ -386,6 +386,9 @@ struct SidebarView: View {
           Button("Checkout as Local Branch") {
             Task { await store.checkout(branch) }
           }
+          Button("Fetch Branch") {
+            Task { await store.fetchRemoteBranch(branch) }
+          }
           Button("Create Branch from Here...") {
             store.presentCreateBranch(from: branch)
           }

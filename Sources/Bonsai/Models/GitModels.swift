@@ -168,10 +168,22 @@ struct GitRef: Identifiable, Hashable {
   }
 
   var remoteTrackingLocalName: String? {
+    remoteBranchName
+  }
+
+  var remoteName: String? {
+    remoteBranchParts?.remote
+  }
+
+  var remoteBranchName: String? {
+    remoteBranchParts?.branch
+  }
+
+  private var remoteBranchParts: (remote: String, branch: String)? {
     guard kind == .remoteBranch else { return nil }
     let parts = shortName.split(separator: "/", maxSplits: 1).map(String.init)
     guard parts.count == 2, parts[1] != "HEAD" else { return nil }
-    return parts[1]
+    return (parts[0], parts[1])
   }
 }
 

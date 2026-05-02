@@ -122,6 +122,14 @@ struct GitClient {
     try await runRaw(["fetch", "--prune", remote.name], in: repository)
   }
 
+  func fetchRemoteBranch(_ branch: GitRef, in repository: GitRepository) async throws -> String {
+    guard let remoteName = branch.remoteName,
+          let branchName = branch.remoteBranchName else {
+      throw GitClientError.invalidRemoteBranch(branch.shortName)
+    }
+    return try await runRaw(["fetch", remoteName, "\(branchName):refs/remotes/\(remoteName)/\(branchName)"], in: repository)
+  }
+
   func stashes(in repository: GitRepository) async throws -> [GitStash] {
     let output = try? await git(["stash", "list"], in: repository.url)
     return GitParsers.parseStashes(output?.stdout ?? "")
@@ -783,6 +791,7 @@ struct GitClient {
 enum GitClientError: LocalizedError {
   case notEnoughCommitsForInteractiveRebase
   case commitNotFound(String)
+  case invalidRemoteBranch(String)
 
   var errorDescription: String? {
     switch self {
@@ -790,6 +799,8 @@ enum GitClientError: LocalizedError {
       return "At least two commits are required to start an interactive rebase."
     case .commitNotFound(let revision):
       return "Could not find commit \(revision)."
+    case .invalidRemoteBranch(let branch):
+      return "\(branch) is not a remote branch."
     }
   }
 }
