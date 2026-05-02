@@ -460,7 +460,7 @@ private struct ImageDiffPane: View {
           .scaledToFit()
           .frame(maxWidth: .infinity, maxHeight: .infinity)
           .padding()
-        Text(Self.metadata(for: image, data: data))
+        Text(ImageDiffMetadata.metadata(for: image, data: data))
           .font(.caption.monospacedDigit())
           .foregroundStyle(.secondary)
       } else {
@@ -471,13 +471,6 @@ private struct ImageDiffPane: View {
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
-  }
-
-  private static func metadata(for image: NSImage, data: Data) -> String {
-    let size = image.size
-    let formatter = ByteCountFormatter()
-    formatter.countStyle = .file
-    return "\(Int(size.width)) x \(Int(size.height)) - \(formatter.string(fromByteCount: Int64(data.count)))"
   }
 }
 
