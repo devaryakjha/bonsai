@@ -431,7 +431,7 @@ enum GitParsers {
     }
 
     for line in output.split(separator: "\n", omittingEmptySubsequences: false).map(String.init) {
-      if line.hasPrefix("diff --git") || line.hasPrefix("index ") || line.hasPrefix("---") || line.hasPrefix("+++") {
+      if line.hasPrefix("diff --git") || line.hasPrefix("index ") || line.hasPrefix("--- ") || line.hasPrefix("+++ ") {
         continue
       }
       if line.hasPrefix("@@") {

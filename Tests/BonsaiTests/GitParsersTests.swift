@@ -333,6 +333,36 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(split.newLines.map(\.number), [nil, 1, 2, 3, 4, 5])
   }
 
+  func testSplitDiffLinesSeparatePatchMarkersFromDisplayText() {
+    let deleted = SplitDiffLine(number: 2, text: "-old value")
+    let added = SplitDiffLine(number: 2, text: "+new value")
+    let context = SplitDiffLine(number: 1, text: " shared")
+
+    XCTAssertEqual(deleted.changeMarker, "-")
+    XCTAssertEqual(deleted.displayText, "old value")
+    XCTAssertEqual(added.changeMarker, "+")
+    XCTAssertEqual(added.displayText, "new value")
+    XCTAssertEqual(context.changeMarker, " ")
+    XCTAssertEqual(context.displayText, " shared")
+  }
+
+  func testParseSplitDiffKeepsHeaderLikeSourceLines() {
+    let split = GitParsers.parseSplitDiff("""
+    diff --git a/file.txt b/file.txt
+    --- a/file.txt
+    +++ b/file.txt
+    @@ -1,2 +1,2 @@
+    ---flag
+    +++flag
+     context
+    """)
+
+    XCTAssertEqual(split.oldLines.map(\.text), ["@@ -1,2 +1,2 @@", "---flag", " context"])
+    XCTAssertEqual(split.newLines.map(\.text), ["@@ -1,2 +1,2 @@", "+++flag", " context"])
+    XCTAssertEqual(split.oldLines[1].displayText, "--flag")
+    XCTAssertEqual(split.newLines[1].displayText, "++flag")
+  }
+
   func testParseLFSFilesExtractsOidAndPath() {
     let files = GitParsers.parseLFSFiles("""
     2f9c2a4d3b * Assets/image.png

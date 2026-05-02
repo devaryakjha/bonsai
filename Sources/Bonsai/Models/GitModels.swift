@@ -594,6 +594,23 @@ enum DiffDisplayMode: String, CaseIterable, Identifiable {
 struct SplitDiffLine: Hashable {
   var number: Int?
   var text: String
+
+  var changeMarker: String {
+    if text.hasPrefix("+") {
+      return "+"
+    }
+    if text.hasPrefix("-") {
+      return "-"
+    }
+    return " "
+  }
+
+  var displayText: String {
+    if text.hasPrefix("+") || text.hasPrefix("-") {
+      return String(text.dropFirst())
+    }
+    return text
+  }
 }
 
 struct SplitDiff: Hashable {
