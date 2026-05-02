@@ -325,6 +325,9 @@ private struct DiffView: View {
             onShowLineHistory: { change in
               Task { await store.showLineHistory(change) }
             },
+            onShowHunkHistory: { hunk in
+              Task { await store.showHunkHistory(hunk) }
+            },
             onDiscardHunk: { hunk in
               store.presentDiscardHunk(hunk)
             },
@@ -528,6 +531,7 @@ private struct HunkActionStrip: View {
   var onSelectHunk: (DiffHunk) -> Void
   var onSelectLine: (DiffLineChange) -> Void
   var onShowLineHistory: (DiffLineChange) -> Void
+  var onShowHunkHistory: (DiffHunk) -> Void
   var onDiscardHunk: (DiffHunk) -> Void
   var onDiscardLine: (DiffLineChange) -> Void
 
@@ -551,19 +555,35 @@ private struct HunkActionStrip: View {
           }
           .menuStyle(.borderedButton)
           .controlSize(.small)
+        }
 
-          Menu {
-            ForEach(lineChanges) { change in
-              Button(change.historyTitle) {
-                onShowLineHistory(change)
+        Menu {
+          if !hunksWithHistory.isEmpty {
+            Section("Hunks") {
+              ForEach(hunksWithHistory, id: \.hunk.id) { item in
+                Button("Hunk \(item.hunk.id + 1), \(item.range.title)") {
+                  onShowHunkHistory(item.hunk)
+                }
               }
             }
-          } label: {
-            Label("Line history", systemImage: "clock.arrow.circlepath")
           }
-          .menuStyle(.borderedButton)
-          .controlSize(.small)
+
+          if !lineChanges.isEmpty {
+            Section("Lines") {
+              ForEach(lineChanges) { change in
+                Button(change.historyTitle) {
+                  onShowLineHistory(change)
+                }
+              }
+            }
+          }
+        } label: {
+          Label("History", systemImage: "clock.arrow.circlepath")
         }
+        .menuStyle(.borderedButton)
+        .controlSize(.small)
+        .disabled(hunksWithHistory.isEmpty && lineChanges.isEmpty)
+        .help("Show hunk or line history")
 
         if !isStaged {
           Menu {
@@ -594,6 +614,13 @@ private struct HunkActionStrip: View {
       }
       .padding(.horizontal, 10)
       .padding(.vertical, 7)
+    }
+  }
+
+  private var hunksWithHistory: [(hunk: DiffHunk, range: DiffHunkHistoryRange)] {
+    hunks.compactMap { hunk in
+      guard let range = DiffHunkHistoryRange.range(for: hunk) else { return nil }
+      return (hunk, range)
     }
   }
 

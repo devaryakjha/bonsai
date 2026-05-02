@@ -1848,6 +1848,17 @@ final class RepositoryStore {
     let startLine = change.historyStartLine
     let endLine = change.historyEndLine
 
+    await showLineHistory(path: path, startLine: startLine, endLine: endLine)
+  }
+
+  func showHunkHistory(_ hunk: DiffHunk) async {
+    guard let path = selectedChangedFile?.path ?? selectedStatusEntry?.path,
+          let range = DiffHunkHistoryRange.range(for: hunk) else { return }
+
+    await showLineHistory(path: path, startLine: range.startLine, endLine: range.endLine)
+  }
+
+  private func showLineHistory(path: String, startLine: Int, endLine: Int) async {
     do {
       let entries = try await gitClient.lineHistoryEntries(
         path: path,
