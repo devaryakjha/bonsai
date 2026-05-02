@@ -373,6 +373,18 @@ final class GitClientCommandArgumentsTests: XCTestCase {
       GitClient.deleteTagArguments("v1.0 candidate"),
       ["tag", "-d", "v1.0 candidate"]
     )
+    XCTAssertEqual(
+      GitClient.renameTagResolveArguments(oldName: "v1.0 candidate"),
+      ["rev-parse", "refs/tags/v1.0 candidate"]
+    )
+    XCTAssertEqual(
+      GitClient.renameTagCreateArguments(newName: "v1.1 candidate", object: "abc1234"),
+      ["update-ref", "refs/tags/v1.1 candidate", "abc1234", ""]
+    )
+    XCTAssertEqual(
+      GitClient.renameTagDeleteArguments(oldName: "v1.0 candidate"),
+      ["update-ref", "-d", "refs/tags/v1.0 candidate"]
+    )
   }
 
   func testCheckoutUpstreamAndResetArgumentsPreserveRefs() {

@@ -760,15 +760,29 @@ struct GitClient {
   }
 
   func renameTag(from oldName: String, to newName: String, in repository: GitRepository) async throws -> String {
-    let oldRef = "refs/tags/\(oldName)"
-    let newRef = "refs/tags/\(newName)"
-    let object = try await git(["rev-parse", oldRef], in: repository.url).stdout
+    let object = try await git(Self.renameTagResolveArguments(oldName: oldName), in: repository.url).stdout
       .trimmingCharacters(in: .whitespacesAndNewlines)
-    let create = try await git(["update-ref", newRef, object, ""], in: repository.url)
-    let delete = try await git(["update-ref", "-d", oldRef], in: repository.url)
+    let create = try await git(Self.renameTagCreateArguments(newName: newName, object: object), in: repository.url)
+    let delete = try await git(Self.renameTagDeleteArguments(oldName: oldName), in: repository.url)
     return [create.combinedOutput, delete.combinedOutput]
       .filter { !$0.isEmpty }
       .joined(separator: "\n")
+  }
+
+  static func renameTagResolveArguments(oldName: String) -> [String] {
+    ["rev-parse", tagRefName(oldName)]
+  }
+
+  static func renameTagCreateArguments(newName: String, object: String) -> [String] {
+    ["update-ref", tagRefName(newName), object, ""]
+  }
+
+  static func renameTagDeleteArguments(oldName: String) -> [String] {
+    ["update-ref", "-d", tagRefName(oldName)]
+  }
+
+  private static func tagRefName(_ name: String) -> String {
+    "refs/tags/\(name)"
   }
 
   func checkout(_ ref: String, in repository: GitRepository) async throws -> String {
