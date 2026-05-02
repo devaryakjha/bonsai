@@ -10,37 +10,107 @@ struct SettingsView: View {
   @AppStorage("bonsai.githubToken") private var githubToken = ""
 
   var body: some View {
-    Form {
-      Section("General") {
-        Toggle("Show toolbar labels", isOn: $showToolbarLabels)
-        Toggle("Show commit row details", isOn: $showCommitRowDetails)
-        Toggle("Refresh after Git operations", isOn: $autoRefresh)
-      }
-
-      Section("Diff") {
-        Picker("Diff algorithm", selection: $diffAlgorithm) {
-          ForEach(DiffAlgorithm.allCases) { algorithm in
-            Text(algorithm.title).tag(algorithm.rawValue)
-          }
+    VStack(alignment: .leading, spacing: 22) {
+      SettingsSection("General") {
+        SettingsRow("Toolbar labels") {
+          Toggle("", isOn: $showToolbarLabels)
+            .labelsHidden()
+            .accessibilityLabel("Toolbar labels")
         }
-        Picker("Whitespace", selection: $diffWhitespaceMode) {
-          ForEach(DiffWhitespaceMode.allCases) { mode in
-            Text(mode.title).tag(mode.rawValue)
-          }
+        SettingsRow("Commit row details") {
+          Toggle("", isOn: $showCommitRowDetails)
+            .labelsHidden()
+            .accessibilityLabel("Commit row details")
         }
-        Picker("Diff view", selection: $diffDisplayMode) {
-          ForEach(DiffDisplayMode.allCases) { mode in
-            Text(mode.title).tag(mode.rawValue)
-          }
+        SettingsRow("Auto refresh") {
+          Toggle("", isOn: $autoRefresh)
+            .labelsHidden()
+            .accessibilityLabel("Auto refresh")
         }
       }
 
-      Section("Integrations") {
-        SecureField("GitHub token", text: $githubToken)
+      SettingsSection("Diff") {
+        SettingsRow("Algorithm") {
+          Picker("Algorithm", selection: $diffAlgorithm) {
+            ForEach(DiffAlgorithm.allCases) { algorithm in
+              Text(algorithm.title).tag(algorithm.rawValue)
+            }
+          }
+          .pickerStyle(.segmented)
+          .labelsHidden()
+          .accessibilityLabel("Algorithm")
+        }
+        SettingsRow("Whitespace") {
+          Picker("Whitespace", selection: $diffWhitespaceMode) {
+            ForEach(DiffWhitespaceMode.allCases) { mode in
+              Text(mode.title).tag(mode.rawValue)
+            }
+          }
+          .labelsHidden()
+          .accessibilityLabel("Whitespace")
+        }
+        SettingsRow("View") {
+          Picker("View", selection: $diffDisplayMode) {
+            ForEach(DiffDisplayMode.allCases) { mode in
+              Text(mode.title).tag(mode.rawValue)
+            }
+          }
+          .pickerStyle(.segmented)
+          .labelsHidden()
+          .accessibilityLabel("Diff view")
+        }
+      }
+
+      SettingsSection("Integrations") {
+        SettingsRow("GitHub token") {
+          SecureField("GitHub token", text: $githubToken)
+            .textFieldStyle(.roundedBorder)
+        }
       }
     }
-    .formStyle(.grouped)
-    .padding()
-    .frame(width: 420)
+    .padding(24)
+    .frame(width: 560)
+  }
+}
+
+private struct SettingsSection<Content: View>: View {
+  var title: String
+  var content: Content
+
+  init(_ title: String, @ViewBuilder content: () -> Content) {
+    self.title = title
+    self.content = content()
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      Text(title)
+        .font(.headline)
+        .lineLimit(1)
+      VStack(alignment: .leading, spacing: 8) {
+        content
+      }
+    }
+  }
+}
+
+private struct SettingsRow<Content: View>: View {
+  var title: String
+  var content: Content
+
+  init(_ title: String, @ViewBuilder content: () -> Content) {
+    self.title = title
+    self.content = content()
+  }
+
+  var body: some View {
+    HStack(alignment: .center, spacing: 16) {
+      Text(title)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .frame(width: 132, alignment: .leading)
+      content
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
   }
 }
