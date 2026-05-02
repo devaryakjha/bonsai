@@ -240,7 +240,8 @@ struct SidebarView: View {
           DisclosureGroup(isExpanded: $referencesExpanded) {
             referenceRows
           } label: {
-            SidebarDisclosureLabel(title: "Remote branches and tags", count: referenceCount, systemImage: "tag")
+            SidebarDisclosureLabel(title: "References", count: referenceCount, systemImage: "tag")
+              .help("Remote branches and tags")
           }
         }
 
