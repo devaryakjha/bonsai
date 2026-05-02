@@ -479,6 +479,24 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(refs.contains { $0.shortName == "origin/feature/publish" && $0.kind == .remoteBranch })
     _ = try await client.checkout("main", in: repository)
 
+    _ = try await client.createBranch(named: "feature/delete-remote", startPoint: nil, in: repository)
+    _ = try await client.checkout("feature/delete-remote", in: repository)
+    try write("delete remote\n", to: repo.appending(path: "delete-remote.txt"))
+    try await commitAll(in: repo, message: "Delete remote branch")
+    _ = try await client.runRaw(["push", "-u", "origin", "feature/delete-remote"], in: repository)
+    _ = try await client.checkout("main", in: repository)
+    _ = try await client.deleteBranch("feature/delete-remote", force: true, in: repository)
+    let deleteRemoteStore = await RepositoryStore()
+    await deleteRemoteStore.openRepository(at: repo)
+    let remoteBranches = await deleteRemoteStore.remoteBranches
+    let remoteBranchToDelete = try XCTUnwrap(remoteBranches.first { $0.shortName == "origin/feature/delete-remote" })
+    await MainActor.run {
+      deleteRemoteStore.presentDelete(remoteBranchToDelete)
+    }
+    await deleteRemoteStore.deleteRequestedRef()
+    refs = try await client.refs(in: repository)
+    XCTAssertFalse(refs.contains { $0.shortName == "origin/feature/delete-remote" && $0.kind == .remoteBranch })
+
     let remoteFeature = try XCTUnwrap(refs.first { $0.shortName == "origin/feature/remote" && $0.kind == .remoteBranch })
     XCTAssertEqual(remoteFeature.remoteTrackingLocalName, "feature/remote")
     _ = try await client.checkoutTrackingRemote(remoteFeature, in: repository)

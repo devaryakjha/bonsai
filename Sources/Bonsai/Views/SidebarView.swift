@@ -286,6 +286,9 @@ struct SidebarView: View {
             Task { await store.setCurrentBranchUpstream(branch) }
           }
           .disabled(store.currentBranch == nil)
+          Button("Delete", role: .destructive) {
+            store.presentDelete(branch)
+          }
         }
     }
 
