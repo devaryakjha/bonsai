@@ -1575,6 +1575,15 @@ final class RepositoryStore {
     recentCommitMessages.removeAll { $0 == message }
     recentCommitMessages.insert(message, at: 0)
     recentCommitMessages = Array(recentCommitMessages.prefix(20))
+    saveRecentCommitMessages()
+  }
+
+  func clearRecentCommitMessages() {
+    recentCommitMessages.removeAll()
+    saveRecentCommitMessages()
+  }
+
+  private func saveRecentCommitMessages() {
     if let data = try? JSONEncoder().encode(recentCommitMessages) {
       UserDefaults.standard.set(data, forKey: recentCommitMessagesKey)
     }

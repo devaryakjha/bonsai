@@ -232,6 +232,31 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(commandResult?.isError, true)
   }
 
+  func testClearRecentCommitMessagesKeepsDraft() async throws {
+    let previousRecentMessages = UserDefaults.standard.data(forKey: "bonsai.recentCommitMessages")
+    UserDefaults.standard.removeObject(forKey: "bonsai.recentCommitMessages")
+    defer {
+      if let previousRecentMessages {
+        UserDefaults.standard.set(previousRecentMessages, forKey: "bonsai.recentCommitMessages")
+      } else {
+        UserDefaults.standard.removeObject(forKey: "bonsai.recentCommitMessages")
+      }
+    }
+
+    let store = await RepositoryStore()
+    await MainActor.run {
+      store.recentCommitMessages = ["Fix parser", "Update UI"]
+      store.commitMessage = "Draft in progress"
+    }
+
+    await store.clearRecentCommitMessages()
+
+    let message = await store.commitMessage
+    let recentCommitMessages = await store.recentCommitMessages
+    XCTAssertEqual(message, "Draft in progress")
+    XCTAssertTrue(recentCommitMessages.isEmpty)
+  }
+
   func testStorePullRequiresUsableUpstream() async throws {
     let repo = try await makeRepository()
     try write("initial\n", to: repo.appending(path: "file.txt"))

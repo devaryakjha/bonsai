@@ -233,6 +233,10 @@ private struct CommitComposerView: View {
                 store.commitMessage = message
               }
             }
+            Divider()
+            Button("Clear Recent Messages", role: .destructive) {
+              store.clearRecentCommitMessages()
+            }
           } label: {
             Label("Recent messages", systemImage: "clock")
               .lineLimit(1)
