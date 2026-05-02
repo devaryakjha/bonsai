@@ -56,6 +56,18 @@ struct SplitDiffTextView: NSViewRepresentable {
         numberWidth: splitDiff.gutterNumberWidth,
         searchText: searchText
       ))
+      context.coordinator.oldSearchRanges = SplitDiffRenderedSearch.ranges(
+        in: splitDiff.oldLines,
+        counterpart: splitDiff.newLines,
+        numberWidth: splitDiff.gutterNumberWidth,
+        query: searchText
+      )
+      context.coordinator.newSearchRanges = SplitDiffRenderedSearch.ranges(
+        in: splitDiff.newLines,
+        counterpart: splitDiff.oldLines,
+        numberWidth: splitDiff.gutterNumberWidth,
+        query: searchText
+      )
     }
 
     guard context.coordinator.lastSearchNavigationRequest != searchNavigationRequest else { return }
@@ -75,6 +87,8 @@ struct SplitDiffTextView: NSViewRepresentable {
     var lastDiff: SplitDiff?
     var lastSearchText: String?
     var lastSearchNavigationRequest: DiffSearch.NavigationRequest?
+    var oldSearchRanges: [NSRange] = []
+    var newSearchRanges: [NSRange] = []
     private var lastPaneContext: SplitDiffPaneContext?
     private var didSetInitialDividerPosition = false
     private var isSyncing = false
@@ -162,43 +176,42 @@ struct SplitDiffTextView: NSViewRepresentable {
       switch request.direction {
       case .next:
         if oldIsActive {
-          if selectMatch(in: oldTextView, query: query, direction: .next, allowsWrap: false) { return }
-          if selectEdgeMatch(in: newTextView, query: query, direction: .next) { return }
-          _ = selectEdgeMatch(in: oldTextView, query: query, direction: .next)
+          if selectMatch(in: oldTextView, ranges: oldSearchRanges, direction: .next, allowsWrap: false) { return }
+          if selectEdgeMatch(in: newTextView, ranges: newSearchRanges, direction: .next) { return }
+          _ = selectEdgeMatch(in: oldTextView, ranges: oldSearchRanges, direction: .next)
         } else if newIsActive {
-          if selectMatch(in: newTextView, query: query, direction: .next, allowsWrap: false) { return }
-          if selectEdgeMatch(in: oldTextView, query: query, direction: .next) { return }
-          _ = selectEdgeMatch(in: newTextView, query: query, direction: .next)
+          if selectMatch(in: newTextView, ranges: newSearchRanges, direction: .next, allowsWrap: false) { return }
+          if selectEdgeMatch(in: oldTextView, ranges: oldSearchRanges, direction: .next) { return }
+          _ = selectEdgeMatch(in: newTextView, ranges: newSearchRanges, direction: .next)
         } else {
-          if selectEdgeMatch(in: oldTextView, query: query, direction: .next) { return }
-          _ = selectEdgeMatch(in: newTextView, query: query, direction: .next)
+          if selectEdgeMatch(in: oldTextView, ranges: oldSearchRanges, direction: .next) { return }
+          _ = selectEdgeMatch(in: newTextView, ranges: newSearchRanges, direction: .next)
         }
       case .previous:
         if newIsActive {
-          if selectMatch(in: newTextView, query: query, direction: .previous, allowsWrap: false) { return }
-          if selectEdgeMatch(in: oldTextView, query: query, direction: .previous) { return }
-          _ = selectEdgeMatch(in: newTextView, query: query, direction: .previous)
+          if selectMatch(in: newTextView, ranges: newSearchRanges, direction: .previous, allowsWrap: false) { return }
+          if selectEdgeMatch(in: oldTextView, ranges: oldSearchRanges, direction: .previous) { return }
+          _ = selectEdgeMatch(in: newTextView, ranges: newSearchRanges, direction: .previous)
         } else if oldIsActive {
-          if selectMatch(in: oldTextView, query: query, direction: .previous, allowsWrap: false) { return }
-          if selectEdgeMatch(in: newTextView, query: query, direction: .previous) { return }
-          _ = selectEdgeMatch(in: oldTextView, query: query, direction: .previous)
+          if selectMatch(in: oldTextView, ranges: oldSearchRanges, direction: .previous, allowsWrap: false) { return }
+          if selectEdgeMatch(in: newTextView, ranges: newSearchRanges, direction: .previous) { return }
+          _ = selectEdgeMatch(in: oldTextView, ranges: oldSearchRanges, direction: .previous)
         } else {
-          if selectEdgeMatch(in: newTextView, query: query, direction: .previous) { return }
-          _ = selectEdgeMatch(in: oldTextView, query: query, direction: .previous)
+          if selectEdgeMatch(in: newTextView, ranges: newSearchRanges, direction: .previous) { return }
+          _ = selectEdgeMatch(in: oldTextView, ranges: oldSearchRanges, direction: .previous)
         }
       }
     }
 
     private func selectMatch(
       in textView: NSTextView?,
-      query: String,
+      ranges: [NSRange],
       direction: DiffSearch.NavigationDirection,
       allowsWrap: Bool
     ) -> Bool {
       guard let textView,
             let range = DiffSearch.navigationRange(
-              in: textView.string,
-              query: query,
+              in: ranges,
               selectedRange: textView.selectedRange(),
               direction: direction,
               allowsWrap: allowsWrap
@@ -209,7 +222,7 @@ struct SplitDiffTextView: NSViewRepresentable {
 
     private func selectEdgeMatch(
       in textView: NSTextView?,
-      query: String,
+      ranges: [NSRange],
       direction: DiffSearch.NavigationDirection
     ) -> Bool {
       guard let textView else { return false }
@@ -221,8 +234,7 @@ struct SplitDiffTextView: NSViewRepresentable {
         selection = NSRange(location: (textView.string as NSString).length, length: 0)
       }
       guard let range = DiffSearch.navigationRange(
-        in: textView.string,
-        query: query,
+        in: ranges,
         selectedRange: selection,
         direction: direction,
         allowsWrap: false
@@ -354,7 +366,7 @@ struct SplitDiffTextView: NSViewRepresentable {
     for index in lines.indices {
       let line = lines[index].text
       let counterpartLine = counterpart.indices.contains(index) ? counterpart[index].text : ""
-      let renderedLine = renderLine(lines[index], numberWidth: numberWidth, counterpart: counterpartLine)
+      let renderedLine = SplitDiffRenderedSearch.renderLine(lines[index], numberWidth: numberWidth, counterpart: counterpartLine)
       var attributes: [NSAttributedString.Key: Any] = [
         .font: baseFont,
         .foregroundColor: NSColor.labelColor,
@@ -382,8 +394,7 @@ struct SplitDiffTextView: NSViewRepresentable {
         .backgroundColor: NSColor.textBackgroundColor.withAlphaComponent(0.35)
       ], range: gutterRange)
 
-      let isPlaceholder = line.isEmpty && !counterpartLine.isEmpty
-      if isPlaceholder {
+      if renderedLine.isPlaceholder {
         let placeholderRange = NSRange(
           location: renderedLine.contentOffset,
           length: min(DiffRenderPolicy.splitPlaceholderText.count, max(lineString.length - renderedLine.contentOffset, 0))
@@ -409,23 +420,18 @@ struct SplitDiffTextView: NSViewRepresentable {
           lineString.addAttribute(.backgroundColor, value: highlightColor, range: inlineRange)
         }
       }
-      if !isPlaceholder {
-        applySearchHighlights(to: lineString, line: renderedLine.text, searchText: searchText, lineCount: lines.count)
+      if !renderedLine.isPlaceholder {
+        applySearchHighlights(
+          to: lineString,
+          line: lines[index].displayText,
+          contentOffset: renderedLine.contentOffset,
+          searchText: searchText,
+          lineCount: lines.count
+        )
       }
       result.append(lineString)
     }
     return result
-  }
-
-  private static func renderLine(_ line: SplitDiffLine, numberWidth: Int, counterpart: String) -> (text: String, contentOffset: Int) {
-    let number = line.number.map { String($0).leftPadded(to: numberWidth) } ?? String(repeating: " ", count: numberWidth)
-    if line.text.isEmpty && !counterpart.isEmpty {
-      let prefix = "\(number)   │ "
-      let placeholder = DiffRenderPolicy.splitPlaceholder(counterpart: SplitDiffLine(number: nil, text: counterpart).displayText)
-      return (prefix + placeholder, prefix.count)
-    }
-    let prefix = "\(number) \(line.changeMarker) │ "
-    return (prefix + line.displayText, prefix.count)
   }
 
   private static func placeholderColor(for counterpart: String) -> NSColor {
@@ -474,6 +480,7 @@ struct SplitDiffTextView: NSViewRepresentable {
   private static func applySearchHighlights(
     to lineString: NSMutableAttributedString,
     line: String,
+    contentOffset: Int,
     searchText: String,
     lineCount: Int
   ) {
@@ -482,18 +489,13 @@ struct SplitDiffTextView: NSViewRepresentable {
     guard !ranges.isEmpty else { return }
 
     let highlightColor = NSColor.systemYellow.withAlphaComponent(0.38)
-    for range in ranges where NSMaxRange(range) <= lineString.length {
+    for range in ranges {
+      let offsetRange = NSRange(location: range.location + contentOffset, length: range.length)
+      guard NSMaxRange(offsetRange) <= lineString.length else { continue }
       lineString.addAttributes([
         .backgroundColor: highlightColor,
         .underlineStyle: NSUnderlineStyle.single.rawValue
-      ], range: range)
+      ], range: offsetRange)
     }
-  }
-}
-
-private extension String {
-  func leftPadded(to width: Int) -> String {
-    guard count < width else { return self }
-    return String(repeating: " ", count: width - count) + self
   }
 }

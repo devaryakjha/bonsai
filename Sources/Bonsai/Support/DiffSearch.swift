@@ -81,7 +81,20 @@ enum DiffSearch {
     direction: NavigationDirection,
     allowsWrap: Bool = true
   ) -> NSRange? {
-    let ranges = ranges(in: text, query: query)
+    navigationRange(
+      in: ranges(in: text, query: query),
+      selectedRange: selectedRange,
+      direction: direction,
+      allowsWrap: allowsWrap
+    )
+  }
+
+  static func navigationRange(
+    in ranges: [NSRange],
+    selectedRange: NSRange,
+    direction: NavigationDirection,
+    allowsWrap: Bool = true
+  ) -> NSRange? {
     guard !ranges.isEmpty else { return nil }
 
     switch direction {
