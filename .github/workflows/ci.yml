@@ -38,3 +38,6 @@ jobs:
 
       - name: Verify release archive
         run: ./script/package_release.sh --verify-archive
+
+      - name: Verify release artifacts
+        run: ./script/package_release.sh --verify-artifacts
