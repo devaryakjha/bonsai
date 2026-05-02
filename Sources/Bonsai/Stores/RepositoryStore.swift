@@ -1546,10 +1546,7 @@ final class RepositoryStore {
       case .localBranch:
         return try await gitClient.deleteBranch(ref.shortName, force: force, in: requiredRepository())
       case .remoteBranch:
-        let parts = ref.shortName.split(separator: "/", maxSplits: 1).map(String.init)
-        let remote = parts.first ?? "origin"
-        let branch = parts.count > 1 ? parts[1] : ref.shortName
-        return try await gitClient.runRaw(["push", remote, "--delete", branch], in: requiredRepository())
+        return try await gitClient.deleteRemoteBranch(ref, in: requiredRepository())
       case .tag:
         return try await gitClient.deleteTag(ref.shortName, in: requiredRepository())
       }

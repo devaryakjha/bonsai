@@ -461,9 +461,11 @@ struct SidebarView: View {
           }
           Divider()
           ReferenceCopyMenu(ref: branch)
-          Divider()
-          Button("Delete", role: .destructive) {
-            store.presentDelete(branch)
+          if branch.remoteBranchName != nil {
+            Divider()
+            Button("Delete", role: .destructive) {
+              store.presentDelete(branch)
+            }
           }
         }
     }

@@ -544,6 +544,18 @@ struct GitClient {
     try await runRaw(["branch", force ? "-D" : "-d", name], in: repository)
   }
 
+  func deleteRemoteBranch(_ branch: GitRef, in repository: GitRepository) async throws -> String {
+    try await runRaw(Self.deleteRemoteBranchArguments(branch), in: repository)
+  }
+
+  static func deleteRemoteBranchArguments(_ branch: GitRef) throws -> [String] {
+    guard let remoteName = branch.remoteName,
+          let branchName = branch.remoteBranchName else {
+      throw GitClientError.invalidRemoteBranch(branch.shortName)
+    }
+    return ["push", remoteName, "--delete", branchName]
+  }
+
   func deleteTag(_ name: String, in repository: GitRepository) async throws -> String {
     try await runRaw(["tag", "-d", name], in: repository)
   }
