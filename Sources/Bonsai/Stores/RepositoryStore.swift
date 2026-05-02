@@ -960,14 +960,26 @@ final class RepositoryStore {
 
   func githubWebURL(forTag tag: GitRef) -> URL? {
     guard tag.kind == .tag else { return nil }
-    let remote = snapshot.remotes.first(where: { $0.name == "origin" && $0.githubRepositoryTarget != nil })
-      ?? snapshot.remotes.first(where: { $0.githubRepositoryTarget != nil })
-    return remote?.githubTagWebURL(tagName: tag.shortName)
+    return preferredGitHubRemote?.githubTagWebURL(tagName: tag.shortName)
   }
 
   func openTagInBrowser(_ tag: GitRef) {
     guard let url = githubWebURL(forTag: tag) else { return }
     NSWorkspace.shared.open(url)
+  }
+
+  func githubWebURL(forCommit commit: GitCommit) -> URL? {
+    preferredGitHubRemote?.githubRepositoryTarget?.commitWebURL(commit.hash)
+  }
+
+  func openCommitInBrowser(_ commit: GitCommit) {
+    guard let url = githubWebURL(forCommit: commit) else { return }
+    NSWorkspace.shared.open(url)
+  }
+
+  private var preferredGitHubRemote: GitRemote? {
+    snapshot.remotes.first(where: { $0.name == "origin" && $0.githubRepositoryTarget != nil })
+      ?? snapshot.remotes.first(where: { $0.githubRepositoryTarget != nil })
   }
 
   func fetchRemoteBranch(_ branch: GitRef) async {

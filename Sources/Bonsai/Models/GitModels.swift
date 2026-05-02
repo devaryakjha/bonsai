@@ -623,6 +623,13 @@ struct GitHubRepositoryTarget: Hashable {
     treeWebURL(refName: tagName)
   }
 
+  func commitWebURL(_ hash: String) -> URL? {
+    guard let encodedHash = hash.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
+      return nil
+    }
+    return URL(string: "https://github.com/\(fullName)/commit/\(encodedHash)")
+  }
+
   private func treeWebURL(refName: String) -> URL? {
     guard let encodedRef = refName.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
       return nil

@@ -98,6 +98,14 @@ struct HistoryView: View {
                 store.selectCommit(commit)
                 store.presentCreateTag()
               }
+              if let webURL = store.githubWebURL(forCommit: commit) {
+                Button("Open in Browser") {
+                  store.openCommitInBrowser(commit)
+                }
+                Button("Copy Web URL") {
+                  PasteboardWriter.copy(webURL.absoluteString)
+                }
+              }
               Divider()
               CommitCopyMenu(commit: commit)
             }

@@ -324,6 +324,15 @@ final class GitHubNotificationTests: XCTestCase {
     )
   }
 
+  func testGitHubRepositoryTargetExposesCommitWebURL() {
+    let target = GitHubRepositoryTarget(owner: "example", name: "bonsai")
+
+    XCTAssertEqual(
+      target.commitWebURL("abc123def456")?.absoluteString,
+      "https://github.com/example/bonsai/commit/abc123def456"
+    )
+  }
+
   func testRemoteExposesFirstGitHubRepositoryTarget() {
     let remote = GitRemote(
       name: "origin",
@@ -379,6 +388,46 @@ final class GitHubNotificationTests: XCTestCase {
     ]
 
     XCTAssertEqual(store.githubWebURL(forTag: tag)?.absoluteString, "https://github.com/backup/bonsai/tree/release/v1.0")
+  }
+
+  @MainActor
+  func testStoreCommitWebURLPrefersOriginGitHubRemote() {
+    let store = RepositoryStore()
+    let commit = GitCommit(
+      hash: "abc123def456",
+      shortHash: "abc123d",
+      authorName: "Asha",
+      authorEmail: "asha@example.test",
+      date: nil,
+      subject: "Commit",
+      decorations: []
+    )
+    store.snapshot.remotes = [
+      GitRemote(name: "backup", fetchURL: "https://github.com/backup/bonsai.git", pushURL: nil),
+      GitRemote(name: "origin", fetchURL: "https://github.com/example/bonsai.git", pushURL: nil)
+    ]
+
+    XCTAssertEqual(store.githubWebURL(forCommit: commit)?.absoluteString, "https://github.com/example/bonsai/commit/abc123def456")
+  }
+
+  @MainActor
+  func testStoreCommitWebURLFallsBackToFirstGitHubRemote() {
+    let store = RepositoryStore()
+    let commit = GitCommit(
+      hash: "abc123def456",
+      shortHash: "abc123d",
+      authorName: "Asha",
+      authorEmail: "asha@example.test",
+      date: nil,
+      subject: "Commit",
+      decorations: []
+    )
+    store.snapshot.remotes = [
+      GitRemote(name: "origin", fetchURL: "git@gitlab.com:example/bonsai.git", pushURL: nil),
+      GitRemote(name: "backup", fetchURL: "git@github.com:backup/bonsai.git", pushURL: nil)
+    ]
+
+    XCTAssertEqual(store.githubWebURL(forCommit: commit)?.absoluteString, "https://github.com/backup/bonsai/commit/abc123def456")
   }
 
   @MainActor
