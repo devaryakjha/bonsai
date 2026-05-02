@@ -1,17 +1,21 @@
+import AppKit
 import SwiftUI
 
 struct ChangeStatusBadge: View {
   var code: String
   var title: String
+  var role: GitChangeStatusRole
 
   init(changedFile: GitChangedFile) {
     code = changedFile.statusCode
     title = changedFile.statusTitle
+    role = changedFile.statusRole
   }
 
   init(statusEntry: GitStatusEntry) {
     code = statusEntry.statusCode
     title = statusEntry.statusTitle
+    role = statusEntry.statusRole
   }
 
   var body: some View {
@@ -29,23 +33,26 @@ struct ChangeStatusBadge: View {
   }
 
   private var style: (foreground: Color, background: Color) {
-    switch code {
-    case "A":
-      return (.green, .green.opacity(0.16))
-    case "D":
-      return (.red, .red.opacity(0.16))
-    case "R":
-      return (.purple, .purple.opacity(0.16))
-    case "C":
-      return (.blue, .blue.opacity(0.14))
-    case "U":
-      return (.orange, .orange.opacity(0.18))
-    case "?":
+    switch role {
+    case .added:
+      return palette(.systemGreen)
+    case .deleted:
+      return palette(.systemRed)
+    case .modified:
+      return palette(.systemYellow)
+    case .renamed:
+      return palette(.systemPurple)
+    case .copied:
+      return palette(.systemBlue)
+    case .conflicted:
+      return palette(.systemOrange)
+    case .untracked, .unknown:
       return (.secondary, .secondary.opacity(0.12))
-    case "T", "M":
-      return (.yellow, .yellow.opacity(0.16))
-    default:
-      return (.secondary, .secondary.opacity(0.10))
     }
+  }
+
+  private func palette(_ color: NSColor) -> (foreground: Color, background: Color) {
+    let accent = Color(nsColor: color)
+    return (accent, accent.opacity(0.22))
   }
 }

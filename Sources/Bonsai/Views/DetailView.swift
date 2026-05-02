@@ -43,9 +43,12 @@ private struct DetailHeaderView: View {
   @ViewBuilder
   private var titleView: some View {
     if let file = store.selectedChangedFile, store.mainMode == .history {
-      Text(file.path)
-        .font(.headline)
-        .lineLimit(2)
+      HStack(alignment: .firstTextBaseline, spacing: 8) {
+        ChangeStatusBadge(changedFile: file)
+        Text(file.path)
+          .font(.headline)
+          .lineLimit(2)
+      }
       selectedChangedFileContext(file)
         .font(.caption)
         .foregroundStyle(.secondary)

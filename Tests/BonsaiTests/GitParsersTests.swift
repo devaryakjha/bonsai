@@ -207,10 +207,13 @@ final class GitParsersTests: XCTestCase {
 
     XCTAssertEqual(renamed.statusCode, "R")
     XCTAssertEqual(renamed.statusTitle, "Renamed (R100)")
+    XCTAssertEqual(renamed.statusRole, .renamed)
     XCTAssertEqual(copied.statusCode, "C")
     XCTAssertEqual(copied.statusTitle, "Copied (C75)")
+    XCTAssertEqual(copied.statusRole, .copied)
     XCTAssertEqual(modified.statusCode, "M")
     XCTAssertEqual(modified.statusTitle, "Modified")
+    XCTAssertEqual(modified.statusRole, .modified)
   }
 
   func testStatusEntryPresentationUsesGitStatusLetters() {
@@ -223,6 +226,19 @@ final class GitParsersTests: XCTestCase {
 
     XCTAssertEqual(entries.map(\.statusCode), ["A", "M", "D", "U"])
     XCTAssertEqual(entries.map(\.statusTitle), ["Added", "Modified", "Deleted", "Conflicted"])
+    XCTAssertEqual(entries.map(\.statusRole), [.added, .modified, .deleted, .conflicted])
+  }
+
+  func testChangeStatusRoleFollowsConventionalSemanticColors() {
+    XCTAssertEqual(GitChangeStatusRole(code: "A"), .added)
+    XCTAssertEqual(GitChangeStatusRole(code: "D"), .deleted)
+    XCTAssertEqual(GitChangeStatusRole(code: "M"), .modified)
+    XCTAssertEqual(GitChangeStatusRole(code: "T"), .modified)
+    XCTAssertEqual(GitChangeStatusRole(code: "R100"), .renamed)
+    XCTAssertEqual(GitChangeStatusRole(code: "C75"), .copied)
+    XCTAssertEqual(GitChangeStatusRole(code: "U"), .conflicted)
+    XCTAssertEqual(GitChangeStatusRole(code: "?"), .untracked)
+    XCTAssertEqual(GitChangeStatusRole(code: "X"), .unknown)
   }
 
   func testDeleteRefRequestCopyNamesReferenceKind() {
