@@ -160,6 +160,51 @@ enum GitParsers {
       }
   }
 
+  static func parseBlameLines(_ output: String) -> [GitBlameLine] {
+    var lines: [GitBlameLine] = []
+    var commitHash = ""
+    var originalLine = 0
+    var finalLine = 0
+    var author = ""
+    var authorMail: String?
+    var authorTime: Date?
+
+    for line in output.components(separatedBy: "\n") {
+      if let header = parseBlameHeader(line) {
+        commitHash = header.commitHash
+        originalLine = header.originalLine
+        finalLine = header.finalLine
+        author = ""
+        authorMail = nil
+        authorTime = nil
+      } else if line.hasPrefix("author ") {
+        author = String(line.dropFirst("author ".count))
+      } else if line.hasPrefix("author-mail ") {
+        authorMail = cleanMailAddress(String(line.dropFirst("author-mail ".count)))
+      } else if line.hasPrefix("author-time ") {
+        let rawTime = String(line.dropFirst("author-time ".count))
+        if let seconds = TimeInterval(rawTime) {
+          authorTime = Date(timeIntervalSince1970: seconds)
+        }
+      } else if line.hasPrefix("\t"), !commitHash.isEmpty {
+        let shortHash = String(commitHash.prefix(7))
+        lines.append(GitBlameLine(
+          id: lines.count,
+          commitHash: commitHash,
+          shortHash: shortHash,
+          author: author,
+          authorMail: authorMail,
+          authorTime: authorTime,
+          originalLine: originalLine,
+          finalLine: finalLine,
+          content: String(line.dropFirst())
+        ))
+      }
+    }
+
+    return lines
+  }
+
   static func parseSubmodules(_ output: String) -> [GitSubmodule] {
     output
       .split(separator: "\n", omittingEmptySubsequences: true)
@@ -452,6 +497,21 @@ enum GitParsers {
       }
     }
     return (ahead, behind, false)
+  }
+
+  private static func parseBlameHeader(_ line: String) -> (commitHash: String, originalLine: Int, finalLine: Int)? {
+    let parts = line.split(separator: " ", omittingEmptySubsequences: true)
+    guard parts.count >= 3,
+          parts[0].count >= 7,
+          let originalLine = Int(parts[1]),
+          let finalLine = Int(parts[2]) else {
+      return nil
+    }
+    return (String(parts[0]), originalLine, finalLine)
+  }
+
+  private static func cleanMailAddress(_ value: String) -> String {
+    value.trimmingCharacters(in: CharacterSet(charactersIn: "<>"))
   }
 
   private static func parseHunkRanges(_ header: String) -> (oldStart: Int, newStart: Int)? {

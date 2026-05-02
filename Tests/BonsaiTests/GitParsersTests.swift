@@ -141,6 +141,41 @@ final class GitParsersTests: XCTestCase {
     XCTAssertNotNil(entries[0].date)
   }
 
+  func testParseBlameLinesReadsPorcelainRows() {
+    let lines = GitParsers.parseBlameLines("""
+    abcdef1234567890abcdef1234567890abcdef12 1 1 1
+    author Asha
+    author-mail <asha@example.test>
+    author-time 1777700000
+    author-tz +0530
+    summary Initial file
+    filename Sources/App.swift
+    \tlet title = "Bonsai"
+    fedcba9876543210fedcba9876543210fedcba98 3 2 1
+    author Nikhil
+    author-mail <nikhil@example.test>
+    author-time 1777700300
+    author-tz +0530
+    summary Rename title
+    filename Sources/App.swift
+    \tlet subtitle = "Git"
+    """)
+
+    XCTAssertEqual(lines.count, 2)
+    XCTAssertEqual(lines[0].commitHash, "abcdef1234567890abcdef1234567890abcdef12")
+    XCTAssertEqual(lines[0].shortHash, "abcdef1")
+    XCTAssertEqual(lines[0].author, "Asha")
+    XCTAssertEqual(lines[0].authorMail, "asha@example.test")
+    XCTAssertEqual(lines[0].originalLine, 1)
+    XCTAssertEqual(lines[0].finalLine, 1)
+    XCTAssertEqual(lines[0].content, "let title = \"Bonsai\"")
+    XCTAssertNotNil(lines[0].authorTime)
+    XCTAssertEqual(lines[1].author, "Nikhil")
+    XCTAssertEqual(lines[1].originalLine, 3)
+    XCTAssertEqual(lines[1].finalLine, 2)
+    XCTAssertEqual(lines[1].content, "let subtitle = \"Git\"")
+  }
+
   func testParseDiffHunksReconstructsPatchPerHunk() {
     let hunks = GitParsers.parseDiffHunks("""
     diff --git a/file.txt b/file.txt

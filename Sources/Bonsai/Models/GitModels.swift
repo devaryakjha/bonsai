@@ -138,6 +138,25 @@ struct GitReflogEntry: Identifiable, Hashable {
   var id: String { "\(selector):\(hash)" }
 }
 
+struct GitBlameLine: Identifiable, Hashable {
+  var id: Int
+  var commitHash: String
+  var shortHash: String
+  var author: String
+  var authorMail: String?
+  var authorTime: Date?
+  var originalLine: Int
+  var finalLine: Int
+  var content: String
+}
+
+struct GitBlameDocument: Identifiable, Hashable {
+  var path: String
+  var lines: [GitBlameLine]
+
+  var id: String { path }
+}
+
 struct GitSubmodule: Identifiable, Hashable {
   var path: String
   var commit: String

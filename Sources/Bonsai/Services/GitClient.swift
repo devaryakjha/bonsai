@@ -469,6 +469,11 @@ struct GitClient {
     return output.stdout
   }
 
+  func blameLines(path: String, in repository: GitRepository) async throws -> [GitBlameLine] {
+    let output = try await git(["blame", "--line-porcelain", "--", path], in: repository.url)
+    return GitParsers.parseBlameLines(output.stdout)
+  }
+
   func fileHistory(path: String, in repository: GitRepository) async throws -> String {
     let output = try await git([
       "log",

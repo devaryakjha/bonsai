@@ -35,6 +35,7 @@ final class RepositoryStore {
   var stashChangedFiles: [GitChangedFile] = []
   var treeBlobText = ""
   var commandResult: CommandResult?
+  var blameDocument: GitBlameDocument?
   var gitHubNotifications: [GitHubNotification] = []
   var operationRequest: GitOperationRequest?
   var operationInput = ""
@@ -791,8 +792,12 @@ final class RepositoryStore {
 
   func showBlameForSelection() async {
     guard let path = selectedChangedFile?.path ?? selectedStatusEntry?.path else { return }
-    await runReadOnlyCommand(title: "Blame \(path)") {
-      try await gitClient.blame(path: path, in: requiredRepository())
+    do {
+      let lines = try await gitClient.blameLines(path: path, in: requiredRepository())
+      blameDocument = GitBlameDocument(path: path, lines: lines)
+    } catch {
+      commandResult = CommandResult(title: "Blame \(path)", output: error.localizedDescription, isError: true)
+      errorMessage = error.localizedDescription
     }
   }
 
@@ -1102,6 +1107,7 @@ final class RepositoryStore {
     stashChangedFiles = []
     diffText = ""
     commandResult = nil
+    blameDocument = nil
   }
 
   private func saveRecents() {

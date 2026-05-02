@@ -306,6 +306,14 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.blameDocument) { document in
+      BlameSheet(
+        document: document,
+        onCancel: {
+          store.blameDocument = nil
+        }
+      )
+    }
     .sheet(item: $store.reflogResetRequest) { request in
       ReflogResetSheet(
         request: request,
@@ -352,6 +360,110 @@ struct ContentView: View {
     } message: {
       Text(store.errorMessage ?? "")
     }
+  }
+}
+
+private struct BlameSheet: View {
+  var document: GitBlameDocument
+  var onCancel: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      HStack {
+        VStack(alignment: .leading, spacing: 3) {
+          Text("Blame")
+            .font(.title3)
+            .fontWeight(.semibold)
+          Text(document.path)
+            .font(.caption.monospaced())
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+        }
+        Spacer()
+        Button("Close", action: onCancel)
+      }
+
+      ScrollView([.horizontal, .vertical]) {
+        LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
+          Section {
+            ForEach(document.lines) { line in
+              BlameRow(line: line)
+              Divider()
+            }
+          } header: {
+            BlameHeaderRow()
+              .background(.regularMaterial)
+          }
+        }
+      }
+      .clipShape(RoundedRectangle(cornerRadius: 8))
+      .overlay {
+        RoundedRectangle(cornerRadius: 8)
+          .stroke(.quaternary)
+      }
+    }
+    .padding(20)
+    .frame(minWidth: 900, minHeight: 560)
+  }
+}
+
+private struct BlameHeaderRow: View {
+  var body: some View {
+    HStack(spacing: 12) {
+      Text("Line")
+        .frame(width: 52, alignment: .trailing)
+      Text("Commit")
+        .frame(width: 72, alignment: .leading)
+      Text("Author")
+        .frame(width: 160, alignment: .leading)
+      Text("Date")
+        .frame(width: 132, alignment: .leading)
+      Text("Content")
+        .frame(minWidth: 360, alignment: .leading)
+    }
+    .font(.caption.weight(.semibold))
+    .foregroundStyle(.secondary)
+    .padding(.horizontal, 10)
+    .padding(.vertical, 7)
+  }
+}
+
+private struct BlameRow: View {
+  var line: GitBlameLine
+
+  var body: some View {
+    HStack(alignment: .firstTextBaseline, spacing: 12) {
+      Text("\(line.finalLine)")
+        .foregroundStyle(.secondary)
+        .frame(width: 52, alignment: .trailing)
+
+      Text(line.shortHash)
+        .foregroundStyle(.secondary)
+        .frame(width: 72, alignment: .leading)
+        .textSelection(.enabled)
+
+      Text(line.author.isEmpty ? "Unknown" : line.author)
+        .frame(width: 160, alignment: .leading)
+        .lineLimit(1)
+        .help(line.authorMail ?? line.author)
+
+      Text(dateText)
+        .foregroundStyle(.secondary)
+        .frame(width: 132, alignment: .leading)
+
+      Text(line.content.isEmpty ? " " : line.content)
+        .frame(minWidth: 360, alignment: .leading)
+        .lineLimit(1)
+        .fixedSize(horizontal: true, vertical: false)
+        .textSelection(.enabled)
+    }
+    .font(.caption.monospaced())
+    .padding(.horizontal, 10)
+    .padding(.vertical, 5)
+  }
+
+  private var dateText: String {
+    line.authorTime?.formatted(date: .abbreviated, time: .shortened) ?? "-"
   }
 }
 
