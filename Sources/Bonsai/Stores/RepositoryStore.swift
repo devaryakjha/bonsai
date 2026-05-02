@@ -42,6 +42,7 @@ final class RepositoryStore {
   var operationRequest: GitOperationRequest?
   var operationInput = ""
   var branchRenameSource: GitRef?
+  var branchStartPoint: String?
   var stashBranchSource: GitStash?
   var conflictResolutionRequest: ConflictResolutionRequest?
   var discardChangeRequest: DiscardChangeRequest?
@@ -665,6 +666,7 @@ final class RepositoryStore {
 
   func presentCreateBranch() {
     branchRenameSource = nil
+    branchStartPoint = selectedCommit?.hash
     operationInput = ""
     operationRequest = GitOperationRequest(
       kind: .createBranch,
@@ -676,8 +678,23 @@ final class RepositoryStore {
     )
   }
 
+  func presentCreateBranch(from ref: GitRef) {
+    branchRenameSource = nil
+    branchStartPoint = ref.shortName
+    operationInput = ""
+    operationRequest = GitOperationRequest(
+      kind: .createBranch,
+      title: "Create branch",
+      message: "Create a branch from \(ref.shortName).",
+      placeholder: "feature/new-work",
+      defaultValue: "",
+      primaryActionTitle: "Create"
+    )
+  }
+
   func presentRenameBranch(_ branch: GitRef) {
     branchRenameSource = branch
+    branchStartPoint = nil
     operationInput = branch.shortName
     operationRequest = GitOperationRequest(
       kind: .renameBranch,
@@ -691,6 +708,7 @@ final class RepositoryStore {
 
   func presentCreateTag() {
     branchRenameSource = nil
+    branchStartPoint = nil
     operationInput = ""
     operationRequest = GitOperationRequest(
       kind: .createTag,
@@ -788,16 +806,18 @@ final class RepositoryStore {
     guard let request = operationRequest else { return }
     let value = operationInput.trimmingCharacters(in: .whitespacesAndNewlines)
     let branchToRename = branchRenameSource
+    let branchStartPoint = branchStartPoint
     let stashToBranch = stashBranchSource
     operationRequest = nil
     branchRenameSource = nil
+    self.branchStartPoint = nil
     stashBranchSource = nil
 
     switch request.kind {
     case .createBranch:
       guard !value.isEmpty else { return }
       await runMutation(title: "Create branch \(value)") {
-        try await gitClient.createBranch(named: value, startPoint: selectedCommit?.hash, in: requiredRepository())
+        try await gitClient.createBranch(named: value, startPoint: branchStartPoint, in: requiredRepository())
       }
     case .renameBranch:
       guard let branchToRename, !value.isEmpty else { return }

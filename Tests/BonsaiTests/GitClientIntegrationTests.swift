@@ -508,6 +508,18 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(refs.contains { $0.shortName == "origin/feature/publish" && $0.kind == .remoteBranch })
     _ = try await client.checkout("main", in: repository)
 
+    let createBranchStore = await RepositoryStore()
+    await createBranchStore.openRepository(at: repo)
+    let localBranchRefs = await createBranchStore.localBranches
+    let publishLocalRef = try XCTUnwrap(localBranchRefs.first { $0.shortName == "feature/publish" })
+    await MainActor.run {
+      createBranchStore.presentCreateBranch(from: publishLocalRef)
+      createBranchStore.operationInput = "feature/from-local"
+    }
+    await createBranchStore.confirmOperation()
+    refs = try await client.refs(in: repository)
+    XCTAssertTrue(refs.contains { $0.shortName == "feature/from-local" && $0.kind == .localBranch })
+
     _ = try await client.createBranch(named: "feature/delete-remote", startPoint: nil, in: repository)
     _ = try await client.checkout("feature/delete-remote", in: repository)
     try write("delete remote\n", to: repo.appending(path: "delete-remote.txt"))
@@ -527,6 +539,18 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertFalse(refs.contains { $0.shortName == "origin/feature/delete-remote" && $0.kind == .remoteBranch })
 
     let remoteFeature = try XCTUnwrap(refs.first { $0.shortName == "origin/feature/remote" && $0.kind == .remoteBranch })
+    let createRemoteBranchStore = await RepositoryStore()
+    await createRemoteBranchStore.openRepository(at: repo)
+    let remoteBranchRefs = await createRemoteBranchStore.remoteBranches
+    let remoteFeatureRef = try XCTUnwrap(remoteBranchRefs.first { $0.shortName == "origin/feature/remote" })
+    await MainActor.run {
+      createRemoteBranchStore.presentCreateBranch(from: remoteFeatureRef)
+      createRemoteBranchStore.operationInput = "feature/from-remote"
+    }
+    await createRemoteBranchStore.confirmOperation()
+    refs = try await client.refs(in: repository)
+    XCTAssertTrue(refs.contains { $0.shortName == "feature/from-remote" && $0.kind == .localBranch })
+
     XCTAssertEqual(remoteFeature.remoteTrackingLocalName, "feature/remote")
     _ = try await client.checkoutTrackingRemote(remoteFeature, in: repository)
     refs = try await client.refs(in: repository)
@@ -562,6 +586,17 @@ final class GitClientIntegrationTests: XCTestCase {
     _ = try await client.createTag(named: "v0.1.0", target: nil, in: repository)
     refs = try await client.refs(in: repository)
     XCTAssertTrue(refs.contains { $0.shortName == "v0.1.0" })
+    let createTagBranchStore = await RepositoryStore()
+    await createTagBranchStore.openRepository(at: repo)
+    let tagRefs = await createTagBranchStore.tags
+    let tagRef = try XCTUnwrap(tagRefs.first { $0.shortName == "v0.1.0" })
+    await MainActor.run {
+      createTagBranchStore.presentCreateBranch(from: tagRef)
+      createTagBranchStore.operationInput = "feature/from-tag"
+    }
+    await createTagBranchStore.confirmOperation()
+    refs = try await client.refs(in: repository)
+    XCTAssertTrue(refs.contains { $0.shortName == "feature/from-tag" && $0.kind == .localBranch })
     _ = try await client.deleteTag("v0.1.0", in: repository)
 
     try write("dirty\n", to: repo.appending(path: "README.md"))

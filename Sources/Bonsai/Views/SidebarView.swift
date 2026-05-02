@@ -114,6 +114,9 @@ struct SidebarView: View {
               Button("Checkout") {
                 Task { await store.checkout(branch) }
               }
+              Button("Create Branch from Here...") {
+                store.presentCreateBranch(from: branch)
+              }
               Button("Rename...") {
                 store.presentRenameBranch(branch)
               }
@@ -282,6 +285,9 @@ struct SidebarView: View {
           Button("Checkout as Local Branch") {
             Task { await store.checkout(branch) }
           }
+          Button("Create Branch from Here...") {
+            store.presentCreateBranch(from: branch)
+          }
           Button("Set as Upstream for Current Branch") {
             Task { await store.setCurrentBranchUpstream(branch) }
           }
@@ -298,6 +304,9 @@ struct SidebarView: View {
         .contextMenu {
           Button("Checkout") {
             Task { await store.checkout(tag) }
+          }
+          Button("Create Branch from Here...") {
+            store.presentCreateBranch(from: tag)
           }
           Button("Delete", role: .destructive) {
             store.presentDelete(tag)
