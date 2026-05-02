@@ -1740,6 +1740,32 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertFalse(worktrees.contains { $0.path.hasSuffix("/\(worktreeName)") })
   }
 
+  func testStorePrunesWorktreesAndRefreshesSnapshot() async throws {
+    let repo = try await makeRepository()
+    try write("root\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Initial")
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let worktreeURL = temporaryDirectory()
+    let worktreeName = worktreeURL.lastPathComponent
+    _ = try await client.createWorktree(at: worktreeURL.path(percentEncoded: false), startPoint: "HEAD", in: repository)
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+
+    var snapshot = await store.snapshot
+    XCTAssertTrue(snapshot.worktrees.contains { $0.path.hasSuffix("/\(worktreeName)") })
+
+    try FileManager.default.removeItem(at: worktreeURL)
+
+    await store.pruneWorktrees()
+
+    snapshot = await store.snapshot
+    let commandResult = await store.commandResult
+    XCTAssertFalse(snapshot.worktrees.contains { $0.path.hasSuffix("/\(worktreeName)") })
+    XCTAssertEqual(commandResult?.title, "Prune worktrees")
+  }
+
   func testStoreCreatesBranchWorktreeAndRefreshesSnapshot() async throws {
     let repo = try await makeRepository()
     try write("root\n", to: repo.appending(path: "README.md"))

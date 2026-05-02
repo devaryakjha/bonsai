@@ -18,4 +18,5 @@ while keeping worktree rows visually calm.
 
 - Integration coverage proves a missing linked worktree is removed from
   `git worktree list --porcelain` after pruning.
+- Store coverage proves pruning refreshes the visible worktree snapshot.
 - `swift test`, the app verifier, and whitespace checks pass.
