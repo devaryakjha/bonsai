@@ -24,6 +24,26 @@ final class RemoteManagementTests: XCTestCase {
     XCTAssertFalse(remotes.contains { $0.name == "backup" })
   }
 
+  func testFetchSingleRemoteUpdatesTrackingRefs() async throws {
+    let remote = try await makeBareRepository()
+    let source = try await makeRepository()
+    try write("remote\n", to: source.appending(path: "README.md"))
+    try await commitAll(in: source, message: "Remote seed")
+    _ = try await client.git(["remote", "add", "origin", remote.path(percentEncoded: false)], in: source)
+    _ = try await client.git(["push", "-u", "origin", "main"], in: source)
+
+    let repo = try await makeRepository()
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    _ = try await client.addRemote(name: "origin", url: remote.path(percentEncoded: false), in: repository)
+    let remotes = try await client.remotes(in: repository)
+    let origin = try XCTUnwrap(remotes.first { $0.name == "origin" })
+
+    _ = try await client.fetchRemote(origin, in: repository)
+
+    let refs = try await client.refs(in: repository)
+    XCTAssertTrue(refs.contains { $0.shortName == "origin/main" && $0.kind == .remoteBranch })
+  }
+
   private func makeRepository() async throws -> URL {
     let url = temporaryDirectory()
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
@@ -39,6 +59,16 @@ final class RemoteManagementTests: XCTestCase {
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     _ = try await client.git(["init", "--bare"], in: url)
     return url
+  }
+
+  private func commitAll(in repository: URL, message: String) async throws {
+    _ = try await client.git(["add", "."], in: repository)
+    _ = try await client.git(["commit", "-m", message], in: repository)
+  }
+
+  private func write(_ text: String, to url: URL) throws {
+    try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try text.write(to: url, atomically: true, encoding: .utf8)
   }
 
   private func temporaryDirectory() -> URL {

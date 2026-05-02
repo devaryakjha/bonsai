@@ -114,6 +114,10 @@ struct GitClient {
     try await runRaw(["remote", "remove", name], in: repository)
   }
 
+  func fetchRemote(_ remote: GitRemote, in repository: GitRepository) async throws -> String {
+    try await runRaw(["fetch", "--prune", remote.name], in: repository)
+  }
+
   func stashes(in repository: GitRepository) async throws -> [GitStash] {
     let output = try? await git(["stash", "list"], in: repository.url)
     return GitParsers.parseStashes(output?.stdout ?? "")

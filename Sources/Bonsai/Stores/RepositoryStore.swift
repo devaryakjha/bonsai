@@ -609,6 +609,12 @@ final class RepositoryStore {
     await removeRemote(request.remote)
   }
 
+  func fetchRemote(_ remote: GitRemote) async {
+    await runMutation(title: "Fetch \(remote.name)") {
+      try await gitClient.fetchRemote(remote, in: requiredRepository())
+    }
+  }
+
   private func removeRemote(_ remote: GitRemote) async {
     await runMutation(title: "Remove remote \(remote.name)") {
       try await gitClient.removeRemote(name: remote.name, in: requiredRepository())

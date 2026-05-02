@@ -331,6 +331,9 @@ struct SidebarView: View {
     ForEach(store.snapshot.remotes) { remote in
       RemoteSidebarRow(remote: remote)
       .contextMenu {
+        Button("Fetch") {
+          Task { await store.fetchRemote(remote) }
+        }
         Button("Edit URL") {
           store.presentEditRemote(remote)
         }
