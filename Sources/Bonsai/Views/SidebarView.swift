@@ -403,6 +403,9 @@ struct SidebarView: View {
               Button("Unlock") {
                 Task { await store.lfsUnlock(file) }
               }
+              Button("Force Unlock") {
+                Task { await store.lfsUnlock(file, force: true) }
+              }
             }
         }
       } label: {

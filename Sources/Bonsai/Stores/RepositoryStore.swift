@@ -1712,7 +1712,7 @@ final class RepositoryStore {
   }
 
   private func lfsUnlock(path: String, force: Bool) async {
-    await runMutation(title: "Git LFS unlock \(path)") {
+    await runMutation(title: force ? "Git LFS force unlock \(path)" : "Git LFS unlock \(path)") {
       try await gitClient.lfsUnlock(path: path, force: force, in: requiredRepository())
     }
   }

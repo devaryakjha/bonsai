@@ -239,6 +239,11 @@ struct BonsaiCommands: Commands {
           Task { await store.lfsUnlockSelectedFile() }
         }
         .disabled(!store.canRunSelectedFileLFSAction)
+
+        Button("Force Unlock Selected File") {
+          Task { await store.lfsUnlockSelectedFile(force: true) }
+        }
+        .disabled(!store.canRunSelectedFileLFSAction)
       }
 
       Button(store.snapshot.integrations.gpgSigningEnabled ? "Disable GPG Signing" : "Enable GPG Signing") {

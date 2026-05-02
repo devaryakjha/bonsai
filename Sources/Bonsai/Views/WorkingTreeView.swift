@@ -150,6 +150,10 @@ private struct StatusRow: View {
             store.selectStatusEntry(entry)
             Task { await store.lfsUnlockSelectedFile() }
           }
+          Button("Git LFS Force Unlock") {
+            store.selectStatusEntry(entry)
+            Task { await store.lfsUnlockSelectedFile(force: true) }
+          }
         }
         Divider()
         Button("Copy Path") {
@@ -212,6 +216,10 @@ private struct StatusRow: View {
         Button("Git LFS Unlock") {
           store.selectStatusEntry(entry)
           Task { await store.lfsUnlockSelectedFile() }
+        }
+        Button("Git LFS Force Unlock") {
+          store.selectStatusEntry(entry)
+          Task { await store.lfsUnlockSelectedFile(force: true) }
         }
       }
       Divider()

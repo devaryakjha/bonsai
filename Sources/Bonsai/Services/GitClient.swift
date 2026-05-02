@@ -629,12 +629,16 @@ struct GitClient {
   }
 
   func lfsUnlock(path: String, force: Bool, in repository: GitRepository) async throws -> String {
+    try await runRaw(Self.lfsUnlockArguments(path: path, force: force), in: repository)
+  }
+
+  static func lfsUnlockArguments(path: String, force: Bool) -> [String] {
     var args = ["lfs", "unlock"]
     if force {
       args.append("--force")
     }
     args.append(path)
-    return try await runRaw(args, in: repository)
+    return args
   }
 
   func setCommitSigning(_ enabled: Bool, in repository: GitRepository) async throws -> String {
