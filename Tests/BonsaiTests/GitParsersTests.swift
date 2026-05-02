@@ -283,8 +283,29 @@ final class GitParsersTests: XCTestCase {
     XCTAssertFalse(split.newText.contains("-two"))
     XCTAssertTrue(split.oldText.contains(" one"))
     XCTAssertTrue(split.newText.contains(" one"))
-    XCTAssertEqual(split.oldLines.map(\.number), [nil, 1, 2, nil, 3])
-    XCTAssertEqual(split.newLines.map(\.number), [nil, 1, nil, 2, 3])
+    XCTAssertEqual(split.oldLines.map(\.number), [nil, 1, 2, 3])
+    XCTAssertEqual(split.newLines.map(\.number), [nil, 1, 2, 3])
+  }
+
+  func testParseSplitDiffPairsReplacementBlocksAndKeepsLeftoversOneSided() {
+    let split = GitParsers.parseSplitDiff("""
+    diff --git a/file.txt b/file.txt
+    --- a/file.txt
+    +++ b/file.txt
+    @@ -1,4 +1,5 @@
+     one
+    -two
+    -three
+    +deux
+    +trois
+    +four
+     five
+    """)
+
+    XCTAssertEqual(split.oldLines.map(\.text), ["@@ -1,4 +1,5 @@", " one", "-two", "-three", "", " five"])
+    XCTAssertEqual(split.newLines.map(\.text), ["@@ -1,4 +1,5 @@", " one", "+deux", "+trois", "+four", " five"])
+    XCTAssertEqual(split.oldLines.map(\.number), [nil, 1, 2, 3, nil, 4])
+    XCTAssertEqual(split.newLines.map(\.number), [nil, 1, 2, 3, 4, 5])
   }
 
   func testParseLFSFilesExtractsOidAndPath() {

@@ -99,7 +99,7 @@ struct SplitDiffTextView: NSViewRepresentable {
     scrollView.autohidesScrollers = true
     scrollView.borderType = .noBorder
     scrollView.drawsBackground = true
-    scrollView.backgroundColor = .windowBackgroundColor
+    scrollView.backgroundColor = .textBackgroundColor
     scrollView.contentView.postsBoundsChangedNotifications = true
 
     let textView = NSTextView()
@@ -108,7 +108,7 @@ struct SplitDiffTextView: NSViewRepresentable {
     textView.isRichText = false
     textView.usesFindBar = true
     textView.drawsBackground = true
-    textView.backgroundColor = .windowBackgroundColor
+    textView.backgroundColor = .textBackgroundColor
     textView.textContainerInset = NSSize(width: 18, height: 16)
     textView.textContainer?.widthTracksTextView = false
     textView.textContainer?.containerSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
@@ -137,7 +137,8 @@ struct SplitDiffTextView: NSViewRepresentable {
     let numberWidth = max(3, lines.compactMap(\.number).map { "\($0)".count }.max() ?? 3)
     for index in lines.indices {
       let line = lines[index].text
-      let renderedLine = renderLine(lines[index], numberWidth: numberWidth)
+      let counterpartLine = counterpart.indices.contains(index) ? counterpart[index].text : ""
+      let renderedLine = renderLine(lines[index], numberWidth: numberWidth, counterpart: counterpartLine)
       let contentOffset = renderedLine.count - line.count
       var attributes: [NSAttributedString.Key: Any] = [
         .font: baseFont,
@@ -154,6 +155,8 @@ struct SplitDiffTextView: NSViewRepresentable {
       } else if line.hasPrefix("@@") {
         attributes[.foregroundColor] = NSColor.systemBlue
         attributes[.backgroundColor] = NSColor.systemBlue.withAlphaComponent(0.08)
+      } else if line.isEmpty && !counterpartLine.isEmpty {
+        attributes[.backgroundColor] = placeholderColor(for: counterpartLine)
       }
 
       let lineString = NSMutableAttributedString(string: renderedLine + "\n", attributes: attributes)
@@ -163,7 +166,6 @@ struct SplitDiffTextView: NSViewRepresentable {
         .backgroundColor: NSColor.textBackgroundColor.withAlphaComponent(0.35)
       ], range: gutterRange)
 
-      let counterpartLine = counterpart.indices.contains(index) ? counterpart[index].text : ""
       if let inlineRange = inlineRange(for: line, counterpart: counterpartLine, side: side, contentOffset: contentOffset) {
         let highlightColor = side == .new
           ? NSColor.systemGreen.withAlphaComponent(0.24)
@@ -175,9 +177,22 @@ struct SplitDiffTextView: NSViewRepresentable {
     return result
   }
 
-  private static func renderLine(_ line: SplitDiffLine, numberWidth: Int) -> String {
+  private static func renderLine(_ line: SplitDiffLine, numberWidth: Int, counterpart: String) -> String {
     let number = line.number.map { String($0).leftPadded(to: numberWidth) } ?? String(repeating: " ", count: numberWidth)
+    if line.text.isEmpty && !counterpart.isEmpty {
+      return "\(number) │ \(String(repeating: " ", count: max(24, counterpart.count)))"
+    }
     return "\(number) │ \(line.text)"
+  }
+
+  private static func placeholderColor(for counterpart: String) -> NSColor {
+    if counterpart.hasPrefix("+") {
+      return NSColor.systemGreen.withAlphaComponent(0.055)
+    }
+    if counterpart.hasPrefix("-") {
+      return NSColor.systemRed.withAlphaComponent(0.055)
+    }
+    return NSColor.textBackgroundColor.withAlphaComponent(0.35)
   }
 
   private static func inlineRange(for line: String, counterpart: String, side: SplitSide, contentOffset: Int) -> NSRange? {

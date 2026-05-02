@@ -403,12 +403,39 @@ enum GitParsers {
     var newLines: [SplitDiffLine] = []
     var oldLineNumber = 0
     var newLineNumber = 0
+    var pendingDeletions: [String] = []
+    var pendingAdditions: [String] = []
+
+    func flushPendingChanges() {
+      let rowCount = max(pendingDeletions.count, pendingAdditions.count)
+      guard rowCount > 0 else { return }
+
+      for index in 0..<rowCount {
+        if pendingDeletions.indices.contains(index) {
+          oldLines.append(SplitDiffLine(number: oldLineNumber, text: pendingDeletions[index]))
+          oldLineNumber += 1
+        } else {
+          oldLines.append(SplitDiffLine(number: nil, text: ""))
+        }
+
+        if pendingAdditions.indices.contains(index) {
+          newLines.append(SplitDiffLine(number: newLineNumber, text: pendingAdditions[index]))
+          newLineNumber += 1
+        } else {
+          newLines.append(SplitDiffLine(number: nil, text: ""))
+        }
+      }
+
+      pendingDeletions.removeAll(keepingCapacity: true)
+      pendingAdditions.removeAll(keepingCapacity: true)
+    }
 
     for line in output.split(separator: "\n", omittingEmptySubsequences: false).map(String.init) {
       if line.hasPrefix("diff --git") || line.hasPrefix("index ") || line.hasPrefix("---") || line.hasPrefix("+++") {
         continue
       }
       if line.hasPrefix("@@") {
+        flushPendingChanges()
         if let ranges = parseHunkRanges(line) {
           oldLineNumber = ranges.oldStart
           newLineNumber = ranges.newStart
@@ -416,22 +443,23 @@ enum GitParsers {
         oldLines.append(SplitDiffLine(number: nil, text: line))
         newLines.append(SplitDiffLine(number: nil, text: line))
       } else if line.hasPrefix("-") {
-        oldLines.append(SplitDiffLine(number: oldLineNumber, text: line))
-        newLines.append(SplitDiffLine(number: nil, text: ""))
-        oldLineNumber += 1
+        if !pendingAdditions.isEmpty {
+          flushPendingChanges()
+        }
+        pendingDeletions.append(line)
       } else if line.hasPrefix("+") {
-        oldLines.append(SplitDiffLine(number: nil, text: ""))
-        newLines.append(SplitDiffLine(number: newLineNumber, text: line))
-        newLineNumber += 1
+        pendingAdditions.append(line)
       } else if line.hasPrefix("\\ No newline") {
         continue
       } else {
+        flushPendingChanges()
         oldLines.append(SplitDiffLine(number: oldLineNumber, text: line))
         newLines.append(SplitDiffLine(number: newLineNumber, text: line))
         oldLineNumber += 1
         newLineNumber += 1
       }
     }
+    flushPendingChanges()
 
     return SplitDiff(oldLines: oldLines, newLines: newLines)
   }
