@@ -150,6 +150,82 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertFalse(canUnstageAfterUnstage)
   }
 
+  func testBulkStageCommandsMoveAllNonConflictedChanges() async throws {
+    let hadAutoRefreshPreference = UserDefaults.standard.object(forKey: "bonsai.autoRefresh") != nil
+    let previousAutoRefreshPreference = UserDefaults.standard.bool(forKey: "bonsai.autoRefresh")
+    UserDefaults.standard.set(true, forKey: "bonsai.autoRefresh")
+    defer {
+      if hadAutoRefreshPreference {
+        UserDefaults.standard.set(previousAutoRefreshPreference, forKey: "bonsai.autoRefresh")
+      } else {
+        UserDefaults.standard.removeObject(forKey: "bonsai.autoRefresh")
+      }
+    }
+
+    let repo = try await makeRepository()
+    let modified = repo.appending(path: "modified.txt")
+    let deleted = repo.appending(path: "deleted.txt")
+    let added = repo.appending(path: "added.txt")
+    try write("before\n", to: modified)
+    try write("remove me\n", to: deleted)
+    try await commitAll(in: repo, message: "Initial")
+    try write("after\n", to: modified)
+    try FileManager.default.removeItem(at: deleted)
+    try write("new\n", to: added)
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    let unstagedBeforeStage = await store.unstagedChanges
+    let canStageBefore = await store.canStageAll
+    let canUnstageBefore = await store.canUnstageAll
+    XCTAssertEqual(unstagedBeforeStage.count, 3)
+    XCTAssertTrue(canStageBefore)
+    XCTAssertFalse(canUnstageBefore)
+
+    await store.stageAll()
+
+    let stagedAfterStage = await store.stagedChanges
+    let unstagedAfterStage = await store.unstagedChanges
+    let canStageAfterStage = await store.canStageAll
+    let canUnstageAfterStage = await store.canUnstageAll
+    XCTAssertEqual(stagedAfterStage.count, 3)
+    XCTAssertTrue(unstagedAfterStage.isEmpty)
+    XCTAssertFalse(canStageAfterStage)
+    XCTAssertTrue(canUnstageAfterStage)
+
+    await store.unstageAll()
+
+    let stagedAfterUnstage = await store.stagedChanges
+    let unstagedAfterUnstage = await store.unstagedChanges
+    let canStageAfterUnstage = await store.canStageAll
+    let canUnstageAfterUnstage = await store.canUnstageAll
+    XCTAssertTrue(stagedAfterUnstage.isEmpty)
+    XCTAssertEqual(unstagedAfterUnstage.count, 3)
+    XCTAssertTrue(canStageAfterUnstage)
+    XCTAssertFalse(canUnstageAfterUnstage)
+  }
+
+  func testBulkUnstageWorksBeforeFirstCommit() async throws {
+    let repo = try await makeRepository()
+    let file = repo.appending(path: "first.txt")
+    try write("first\n", to: file)
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+
+    let untracked = try await client.status(in: repository)
+    XCTAssertEqual(untracked.count, 1)
+    XCTAssertTrue(untracked.first?.isUntracked == true)
+
+    _ = try await client.stageAll(untracked, in: repository)
+    let staged = try await client.status(in: repository)
+    XCTAssertEqual(staged.count, 1)
+    XCTAssertTrue(staged.first?.isStaged == true)
+
+    _ = try await client.unstageAll(staged, in: repository)
+    let unstaged = try await client.status(in: repository)
+    XCTAssertEqual(unstaged.count, 1)
+    XCTAssertTrue(unstaged.first?.isUntracked == true)
+  }
+
   func testWorkingTreeHunkCommitAndReadOnlyActions() async throws {
     let repo = try await makeRepository()
     let file = repo.appending(path: "file.txt")

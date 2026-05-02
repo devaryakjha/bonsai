@@ -82,6 +82,16 @@ struct BonsaiCommands: Commands {
       }
       .disabled(store.selectedRepository == nil || !store.canUnstageSelectedStatusEntry)
 
+      Button("Stage All") {
+        Task { await store.stageAll() }
+      }
+      .disabled(store.selectedRepository == nil || !store.canStageAll)
+
+      Button("Unstage All") {
+        Task { await store.unstageAll() }
+      }
+      .disabled(store.selectedRepository == nil || !store.canUnstageAll)
+
       Divider()
 
       Button("Create Branch...") {

@@ -178,6 +178,14 @@ final class RepositoryStore {
     selectedStatusEntry?.isStaged == true
   }
 
+  var canStageAll: Bool {
+    !unstagedChanges.isEmpty
+  }
+
+  var canUnstageAll: Bool {
+    !stagedChanges.isEmpty
+  }
+
   var stagedChanges: [GitStatusEntry] {
     snapshot.status.filter(\.isStaged)
   }
@@ -574,6 +582,14 @@ final class RepositoryStore {
     await stage(selectedStatusEntry)
   }
 
+  func stageAll() async {
+    let entries = unstagedChanges
+    guard !entries.isEmpty else { return }
+    await runMutation(title: "Stage all") {
+      try await gitClient.stageAll(entries, in: requiredRepository())
+    }
+  }
+
   func unstage(_ entry: GitStatusEntry) async {
     await runMutation(title: "Unstage \(entry.path)") {
       try await gitClient.unstage(entry, in: requiredRepository())
@@ -583,6 +599,14 @@ final class RepositoryStore {
   func unstageSelectedStatusEntry() async {
     guard canUnstageSelectedStatusEntry, let selectedStatusEntry else { return }
     await unstage(selectedStatusEntry)
+  }
+
+  func unstageAll() async {
+    let entries = stagedChanges
+    guard !entries.isEmpty else { return }
+    await runMutation(title: "Unstage all") {
+      try await gitClient.unstageAll(entries, in: requiredRepository())
+    }
   }
 
   func presentDiscardChange(_ entry: GitStatusEntry) {

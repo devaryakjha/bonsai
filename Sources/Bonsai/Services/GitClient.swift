@@ -241,8 +241,25 @@ struct GitClient {
     return output.combinedOutput
   }
 
+  func stageAll(_ entries: [GitStatusEntry], in repository: GitRepository) async throws -> String {
+    guard !entries.isEmpty else { return "" }
+    let output = try await git(["add", "--all", "--"] + entries.map(\.path), in: repository.url)
+    return output.combinedOutput
+  }
+
   func unstage(_ entry: GitStatusEntry, in repository: GitRepository) async throws -> String {
     let output = try await git(["restore", "--staged", "--", entry.path], in: repository.url)
+    return output.combinedOutput
+  }
+
+  func unstageAll(_ entries: [GitStatusEntry], in repository: GitRepository) async throws -> String {
+    guard !entries.isEmpty else { return "" }
+    let paths = entries.map(\.path)
+    if await commandSucceeds(["rev-parse", "--verify", "HEAD"], in: repository) {
+      let output = try await git(["restore", "--staged", "--"] + paths, in: repository.url)
+      return output.combinedOutput
+    }
+    let output = try await git(["rm", "--cached", "-r", "--"] + paths, in: repository.url)
     return output.combinedOutput
   }
 
