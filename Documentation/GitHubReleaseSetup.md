@@ -3,6 +3,20 @@
 This guide configures the manual `Release` workflow. It is only needed for
 maintainers who can publish Bonsai's notarized macOS artifact.
 
+## Runner
+
+The manual release workflow targets the Jarvis self-hosted runner with these
+labels:
+
+- `self-hosted`
+- `macOS`
+- `ARM64`
+- `jarvis`
+
+Jarvis should be online and available to the `devaryakjha/bonsai` repository
+before starting the workflow. Regular pull request and push validation stays on
+GitHub-hosted macOS runners and does not receive release credentials.
+
 ## Protected Environment
 
 Create a GitHub Actions environment named `release` and put the release secrets

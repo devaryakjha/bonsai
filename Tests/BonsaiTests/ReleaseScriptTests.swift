@@ -75,6 +75,10 @@ final class ReleaseScriptTests: XCTestCase {
     let uploadRange = workflow.range(of: "uses: actions/upload-artifact@v4")
 
     XCTAssertTrue(workflow.contains("environment: release"))
+    XCTAssertTrue(workflow.contains("- self-hosted"))
+    XCTAssertTrue(workflow.contains("- macOS"))
+    XCTAssertTrue(workflow.contains("- ARM64"))
+    XCTAssertTrue(workflow.contains("- jarvis"))
     XCTAssertTrue(workflow.contains("dist/release/Bonsai.zip"))
     XCTAssertTrue(workflow.contains("dist/release/Bonsai.release.plist"))
     XCTAssertTrue(workflow.contains("./script/package_release.sh --verify-artifacts"))

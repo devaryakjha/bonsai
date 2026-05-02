@@ -18,7 +18,11 @@ permissions:
 jobs:
   notarize:
     name: Notarized macOS artifact
-    runs-on: macos-14
+    runs-on:
+      - self-hosted
+      - macOS
+      - ARM64
+      - jarvis
     environment: release
 
     env:

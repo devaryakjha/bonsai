@@ -9,6 +9,8 @@ available, without weakening local release validation.
 ## Requirements
 
 - Add a manual GitHub Actions workflow for credentialed release packaging.
+- Run the credentialed release workflow on the Jarvis self-hosted macOS ARM64
+  runner instead of a GitHub-hosted runner.
 - Keep regular pull request and push CI credential-free.
 - Import the Developer ID certificate from repository or environment secrets
   into a temporary keychain.
@@ -25,6 +27,8 @@ available, without weakening local release validation.
 ## Acceptance
 
 - `.github/workflows/release.yml` is manual-only.
+- `.github/workflows/release.yml` targets the Jarvis self-hosted runner labels:
+  `self-hosted`, `macOS`, `ARM64`, and `jarvis`.
 - `script/package_release.sh` can validate and submit using an optional
   notarytool keychain path.
 - The workflow verifies release artifacts before upload.

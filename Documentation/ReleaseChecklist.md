@@ -91,7 +91,9 @@ that final zip.
   `BONSAI_NOTARY_APP_PASSWORD`, and
   `BONSAI_NOTARY_TEAM_ID`.
 - Run the manual `Release` workflow if the artifact should be produced by
-  GitHub Actions.
+  GitHub Actions. The workflow targets the Jarvis self-hosted macOS ARM64
+  runner, so confirm Jarvis is online and available to this repository before
+  starting it.
 - Tag the release from the audited commit.
 - Attach the notarized `dist/release/Bonsai.zip` and
   `dist/release/Bonsai.release.plist` from the local notarization run or from

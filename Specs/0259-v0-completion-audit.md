@@ -39,7 +39,7 @@ development, regular checkpoint commits, and OSS-ready project structure.
 | Release artifact evidence | `script/package_release.sh` writes `dist/release/Bonsai.release.plist` for archive-producing modes with version, build, commit, zip hash, signature kind, team, and notarization state | Covered |
 | Release artifact verification | `script/package_release.sh --verify-artifacts` validates the zip, manifest shape, archive name, byte size, and SHA-256 after packaging or download | Covered |
 | Release guardrail tests | `Tests/BonsaiTests/ReleaseScriptTests.swift` covers credential rejection, doctor output, artifact verifier wiring, manifest upload, and temporary keychain cleanup wiring without running release builds or notarization | Covered |
-| Credentialed GitHub release path | `.github/workflows/release.yml` is manual-only, uses the protected `release` environment, imports the Developer ID certificate, stores notarytool credentials in a temporary keychain, runs `--notarize`, uploads zip plus manifest, and cleans up the temporary keychain | Covered pending configured secrets |
+| Credentialed GitHub release path | `.github/workflows/release.yml` is manual-only, targets the Jarvis self-hosted macOS ARM64 runner, uses the protected `release` environment, imports the Developer ID certificate, stores notarytool credentials in a temporary keychain, runs `--notarize`, uploads zip plus manifest, and cleans up the temporary keychain | Covered pending configured secrets |
 
 ## Current Blocking Evidence
 

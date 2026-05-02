@@ -18,8 +18,8 @@ checks.
 - Add XCTest coverage that regular CI runs `--verify-artifacts` after
   `--verify-archive`.
 - Add XCTest coverage that the manual GitHub release workflow verifies artifacts
-  before upload, uploads both the zip and manifest, and cleans up the temporary
-  keychain.
+  before upload, uploads both the zip and manifest, targets the Jarvis
+  self-hosted runner, and cleans up the temporary keychain.
 - Do not run release builds or notarization from `swift test`.
 
 ## Acceptance
