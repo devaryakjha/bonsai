@@ -169,6 +169,11 @@ private struct StatusRow: View {
           Button("Ignore") {
             ignoreFile()
           }
+          if canIgnoreExtension {
+            Button("Ignore Extension") {
+              ignoreExtension()
+            }
+          }
         }
         Button("Discard Change", role: .destructive) {
           store.presentDiscardChange(entry)
@@ -221,6 +226,11 @@ private struct StatusRow: View {
         Button("Ignore") {
           ignoreFile()
         }
+        if canIgnoreExtension {
+          Button("Ignore Extension") {
+            ignoreExtension()
+          }
+        }
       }
       Divider()
       Button("Discard Change", role: .destructive) {
@@ -272,6 +282,14 @@ private struct StatusRow: View {
 
   private func ignoreFile() {
     Task { await store.ignore(entry) }
+  }
+
+  private func ignoreExtension() {
+    Task { await store.ignoreExtension(entry) }
+  }
+
+  private var canIgnoreExtension: Bool {
+    entry.isUntracked && GitIgnorePattern.extensionPattern(for: entry.path) != nil
   }
 }
 

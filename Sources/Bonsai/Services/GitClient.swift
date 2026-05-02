@@ -289,11 +289,22 @@ struct GitClient {
 
   func ignorePath(_ path: String, in repository: GitRepository) throws -> String {
     let pattern = GitIgnorePattern.repositoryRootPattern(for: path)
+    return try ignorePattern(pattern, label: path, in: repository)
+  }
+
+  func ignoreExtension(for path: String, in repository: GitRepository) throws -> String {
+    guard let pattern = GitIgnorePattern.extensionPattern(for: path) else {
+      return "No file extension found for \(path)."
+    }
+    return try ignorePattern(pattern, label: pattern, in: repository)
+  }
+
+  private func ignorePattern(_ pattern: String, label: String, in repository: GitRepository) throws -> String {
     let ignoreURL = repository.url.appending(path: ".gitignore")
     let existing = (try? String(contentsOf: ignoreURL, encoding: .utf8)) ?? ""
     let existingPatterns = Set(existing.split(separator: "\n").map(String.init))
     if existingPatterns.contains(pattern) {
-      return "Already ignored \(path)."
+      return "Already ignored \(label)."
     }
 
     var updated = existing
