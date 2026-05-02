@@ -262,8 +262,10 @@ struct ContentView: View {
     .sheet(item: $store.removeWorktreeRequest) { request in
       RemoveWorktreeSheet(
         request: request,
+        forceRemove: $store.removeWorktreeForce,
         onCancel: {
           store.removeWorktreeRequest = nil
+          store.removeWorktreeForce = false
         },
         onRemove: {
           Task { await store.removeRequestedWorktree() }
@@ -731,6 +733,7 @@ private struct RemoveRemoteSheet: View {
 
 private struct RemoveWorktreeSheet: View {
   var request: RemoveWorktreeRequest
+  @Binding var forceRemove: Bool
   var onCancel: () -> Void
   var onRemove: () -> Void
 
@@ -748,6 +751,8 @@ private struct RemoveWorktreeSheet: View {
         .foregroundStyle(.secondary)
         .lineLimit(3)
         .textSelection(.enabled)
+
+      Toggle("Force remove dirty worktree", isOn: $forceRemove)
 
       HStack {
         Spacer()

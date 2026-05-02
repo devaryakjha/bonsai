@@ -54,6 +54,7 @@ final class RepositoryStore {
   var remoteEditorRequest: RemoteEditorRequest?
   var removeRemoteRequest: RemoveRemoteRequest?
   var removeWorktreeRequest: RemoveWorktreeRequest?
+  var removeWorktreeForce = false
   var gitHubRepositoryRequest: GitHubRepositoryRequest?
   var repositorySetupMode: RepositorySetupMode?
   var repositorySetupRemoteURL = ""
@@ -836,18 +837,21 @@ final class RepositoryStore {
 
   func presentRemoveWorktree(_ worktree: GitWorktree) {
     guard worktree.path != selectedRepository?.path else { return }
+    removeWorktreeForce = false
     removeWorktreeRequest = RemoveWorktreeRequest(worktree: worktree)
   }
 
   func removeRequestedWorktree() async {
     guard let request = removeWorktreeRequest else { return }
+    let force = removeWorktreeForce
     removeWorktreeRequest = nil
-    await removeWorktree(request.worktree)
+    removeWorktreeForce = false
+    await removeWorktree(request.worktree, force: force)
   }
 
-  private func removeWorktree(_ worktree: GitWorktree) async {
+  private func removeWorktree(_ worktree: GitWorktree, force: Bool) async {
     await runMutation(title: "Remove worktree \(worktree.name)") {
-      try await gitClient.removeWorktree(worktree, in: requiredRepository())
+      try await gitClient.removeWorktree(worktree, force: force, in: requiredRepository())
     }
   }
 

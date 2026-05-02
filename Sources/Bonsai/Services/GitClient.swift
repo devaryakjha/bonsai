@@ -363,8 +363,13 @@ struct GitClient {
     try await runRaw(["worktree", "add", "--detach", path, startPoint], in: repository)
   }
 
-  func removeWorktree(_ worktree: GitWorktree, in repository: GitRepository) async throws -> String {
-    try await runRaw(["worktree", "remove", worktree.path], in: repository)
+  func removeWorktree(_ worktree: GitWorktree, force: Bool = false, in repository: GitRepository) async throws -> String {
+    var args = ["worktree", "remove"]
+    if force {
+      args.append("--force")
+    }
+    args.append(worktree.path)
+    return try await runRaw(args, in: repository)
   }
 
   func stashPush(message: String?, includeUntracked: Bool = false, in repository: GitRepository) async throws -> String {

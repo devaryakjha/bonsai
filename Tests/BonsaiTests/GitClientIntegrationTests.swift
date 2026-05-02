@@ -511,6 +511,22 @@ final class GitClientIntegrationTests: XCTestCase {
     _ = try await client.removeWorktree(created, in: repository)
     worktrees = try await client.worktrees(in: repository)
     XCTAssertFalse(worktrees.contains { canonicalPath($0.path) == worktreePath })
+
+    let dirtyWorktreeURL = temporaryDirectory()
+    let dirtyWorktreePath = canonicalPath(dirtyWorktreeURL)
+    _ = try await client.createWorktree(at: dirtyWorktreeURL.path(percentEncoded: false), startPoint: "HEAD", in: repository)
+    try write("dirty\n", to: dirtyWorktreeURL.appending(path: "dirty.txt"))
+    worktrees = try await client.worktrees(in: repository)
+    let dirty = try XCTUnwrap(worktrees.first { canonicalPath($0.path) == dirtyWorktreePath })
+
+    do {
+      _ = try await client.removeWorktree(dirty, in: repository)
+      XCTFail("Expected normal worktree removal to reject a dirty worktree")
+    } catch {
+      _ = try await client.removeWorktree(dirty, force: true, in: repository)
+    }
+    worktrees = try await client.worktrees(in: repository)
+    XCTAssertFalse(worktrees.contains { canonicalPath($0.path) == dirtyWorktreePath })
   }
 
   func testCloneInteractiveRebaseAndConflictResolution() async throws {
