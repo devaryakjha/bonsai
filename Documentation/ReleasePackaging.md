@@ -33,6 +33,36 @@ export BONSAI_VERSION="0.1.0"
 export BONSAI_BUILD_NUMBER="42"
 ```
 
+## Credential Setup
+
+Direct macOS distribution requires a Developer ID Application certificate. Use
+the exact identity string reported by the keychain:
+
+```sh
+security find-identity -p codesigning -v | grep "Developer ID Application"
+```
+
+If that command prints nothing, create or install a Developer ID Application
+certificate from the Apple Developer account before continuing. Apple
+Development and Apple Distribution identities are not valid substitutes for this
+release path.
+
+Store notarization credentials in the keychain with `notarytool`. This keeps the
+release script free of secrets:
+
+```sh
+xcrun notarytool store-credentials bonsai-notary \
+  --apple-id "developer@example.com" \
+  --team-id "TEAMID"
+```
+
+`notarytool` prompts for the app-specific password when `--password` is omitted.
+Validate the stored profile before running a full release:
+
+```sh
+xcrun notarytool history --keychain-profile bonsai-notary
+```
+
 ## Signed Archive
 
 Set a Developer ID Application identity before creating a distributable archive:

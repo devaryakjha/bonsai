@@ -32,6 +32,9 @@ For diff performance-sensitive changes, also run:
 
 ## 3. Distribution Credentials
 
+If this machine has not shipped Bonsai before, complete the credential setup in
+`Documentation/ReleasePackaging.md` first.
+
 Validate that the machine has the correct public-distribution credentials:
 
 ```sh
