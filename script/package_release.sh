@@ -252,7 +252,9 @@ case "$MODE" in
       --keychain-profile "$(notary_profile)" \
       --wait
     xcrun stapler staple "$APP_BUNDLE"
+    xcrun stapler validate "$APP_BUNDLE"
     spctl -a -vv -t exec "$APP_BUNDLE"
+    create_archive
     ;;
   --check-credentials|check-credentials)
     check_distribution_credentials

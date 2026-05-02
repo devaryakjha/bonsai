@@ -50,9 +50,11 @@ export BONSAI_NOTARY_PROFILE="bonsai-notary"
 script/package_release.sh --notarize
 ```
 
-The script submits the zip with `xcrun notarytool submit --wait`, staples the
-ticket to the app bundle, and runs Gatekeeper assessment. A local `--verify`
-run is not a substitute for this credentialed notarization path.
+The script submits the zip with `xcrun notarytool submit --wait`, staples and
+validates the ticket on the app bundle, runs Gatekeeper assessment, then
+recreates `dist/release/Bonsai.zip` so the published archive contains the
+stapled app. A local `--verify` run is not a substitute for this credentialed
+notarization path.
 
 You can validate the local signing identity and notarytool profile before
 running the full packaging workflow:

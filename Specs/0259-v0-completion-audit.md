@@ -33,6 +33,7 @@ development, regular checkpoint commits, and OSS-ready project structure.
 | OSS contribution intake | GitHub issue forms and pull request template keep bug, feature, security, and validation details structured | Covered |
 | Public release handoff | `Documentation/ReleaseChecklist.md` defines the v0 evidence, validation, notarization, artifact, and post-release sequence | Covered |
 | Release version metadata | `VERSION` plus package scripts stamp `CFBundleShortVersionString` and `CFBundleVersion` into app bundles | Covered |
+| Notarized archive contents | `script/package_release.sh --notarize` recreates `Bonsai.zip` after stapling so the published archive contains the stapled app | Covered |
 
 ## Current Blocking Evidence
 

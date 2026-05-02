@@ -59,6 +59,9 @@ Expected local outputs:
 
 Do not publish the ad-hoc artifact created by `--verify`.
 
+The `--notarize` path rebuilds `dist/release/Bonsai.zip` after stapling; upload
+that final zip.
+
 ## 5. GitHub Release
 
 - Tag the release from the audited commit.
