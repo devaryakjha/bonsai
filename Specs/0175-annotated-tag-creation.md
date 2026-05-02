@@ -7,10 +7,10 @@ or overloading the lightweight tag flow.
 
 ## Requirements
 
-- The Git command menu exposes `Create Annotated Tag...`.
-- The toolbar actions branch menu exposes `Create Annotated Tag...`.
-- Commit history context menus expose `Create Annotated Tag Here...`.
-- Local and remote branch context menus expose `Create Annotated Tag Here...`.
+- The Git command menu exposes `Create Annotated Tag…`.
+- The toolbar actions branch menu exposes `Create Annotated Tag…`.
+- Commit history context menus expose `Create Annotated Tag Here…`.
+- Local and remote branch context menus expose `Create Annotated Tag Here…`.
 - The annotated tag sheet collects a tag name and tag message.
 - Confirming creates an annotated tag with `git tag -a <name> -m <message>`.
 - If a commit or branch reference launched the flow, the tag is created at that

@@ -24,10 +24,10 @@ struct ContentView: View {
         }
 
         Menu {
-          Button("Clone Repository...") {
+          Button("Clone Repository…") {
             store.presentCloneRepository()
           }
-          Button("Create Repository...") {
+          Button("Create Repository…") {
             store.presentCreateRepository()
           }
         } label: {
@@ -1317,7 +1317,7 @@ private struct ReflogSheet: View {
           }
           .buttonStyle(.borderless)
 
-          Button("Reset...") {
+          Button("Reset…") {
             onReset(entry)
           }
           .buttonStyle(.borderless)

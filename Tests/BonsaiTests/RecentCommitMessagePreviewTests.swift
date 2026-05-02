@@ -13,6 +13,6 @@ final class RecentCommitMessagePreviewTests: XCTestCase {
     let title = RecentCommitMessagePreview.title(for: message)
 
     XCTAssertEqual(title.count, RecentCommitMessagePreview.maxLength)
-    XCTAssertTrue(title.hasSuffix("..."))
+    XCTAssertTrue(title.hasSuffix("…"))
   }
 }

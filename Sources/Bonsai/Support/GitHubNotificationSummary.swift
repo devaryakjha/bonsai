@@ -1,6 +1,7 @@
 enum GitHubNotificationSummary {
   static let maxItems = 8
   static let maxLineLength = 120
+  private static let ellipsis = "…"
 
   static func output(for notifications: [GitHubNotification]) -> String {
     let lines = notifications.prefix(maxItems).map { notification in
@@ -11,6 +12,6 @@ enum GitHubNotificationSummary {
 
   private static func truncated(_ line: String) -> String {
     guard line.count > maxLineLength else { return line }
-    return "\(line.prefix(maxLineLength - 3))..."
+    return "\(line.prefix(maxLineLength - ellipsis.count))\(ellipsis)"
   }
 }

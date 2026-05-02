@@ -102,7 +102,7 @@ final class GitHubNotificationTests: XCTestCase {
     let lines = GitHubNotificationSummary.output(for: notifications).split(separator: "\n").map(String.init)
 
     XCTAssertEqual(lines.count, 8)
-    XCTAssertTrue(lines[0].hasSuffix("..."))
+    XCTAssertTrue(lines[0].hasSuffix("…"))
     XCTAssertLessThanOrEqual(lines[0].count, GitHubNotificationSummary.maxLineLength)
     XCTAssertEqual(lines[7], "example/bonsai: Thread 8")
   }

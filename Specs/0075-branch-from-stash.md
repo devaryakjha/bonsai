@@ -7,7 +7,7 @@ stash workflow without requiring terminal commands.
 
 ## Requirements
 
-- Stash row and toolbar stash menus must expose `Create Branch...`.
+- Stash row and toolbar stash menus must expose `Create Branch…`.
 - The action must ask for a branch name through the existing operation sheet.
 - Confirming must run `git stash branch <name> <stash>`.
 - Repository state must refresh after the branch is created.

@@ -7,17 +7,17 @@ struct RepositoryToolbarActionsMenu: View {
   var body: some View {
     Menu {
       Menu("Branch") {
-        Button("Create Branch...") {
+        Button("Create Branch…") {
           store.presentCreateBranch()
         }
-        Button("Create Tag...") {
+        Button("Create Tag…") {
           store.presentCreateTag()
         }
-        Button("Create Annotated Tag...") {
+        Button("Create Annotated Tag…") {
           store.presentCreateAnnotatedTag()
         }
         Divider()
-        Button("Force Push with Lease...") {
+        Button("Force Push with Lease…") {
           store.presentForcePushCurrentBranch()
         }
         .disabled(!store.canForcePushCurrentBranch)
@@ -44,7 +44,7 @@ struct RepositoryToolbarActionsMenu: View {
           store.presentRevisionCommand(.rebase)
         }
         .disabled(store.selectedCommit == nil)
-        Button("Reset to Selected Commit...") {
+        Button("Reset to Selected Commit…") {
           store.presentResetToSelectedCommit()
         }
         .disabled(store.selectedCommit == nil)
@@ -62,11 +62,11 @@ struct RepositoryToolbarActionsMenu: View {
         }
         .disabled(!store.snapshot.inProgressOperation.active)
         Divider()
-        Button("Interactive Rebase...") {
+        Button("Interactive Rebase…") {
           Task { await store.presentInteractiveRebase() }
         }
         Divider()
-        Button("Start Bisect with Selected Commit...") {
+        Button("Start Bisect with Selected Commit…") {
           store.presentStartBisect()
         }
         .disabled(store.selectedCommit == nil || store.snapshot.integrations.bisect.active)
@@ -83,10 +83,10 @@ struct RepositoryToolbarActionsMenu: View {
       }
 
       Menu("Stash") {
-        Button("Create Stash...") {
+        Button("Create Stash…") {
           store.presentStashPush()
         }
-        Button("Create Stash Including Untracked...") {
+        Button("Create Stash Including Untracked…") {
           store.presentStashPush(includeUntracked: true)
         }
         Divider()
@@ -98,7 +98,7 @@ struct RepositoryToolbarActionsMenu: View {
             Button("Pop") {
               Task { await store.applyStash(stash, pop: true) }
             }
-            Button("Create Branch...") {
+            Button("Create Branch…") {
               store.presentStashBranch(stash)
             }
             Divider()
@@ -145,7 +145,7 @@ struct RepositoryToolbarActionsMenu: View {
         Button("Update Submodules") {
           Task { await store.updateSubmodules() }
         }
-        Button("Create Worktree...") {
+        Button("Create Worktree…") {
           store.presentCreateWorktree()
         }
         Button("Prune Worktrees") {
@@ -153,7 +153,7 @@ struct RepositoryToolbarActionsMenu: View {
         }
         .disabled(store.selectedRepository == nil)
         Divider()
-        Button("Add Remote...") {
+        Button("Add Remote…") {
           store.presentAddRemote()
         }
         Divider()
@@ -199,13 +199,13 @@ struct RepositoryToolbarActionsMenu: View {
           .disabled(!store.snapshot.integrations.gitFlowAvailable)
           Divider()
           ForEach(GitFlowStartKind.allCases) { kind in
-            Button("Start \(kind.title)...") {
+            Button("Start \(kind.title)…") {
               store.presentGitFlowStart(kind)
             }
             .disabled(!store.snapshot.integrations.gitFlowInitialized)
           }
           ForEach(GitFlowStartKind.allCases) { kind in
-            Button("Finish \(kind.title)...") {
+            Button("Finish \(kind.title)…") {
               store.presentGitFlowFinish(kind)
             }
             .disabled(!store.snapshot.integrations.gitFlowInitialized)
@@ -242,10 +242,10 @@ struct RepositoryToolbarActionsMenu: View {
           }
           .disabled(store.gitHubNotifications.isEmpty)
           Divider()
-          Button("Create GitHub Repository...") {
+          Button("Create GitHub Repository…") {
             store.presentCreateGitHubRepository()
           }
-          Button("Delete GitHub Repository...") {
+          Button("Delete GitHub Repository…") {
             store.presentDeleteGitHubRepository()
           }
         }

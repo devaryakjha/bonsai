@@ -41,7 +41,7 @@ struct HistoryView: View {
                   Button("Pop") {
                     Task { await store.applyStash(stash, pop: true) }
                   }
-                  Button("Create Branch...") {
+                  Button("Create Branch…") {
                     store.presentStashBranch(stash)
                   }
                   Divider()
@@ -86,7 +86,7 @@ struct HistoryView: View {
                 store.selectCommit(commit)
                 store.presentRevisionCommand(.rebase)
               }
-              Button("Reset Here...") {
+              Button("Reset Here…") {
                 store.selectCommit(commit)
                 store.presentResetToSelectedCommit()
               }
@@ -98,7 +98,7 @@ struct HistoryView: View {
                 store.selectCommit(commit)
                 store.presentCreateTag()
               }
-              Button("Create Annotated Tag Here...") {
+              Button("Create Annotated Tag Here…") {
                 store.selectCommit(commit)
                 store.presentCreateAnnotatedTag()
               }

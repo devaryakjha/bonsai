@@ -7,7 +7,7 @@ keeping destructive remote updates behind explicit confirmation.
 
 ## Requirements
 
-- Bonsai exposes `Force Push with Lease...` for the current branch from the
+- Bonsai exposes `Force Push with Lease…` for the current branch from the
   Repository command menu.
 - Bonsai exposes the same action from the toolbar actions menu.
 - The action is enabled only when the current branch has a usable upstream.

@@ -7,7 +7,7 @@ existing tag without leaving Bonsai.
 
 ## Requirements
 
-- Tag context menus expose `Rename...`.
+- Tag context menus expose `Rename…`.
 - The rename sheet is prefilled with the selected tag name.
 - Renaming must preserve the original tag object so annotated tags do not become
   lightweight tags.

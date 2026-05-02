@@ -167,16 +167,16 @@ struct SidebarView: View {
               Button("Checkout") {
                 Task { await store.checkout(branch) }
               }
-              Button("Create Branch from Here...") {
+              Button("Create Branch from Here…") {
                 store.presentCreateBranch(from: branch)
               }
-              Button("Create Tag Here...") {
+              Button("Create Tag Here…") {
                 store.presentCreateTag(from: branch)
               }
-              Button("Create Annotated Tag Here...") {
+              Button("Create Annotated Tag Here…") {
                 store.presentCreateAnnotatedTag(from: branch)
               }
-              Button("Rename...") {
+              Button("Rename…") {
                 store.presentRenameBranch(branch)
               }
               Button("Merge into Current Branch") {
@@ -451,13 +451,13 @@ struct SidebarView: View {
               Task { await store.fetchRemoteBranch(branch) }
             }
           }
-          Button("Create Branch from Here...") {
+          Button("Create Branch from Here…") {
             store.presentCreateBranch(from: branch)
           }
-          Button("Create Tag Here...") {
+          Button("Create Tag Here…") {
             store.presentCreateTag(from: branch)
           }
-          Button("Create Annotated Tag Here...") {
+          Button("Create Annotated Tag Here…") {
             store.presentCreateAnnotatedTag(from: branch)
           }
           if branch.isConcreteRemoteBranch {
@@ -500,10 +500,10 @@ struct SidebarView: View {
           Button("Checkout") {
             Task { await store.checkout(tag) }
           }
-          Button("Create Branch from Here...") {
+          Button("Create Branch from Here…") {
             store.presentCreateBranch(from: tag)
           }
-          Button("Rename...") {
+          Button("Rename…") {
             store.presentRenameTag(tag)
           }
           Button("Merge into Current Branch") {

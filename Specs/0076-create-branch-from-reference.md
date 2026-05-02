@@ -8,7 +8,7 @@ branch, or tag in the sidebar.
 ## Requirements
 
 - Local branch, remote branch, and tag context menus must expose
-  `Create Branch from Here...`.
+  `Create Branch from Here…`.
 - The operation must use the selected reference as the new branch start point.
 - Existing toolbar/history branch creation from selected commits or `HEAD` must
   keep working.

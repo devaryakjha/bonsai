@@ -7,7 +7,7 @@ sidebar without checking those branches out first.
 
 ## Requirements
 
-- Local branch and remote branch context menus must expose `Create Tag Here...`.
+- Local branch and remote branch context menus must expose `Create Tag Here…`.
 - The operation must use the selected branch reference as the tag target.
 - Existing toolbar/history tag creation from selected commits or `HEAD` must keep
   working.

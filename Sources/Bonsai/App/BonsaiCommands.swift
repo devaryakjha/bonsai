@@ -5,17 +5,17 @@ struct BonsaiCommands: Commands {
 
   var body: some Commands {
     CommandMenu("Repository") {
-      Button("Open Repository...") {
+      Button("Open Repository…") {
         store.presentOpenRepositoryPanel()
       }
       .keyboardShortcut("o", modifiers: [.command])
 
-      Button("Clone Repository...") {
+      Button("Clone Repository…") {
         store.presentCloneRepository()
       }
       .keyboardShortcut("o", modifiers: [.command, .shift])
 
-      Button("Create Repository...") {
+      Button("Create Repository…") {
         store.presentCreateRepository()
       }
 
@@ -61,7 +61,7 @@ struct BonsaiCommands: Commands {
       .keyboardShortcut("p", modifiers: [.command, .shift])
       .disabled(store.selectedRepository == nil || !store.canPush)
 
-      Button("Force Push with Lease...") {
+      Button("Force Push with Lease…") {
         store.presentForcePushCurrentBranch()
       }
       .disabled(store.selectedRepository == nil || !store.canForcePushCurrentBranch)
@@ -119,22 +119,22 @@ struct BonsaiCommands: Commands {
 
       Divider()
 
-      Button("Create Branch...") {
+      Button("Create Branch…") {
         store.presentCreateBranch()
       }
       .disabled(store.selectedRepository == nil)
 
-      Button("Create Tag...") {
+      Button("Create Tag…") {
         store.presentCreateTag()
       }
       .disabled(store.selectedRepository == nil)
 
-      Button("Create Annotated Tag...") {
+      Button("Create Annotated Tag…") {
         store.presentCreateAnnotatedTag()
       }
       .disabled(store.selectedRepository == nil)
 
-      Button("Create Worktree...") {
+      Button("Create Worktree…") {
         store.presentCreateWorktree()
       }
       .disabled(store.selectedRepository == nil)
@@ -146,12 +146,12 @@ struct BonsaiCommands: Commands {
 
       Divider()
 
-      Button("Create Stash...") {
+      Button("Create Stash…") {
         store.presentStashPush()
       }
       .disabled(store.selectedRepository == nil)
 
-      Button("Create Stash Including Untracked...") {
+      Button("Create Stash Including Untracked…") {
         store.presentStashPush(includeUntracked: true)
       }
       .disabled(store.selectedRepository == nil)
@@ -176,7 +176,7 @@ struct BonsaiCommands: Commands {
       }
       .disabled(!store.canOpenSelectedFile)
 
-      Button("Reset to Selected Commit...") {
+      Button("Reset to Selected Commit…") {
         store.presentResetToSelectedCommit()
       }
       .disabled(store.selectedRepository == nil || store.selectedCommit == nil)
@@ -200,12 +200,12 @@ struct BonsaiCommands: Commands {
 
       Divider()
 
-      Button("Interactive Rebase...") {
+      Button("Interactive Rebase…") {
         Task { await store.presentInteractiveRebase() }
       }
       .disabled(store.selectedRepository == nil)
 
-      Button("Start Bisect with Selected Commit...") {
+      Button("Start Bisect with Selected Commit…") {
         store.presentStartBisect()
       }
       .disabled(store.selectedRepository == nil || store.selectedCommit == nil || store.snapshot.integrations.bisect.active)
@@ -279,14 +279,14 @@ struct BonsaiCommands: Commands {
         Divider()
 
         ForEach(GitFlowStartKind.allCases) { kind in
-          Button("Start \(kind.title)...") {
+          Button("Start \(kind.title)…") {
             store.presentGitFlowStart(kind)
           }
           .disabled(store.selectedRepository == nil || !store.snapshot.integrations.gitFlowInitialized)
         }
 
         ForEach(GitFlowStartKind.allCases) { kind in
-          Button("Finish \(kind.title)...") {
+          Button("Finish \(kind.title)…") {
             store.presentGitFlowFinish(kind)
           }
           .disabled(store.selectedRepository == nil || !store.snapshot.integrations.gitFlowInitialized)
@@ -333,11 +333,11 @@ struct BonsaiCommands: Commands {
 
         Divider()
 
-        Button("Create GitHub Repository...") {
+        Button("Create GitHub Repository…") {
           store.presentCreateGitHubRepository()
         }
 
-        Button("Delete GitHub Repository...") {
+        Button("Delete GitHub Repository…") {
           store.presentDeleteGitHubRepository()
         }
       }

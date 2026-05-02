@@ -2,6 +2,7 @@ import Foundation
 
 enum RecentCommitMessagePreview {
   static let maxLength = 72
+  private static let ellipsis = "…"
 
   static func title(for message: String) -> String {
     let firstLine = message
@@ -13,7 +14,7 @@ enum RecentCommitMessagePreview {
       return firstLine
     }
 
-    let endIndex = firstLine.index(firstLine.startIndex, offsetBy: maxLength - 3)
-    return String(firstLine[..<endIndex]) + "..."
+    let endIndex = firstLine.index(firstLine.startIndex, offsetBy: maxLength - ellipsis.count)
+    return String(firstLine[..<endIndex]) + ellipsis
   }
 }
