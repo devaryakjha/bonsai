@@ -411,9 +411,9 @@ private struct BinaryPreviewView: View {
     VStack(spacing: 16) {
       if let snapshot = store.imageDiffSnapshot {
         HStack(spacing: 0) {
-          ImageDiffPane(title: "Before", data: snapshot.oldData)
+          ImageDiffPane(side: .before, data: snapshot.oldData)
           Divider()
-          ImageDiffPane(title: "After", data: snapshot.newData)
+          ImageDiffPane(side: .after, data: snapshot.newData)
         }
       } else {
         Image(systemName: store.selectedPreviewIsImage ? "photo" : "doc")
@@ -447,12 +447,12 @@ private struct BinaryPreviewView: View {
 }
 
 private struct ImageDiffPane: View {
-  var title: String
+  var side: ImageDiffPaneSide
   var data: Data?
 
   var body: some View {
     VStack(spacing: 10) {
-      Text(title)
+      Text(side.title)
         .font(.headline)
       if let data, let image = NSImage(data: data) {
         Image(nsImage: image)
@@ -465,9 +465,8 @@ private struct ImageDiffPane: View {
           .foregroundStyle(.secondary)
       } else {
         ContentUnavailableView(
-          "No image",
-          systemImage: "photo",
-          description: Text("This side is not available for the selected change.")
+          side.missingTitle,
+          systemImage: "photo"
         )
       }
     }
