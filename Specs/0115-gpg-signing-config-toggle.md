@@ -13,9 +13,12 @@ Fork-parity integration surface.
 - The command result reflects the signing action that ran.
 - The commit composer signing toggle remains a per-commit option and is not
   changed by this repository config action.
+- The commit composer summary reflects repository-level signing when
+  `commit.gpgsign` is enabled.
 
 ## Acceptance
 
 - Integration tests cover enabling and disabling repository signing config.
+- Unit coverage verifies the composer summary reflects repository signing.
 - Signing config commands remain behind `GitClient`.
 - `swift test`, the app verification script, and whitespace checks pass.

@@ -223,6 +223,23 @@ final class GitClientIntegrationTests: XCTestCase {
   }
 
   @MainActor
+  func testCommitOptionsSummaryReflectsRepositorySigningStatus() {
+    let store = RepositoryStore()
+
+    XCTAssertEqual(store.commitOptionsSummary, "")
+
+    store.snapshot.integrations.gpgSigningEnabled = true
+    XCTAssertEqual(store.commitOptionsSummary, "Signing on")
+
+    store.amendCommit = true
+    XCTAssertEqual(store.commitOptionsSummary, "Amend, signing on")
+
+    store.snapshot.integrations.gpgSigningEnabled = false
+    store.signCommit = true
+    XCTAssertEqual(store.commitOptionsSummary, "Amend, signing on")
+  }
+
+  @MainActor
   func testSelectedFileLFSActionReadinessFollowsAvailabilityAndSelection() {
     let store = RepositoryStore()
 

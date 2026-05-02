@@ -169,6 +169,20 @@ final class RepositoryStore {
     commitReadinessIssue == nil
   }
 
+  var commitOptionsSummary: String {
+    let signingEnabled = signCommit || snapshot.integrations.gpgSigningEnabled
+    switch (amendCommit, signingEnabled) {
+    case (true, true):
+      return "Amend, signing on"
+    case (true, false):
+      return "Amend"
+    case (false, true):
+      return "Signing on"
+    case (false, false):
+      return ""
+    }
+  }
+
   var canStageSelectedStatusEntry: Bool {
     guard let selectedStatusEntry else { return false }
     return !selectedStatusEntry.isStaged && !selectedStatusEntry.isConflicted

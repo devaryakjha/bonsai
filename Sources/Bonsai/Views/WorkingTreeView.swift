@@ -304,8 +304,8 @@ private struct CommitComposerView: View {
         .help(commitOptionsHelp)
         .accessibilityLabel("Commit settings")
 
-        if !commitOptionsSummary.isEmpty {
-          Text(commitOptionsSummary)
+        if !store.commitOptionsSummary.isEmpty {
+          Text(store.commitOptionsSummary)
             .font(.caption)
             .foregroundStyle(.secondary)
             .lineLimit(1)
@@ -328,23 +328,10 @@ private struct CommitComposerView: View {
     .padding(12)
   }
 
-  private var commitOptionsSummary: String {
-    switch (store.amendCommit, store.signCommit) {
-    case (true, true):
-      return "Amend, signed"
-    case (true, false):
-      return "Amend"
-    case (false, true):
-      return "Signed"
-    case (false, false):
-      return ""
-    }
-  }
-
   private var commitOptionsHelp: String {
-    if commitOptionsSummary.isEmpty {
+    if store.commitOptionsSummary.isEmpty {
       return "Commit options"
     }
-    return "Commit options: \(commitOptionsSummary)"
+    return "Commit options: \(store.commitOptionsSummary)"
   }
 }
