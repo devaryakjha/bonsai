@@ -745,6 +745,28 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(snapshot.newData, secondImage)
   }
 
+  func testImageDiffSnapshotsReadStashBlobs() async throws {
+    let repo = try await makeRepository()
+    let image = repo.appending(path: "image.png")
+    let firstImage = try XCTUnwrap(Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="))
+    let secondImage = try XCTUnwrap(Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR42mNk+M8AAwUBAZsJTYQAAAAASUVORK5CYII="))
+
+    try write(firstImage, to: image)
+    try await commitAll(in: repo, message: "Initial image")
+    try write(secondImage, to: image)
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    _ = try await client.stashPush(message: "image stash", in: repository)
+    let stashes = try await client.stashes(in: repository)
+    let stash = try XCTUnwrap(stashes.first)
+    let changedFiles = try await client.changedFiles(in: repository, stash: stash)
+    let changedFile = try XCTUnwrap(changedFiles.first { $0.path == "image.png" })
+
+    let snapshot = await client.imageDiffForStashFile(changedFile, stash: stash, in: repository)
+    XCTAssertEqual(snapshot.oldData, firstImage)
+    XCTAssertEqual(snapshot.newData, secondImage)
+  }
+
   func testDiscardTrackedAndUntrackedChanges() async throws {
     let repo = try await makeRepository()
     let file = repo.appending(path: "file.txt")

@@ -240,6 +240,13 @@ struct GitClient {
     return ImageDiffSnapshot(path: file.path, oldData: oldData, newData: newData)
   }
 
+  func imageDiffForStashFile(_ file: GitChangedFile, stash: GitStash, in repository: GitRepository) async -> ImageDiffSnapshot {
+    let oldPath = file.oldPath ?? file.path
+    let oldData = file.status.hasPrefix("A") ? nil : try? await gitData(["show", "\(stash.index)^1:\(oldPath)"], in: repository.url).stdout
+    let newData = file.status.hasPrefix("D") ? nil : try? await gitData(["show", "\(stash.index):\(file.path)"], in: repository.url).stdout
+    return ImageDiffSnapshot(path: file.path, oldData: oldData, newData: newData)
+  }
+
   func stage(_ entry: GitStatusEntry, in repository: GitRepository) async throws -> String {
     let output = try await git(["add", "--", entry.path], in: repository.url)
     return output.combinedOutput

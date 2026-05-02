@@ -1534,6 +1534,9 @@ final class RepositoryStore {
         }
       } else if let stash = selectedStash, let file = selectedChangedFile {
         diffText = try await gitClient.diffForStashFile(file, stash: stash, algorithm: diffAlgorithm, in: repository)
+        if FilePreviewSupport.isImagePath(file.path) {
+          imageDiffSnapshot = await gitClient.imageDiffForStashFile(file, stash: stash, in: repository)
+        }
       } else if let file = selectedChangedFile, let commit = selectedCommit {
         diffText = try await gitClient.diffForCommitFile(file, commit: commit, algorithm: diffAlgorithm, in: repository)
         if FilePreviewSupport.isImagePath(file.path) {
