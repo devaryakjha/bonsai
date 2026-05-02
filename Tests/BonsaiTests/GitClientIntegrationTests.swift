@@ -146,6 +146,21 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(canAmendWithoutStagedChanges)
   }
 
+  func testStorePullRequiresUsableUpstream() async throws {
+    let repo = try await makeRepository()
+    try write("initial\n", to: repo.appending(path: "file.txt"))
+    try await commitAll(in: repo, message: "Initial")
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    let canPullWithoutUpstream = await store.canPull
+    XCTAssertFalse(canPullWithoutUpstream)
+
+    await store.runRepositoryAction(.pull)
+    let errorMessage = await store.errorMessage
+    XCTAssertEqual(errorMessage, "Set an upstream before pulling.")
+  }
+
   func testStoreCreatesTagAtSelectedHistoryCommit() async throws {
     let repo = try await makeRepository()
     try write("first\n", to: repo.appending(path: "file.txt"))

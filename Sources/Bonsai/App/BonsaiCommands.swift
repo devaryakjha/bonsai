@@ -31,7 +31,7 @@ struct BonsaiCommands: Commands {
         Task { await store.runRepositoryAction(.pull) }
       }
       .keyboardShortcut("u", modifiers: [.command, .shift])
-      .disabled(store.selectedRepository == nil)
+      .disabled(store.selectedRepository == nil || !store.canPull)
 
       Button(store.pushActionTitle) {
         Task { await store.runRepositoryAction(.push) }

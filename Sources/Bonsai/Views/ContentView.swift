@@ -55,7 +55,8 @@ struct ContentView: View {
         } label: {
           ToolbarLabel(store.currentBranch?.pullTitle ?? "Pull", systemImage: "arrow.down.to.line.circle", showTitle: showToolbarLabels)
         }
-        .disabled(store.selectedRepository == nil)
+        .disabled(store.selectedRepository == nil || !store.canPull)
+        .help(store.pullReadinessIssue ?? "Pull")
 
         Button {
           Task { await store.runRepositoryAction(.push) }

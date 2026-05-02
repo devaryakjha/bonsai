@@ -147,6 +147,23 @@ final class RepositoryStore {
     localBranches.first(where: \.isHead)
   }
 
+  var pullReadinessIssue: String? {
+    guard let currentBranch else {
+      return selectedRepository == nil ? nil : "Checkout a branch before pulling."
+    }
+    if currentBranch.upstream == nil {
+      return "Set an upstream before pulling."
+    }
+    if currentBranch.upstreamGone {
+      return "Upstream branch is gone."
+    }
+    return nil
+  }
+
+  var canPull: Bool {
+    pullReadinessIssue == nil
+  }
+
   var publishRemote: GitRemote? {
     snapshot.remotes.first(where: { $0.name == "origin" }) ?? snapshot.remotes.first
   }
@@ -554,6 +571,11 @@ final class RepositoryStore {
   }
 
   func runRepositoryAction(_ action: RepositoryAction) async {
+    if action == .pull, let pullReadinessIssue {
+      errorMessage = pullReadinessIssue
+      return
+    }
+
     if action == .push, shouldPublishCurrentBranch, let currentBranch, let publishRemote {
       await runMutation(title: "Publish \(currentBranch.shortName)") {
         try await gitClient.publishBranch(currentBranch.shortName, remote: publishRemote.name, in: requiredRepository())
