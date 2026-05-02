@@ -420,6 +420,13 @@ final class GitClientCommandArgumentsTests: XCTestCase {
     )
   }
 
+  func testLFSLockArgumentsPreservePath() {
+    XCTAssertEqual(
+      GitClient.lfsLockArguments(path: "Assets/Large Logo.png"),
+      ["lfs", "lock", "Assets/Large Logo.png"]
+    )
+  }
+
   func testLFSUnlockArgumentsPreserveForceFlagOrder() {
     XCTAssertEqual(
       GitClient.lfsUnlockArguments(path: "Assets/logo.png", force: false),
@@ -499,6 +506,84 @@ final class GitClientCommandArgumentsTests: XCTestCase {
     XCTAssertEqual(GitClient.repositoryActionArguments(.fetch), ["fetch", "--all", "--prune"])
     XCTAssertEqual(GitClient.repositoryActionArguments(.pull), ["pull", "--ff-only"])
     XCTAssertEqual(GitClient.repositoryActionArguments(.push), ["push"])
+  }
+
+  func testSigningAndInProgressOperationArguments() {
+    XCTAssertEqual(
+      GitClient.setCommitSigningArguments(true),
+      ["config", "commit.gpgsign", "true"]
+    )
+    XCTAssertEqual(
+      GitClient.setCommitSigningArguments(false),
+      ["config", "commit.gpgsign", "false"]
+    )
+    XCTAssertEqual(
+      GitClient.inProgressOperationArguments(.continueOperation, kind: .rebase),
+      ["rebase", "--continue"]
+    )
+    XCTAssertEqual(
+      GitClient.inProgressOperationArguments(.skip, kind: .cherryPick),
+      ["cherry-pick", "--skip"]
+    )
+  }
+
+  func testBisectArgumentsPreserveRevisionsAndMarks() {
+    XCTAssertEqual(
+      GitClient.startBisectArguments(bad: "bad revision", good: "main~10"),
+      ["bisect", "start", "bad revision", "main~10"]
+    )
+    XCTAssertEqual(
+      GitClient.markBisectArguments(.good),
+      ["bisect", "good"]
+    )
+    XCTAssertEqual(
+      GitClient.markBisectArguments(.skip),
+      ["bisect", "skip"]
+    )
+    XCTAssertEqual(
+      GitClient.resetBisectArguments(),
+      ["bisect", "reset"]
+    )
+  }
+
+  func testGitFlowArgumentsPreserveNames() {
+    XCTAssertEqual(
+      GitClient.initializeGitFlowArguments(),
+      ["flow", "init", "-d"]
+    )
+    XCTAssertEqual(
+      GitClient.startGitFlowArguments(kind: .feature, name: "dashboard polish"),
+      ["flow", "feature", "start", "dashboard polish"]
+    )
+    XCTAssertEqual(
+      GitClient.finishGitFlowArguments(kind: .release, name: "1.0 candidate"),
+      ["flow", "release", "finish", "1.0 candidate"]
+    )
+  }
+
+  func testConflictResolutionArgumentsPreservePathsAndChoiceOrder() {
+    let entry = statusEntry(path: "Sources/App View.swift", indexStatus: "U", workTreeStatus: "U", kind: .conflicted)
+
+    XCTAssertEqual(
+      GitClient.resolveConflictArguments(entry, choice: .ours),
+      [
+        ["checkout", "--ours", "--", "Sources/App View.swift"],
+        ["add", "--", "Sources/App View.swift"]
+      ]
+    )
+    XCTAssertEqual(
+      GitClient.resolveConflictArguments(entry, choice: .theirs),
+      [
+        ["checkout", "--theirs", "--", "Sources/App View.swift"],
+        ["add", "--", "Sources/App View.swift"]
+      ]
+    )
+    XCTAssertEqual(
+      GitClient.resolveConflictArguments(entry, choice: .markResolved),
+      [
+        ["add", "--", "Sources/App View.swift"]
+      ]
+    )
   }
 
   private func statusEntry(

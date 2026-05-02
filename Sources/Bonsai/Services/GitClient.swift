@@ -854,7 +854,11 @@ struct GitClient {
   }
 
   func lfsLock(path: String, in repository: GitRepository) async throws -> String {
-    try await runRaw(["lfs", "lock", path], in: repository)
+    try await runRaw(Self.lfsLockArguments(path: path), in: repository)
+  }
+
+  static func lfsLockArguments(path: String) -> [String] {
+    ["lfs", "lock", path]
   }
 
   func lfsUnlock(path: String, force: Bool, in repository: GitRepository) async throws -> String {
@@ -871,50 +875,94 @@ struct GitClient {
   }
 
   func setCommitSigning(_ enabled: Bool, in repository: GitRepository) async throws -> String {
-    try await runRaw(["config", "commit.gpgsign", enabled ? "true" : "false"], in: repository)
+    try await runRaw(Self.setCommitSigningArguments(enabled), in: repository)
+  }
+
+  static func setCommitSigningArguments(_ enabled: Bool) -> [String] {
+    ["config", "commit.gpgsign", enabled ? "true" : "false"]
   }
 
   func runInProgressOperation(_ action: GitInProgressOperationAction, kind: GitInProgressOperationKind, in repository: GitRepository) async throws -> String {
-    try await runRaw([kind.command, action.flag], in: repository)
+    try await runRaw(Self.inProgressOperationArguments(action, kind: kind), in: repository)
+  }
+
+  static func inProgressOperationArguments(_ action: GitInProgressOperationAction, kind: GitInProgressOperationKind) -> [String] {
+    [kind.command, action.flag]
   }
 
   func startBisect(bad: String, good: String, in repository: GitRepository) async throws -> String {
-    try await runRaw(["bisect", "start", bad, good], in: repository)
+    try await runRaw(Self.startBisectArguments(bad: bad, good: good), in: repository)
+  }
+
+  static func startBisectArguments(bad: String, good: String) -> [String] {
+    ["bisect", "start", bad, good]
   }
 
   func markBisect(_ mark: GitBisectMark, in repository: GitRepository) async throws -> String {
-    try await runRaw(["bisect", mark.rawValue], in: repository)
+    try await runRaw(Self.markBisectArguments(mark), in: repository)
+  }
+
+  static func markBisectArguments(_ mark: GitBisectMark) -> [String] {
+    ["bisect", mark.rawValue]
   }
 
   func resetBisect(in repository: GitRepository) async throws -> String {
-    try await runRaw(["bisect", "reset"], in: repository)
+    try await runRaw(Self.resetBisectArguments(), in: repository)
+  }
+
+  static func resetBisectArguments() -> [String] {
+    ["bisect", "reset"]
   }
 
   func initializeGitFlow(in repository: GitRepository) async throws -> String {
-    try await runRaw(["flow", "init", "-d"], in: repository)
+    try await runRaw(Self.initializeGitFlowArguments(), in: repository)
+  }
+
+  static func initializeGitFlowArguments() -> [String] {
+    ["flow", "init", "-d"]
   }
 
   func startGitFlow(kind: GitFlowStartKind, name: String, in repository: GitRepository) async throws -> String {
-    try await runRaw(["flow", kind.rawValue, "start", name], in: repository)
+    try await runRaw(Self.startGitFlowArguments(kind: kind, name: name), in: repository)
+  }
+
+  static func startGitFlowArguments(kind: GitFlowStartKind, name: String) -> [String] {
+    ["flow", kind.rawValue, "start", name]
   }
 
   func finishGitFlow(kind: GitFlowStartKind, name: String, in repository: GitRepository) async throws -> String {
-    try await runRaw(["flow", kind.rawValue, "finish", name], in: repository)
+    try await runRaw(Self.finishGitFlowArguments(kind: kind, name: name), in: repository)
+  }
+
+  static func finishGitFlowArguments(kind: GitFlowStartKind, name: String) -> [String] {
+    ["flow", kind.rawValue, "finish", name]
   }
 
   func resolveConflict(_ entry: GitStatusEntry, choice: ConflictResolutionChoice, in repository: GitRepository) async throws -> String {
+    var outputs: [String] = []
+    for arguments in Self.resolveConflictArguments(entry, choice: choice) {
+      outputs.append(try await runRaw(arguments, in: repository))
+    }
+    return outputs.filter { !$0.isEmpty }.joined(separator: "\n")
+  }
+
+  static func resolveConflictArguments(_ entry: GitStatusEntry, choice: ConflictResolutionChoice) -> [[String]] {
     switch choice {
     case .ours:
-      let checkout = try await git(["checkout", "--ours", "--", entry.path], in: repository.url)
-      let add = try await git(["add", "--", entry.path], in: repository.url)
-      return [checkout.combinedOutput, add.combinedOutput].filter { !$0.isEmpty }.joined(separator: "\n")
+      return [conflictCheckoutArguments(entry, side: "--ours"), markConflictResolvedArguments(entry)]
     case .theirs:
-      let checkout = try await git(["checkout", "--theirs", "--", entry.path], in: repository.url)
-      let add = try await git(["add", "--", entry.path], in: repository.url)
-      return [checkout.combinedOutput, add.combinedOutput].filter { !$0.isEmpty }.joined(separator: "\n")
+      return [conflictCheckoutArguments(entry, side: "--theirs"), markConflictResolvedArguments(entry)]
     case .markResolved:
-      return try await runRaw(["add", "--", entry.path], in: repository)
+      return [markConflictResolvedArguments(entry)]
     }
+  }
+
+  static func conflictCheckoutArguments(_ entry: GitStatusEntry, side: String) -> [String] {
+    ["checkout", side, "--", entry.path]
+  }
+
+  static func markConflictResolvedArguments(_ entry: GitStatusEntry) -> [String] {
+    ["add", "--", entry.path]
   }
 
   func conflictPreviews(_ entry: GitStatusEntry, in repository: GitRepository) async -> [ConflictPreview] {
