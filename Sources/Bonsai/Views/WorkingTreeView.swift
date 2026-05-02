@@ -229,7 +229,7 @@ private struct CommitComposerView: View {
         if !store.recentCommitMessages.isEmpty {
           Menu {
             ForEach(store.recentCommitMessages, id: \.self) { message in
-              Button(message) {
+              Button(RecentCommitMessagePreview.title(for: message)) {
                 store.commitMessage = message
               }
             }
