@@ -14,7 +14,7 @@ enum FilePreviewSupport {
     diffText
       .split(separator: "\n", omittingEmptySubsequences: true)
       .contains { line in
-        line.hasPrefix("Binary files ") || line.contains(" differ")
+        line.hasPrefix("Binary files ") && line.hasSuffix(" differ")
       }
   }
 }

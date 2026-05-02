@@ -12,4 +12,14 @@ final class FilePreviewSupportTests: XCTestCase {
     XCTAssertTrue(FilePreviewSupport.isBinaryDiff("Binary files a/image.png and b/image.png differ"))
     XCTAssertFalse(FilePreviewSupport.isBinaryDiff("@@ -1 +1 @@\n-old\n+new"))
   }
+
+  func testBinaryDiffDetectionIgnoresSourceTextContainingDiffer() {
+    let diff = """
+    @@ -1,2 +1,2 @@
+    -let message = "values are equal"
+    +let message = "values differ"
+    """
+
+    XCTAssertFalse(FilePreviewSupport.isBinaryDiff(diff))
+  }
 }
