@@ -145,7 +145,7 @@ private struct DiffHeaderControls: View {
       Button {
         store.copyCurrentPatch()
       } label: {
-        Label("Copy Patch", systemImage: "doc.on.doc")
+        Label("Copy patch", systemImage: "doc.on.doc")
           .labelStyle(.iconOnly)
       }
       .controlSize(.small)
@@ -388,7 +388,7 @@ private struct HunkActionStrip: View {
               }
             }
           } label: {
-            Label(isStaged ? "Unstage Line" : "Stage Line", systemImage: "text.line.first.and.arrowtriangle.forward")
+            Label(isStaged ? "Unstage line" : "Stage line", systemImage: "text.line.first.and.arrowtriangle.forward")
           }
           .menuStyle(.borderedButton)
           .controlSize(.small)
@@ -400,7 +400,7 @@ private struct HunkActionStrip: View {
               }
             }
           } label: {
-            Label("Line History", systemImage: "clock.arrow.circlepath")
+            Label("Line history", systemImage: "clock.arrow.circlepath")
           }
           .menuStyle(.borderedButton)
           .controlSize(.small)

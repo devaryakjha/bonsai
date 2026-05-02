@@ -14,6 +14,8 @@ precise under inspection, and never playful with critical developer workflows.
   `Diff options`, `File actions`.
 - Prefer verb labels for actions: `Stage`, `Unstage`, `Commit`, `Abort`,
   `Reveal in Finder`.
+- Use conventional compact notation for Git tracking badges: `↑ 2`, `↓ 1`, or
+  `↑ 2 ↓ 1`, not spelled-out `up` / `down` labels.
 - Do not use cute, playful, apologetic, or explanatory copy in the product UI.
 - Do not add visible instructional copy when a tooltip, menu placement,
   placeholder, or empty state can carry the context.

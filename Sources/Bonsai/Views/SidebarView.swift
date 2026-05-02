@@ -20,7 +20,7 @@ struct SidebarView: View {
           Button {
             store.presentOpenRepositoryPanel()
           } label: {
-            Label("Open Repository", systemImage: "folder.badge.plus")
+            Label("Open repository", systemImage: "folder.badge.plus")
           }
         }
       }

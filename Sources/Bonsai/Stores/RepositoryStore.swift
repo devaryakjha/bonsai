@@ -490,18 +490,18 @@ final class RepositoryStore {
     guard canCopyCurrentPatch else { return }
     NSPasteboard.general.clearContents()
     NSPasteboard.general.setString(diffText, forType: .string)
-    commandResult = CommandResult(title: "Copy Patch", output: "Copied current diff to the clipboard.", isError: false)
+    commandResult = CommandResult(title: "Copy patch", output: "Copied current diff to the clipboard.", isError: false)
   }
 
   func applyPatchFromClipboard() async {
     let patch = NSPasteboard.general.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     guard !patch.isEmpty else {
-      commandResult = CommandResult(title: "Apply Patch", output: "The clipboard does not contain patch text.", isError: true)
+      commandResult = CommandResult(title: "Apply patch", output: "The clipboard does not contain patch text.", isError: true)
       errorMessage = "The clipboard does not contain patch text."
       return
     }
 
-    await runMutation(title: "Apply Patch") {
+    await runMutation(title: "Apply patch") {
       try await gitClient.applyPatch(patch, in: requiredRepository())
     }
   }
@@ -513,7 +513,7 @@ final class RepositoryStore {
       return
     }
 
-    await runMutation(title: amendCommit ? "Amend Commit" : "Commit") {
+    await runMutation(title: amendCommit ? "Amend commit" : "Commit") {
       try await gitClient.commit(message: message, amend: amendCommit, sign: signCommit, in: requiredRepository())
     }
     commitMessage = ""
@@ -561,7 +561,7 @@ final class RepositoryStore {
   }
 
   func removeRemote(_ remote: GitRemote) async {
-    await runMutation(title: "Remove Remote \(remote.name)") {
+    await runMutation(title: "Remove remote \(remote.name)") {
       try await gitClient.removeRemote(name: remote.name, in: requiredRepository())
     }
   }
@@ -571,7 +571,7 @@ final class RepositoryStore {
     operationInput = ""
     operationRequest = GitOperationRequest(
       kind: .createBranch,
-      title: "Create Branch",
+      title: "Create branch",
       message: selectedCommit.map { "Create a branch at \($0.shortHash)." } ?? "Create a branch at HEAD.",
       placeholder: "feature/new-work",
       defaultValue: "",
@@ -584,7 +584,7 @@ final class RepositoryStore {
     operationInput = branch.shortName
     operationRequest = GitOperationRequest(
       kind: .renameBranch,
-      title: "Rename Branch",
+      title: "Rename branch",
       message: "Rename \(branch.shortName).",
       placeholder: "feature/new-name",
       defaultValue: branch.shortName,
@@ -597,7 +597,7 @@ final class RepositoryStore {
     operationInput = ""
     operationRequest = GitOperationRequest(
       kind: .createTag,
-      title: "Create Tag",
+      title: "Create tag",
       message: selectedCommit.map { "Create a tag at \($0.shortHash)." } ?? "Create a tag at HEAD.",
       placeholder: "v0.1.0",
       defaultValue: "",
@@ -620,7 +620,7 @@ final class RepositoryStore {
     operationInput = defaultPath
     operationRequest = GitOperationRequest(
       kind: .createWorktree,
-      title: "Create Worktree",
+      title: "Create worktree",
       message: selectedCommit.map { "Create a worktree at \($0.shortHash)." } ?? "Create a worktree from HEAD.",
       placeholder: "~/projects/repository-worktree",
       defaultValue: defaultPath,
@@ -632,7 +632,7 @@ final class RepositoryStore {
     operationInput = ""
     operationRequest = GitOperationRequest(
       kind: includeUntracked ? .stashPushIncludeUntracked : .stashPush,
-      title: includeUntracked ? "Create Stash Including Untracked" : "Create Stash",
+      title: includeUntracked ? "Create stash including untracked" : "Create stash",
       message: includeUntracked ? "Save tracked changes and untracked files to a stash." : "Save current working tree changes to a stash.",
       placeholder: "Optional stash message",
       defaultValue: "",
@@ -645,7 +645,7 @@ final class RepositoryStore {
     operationInput = ""
     operationRequest = GitOperationRequest(
       kind: .bisectStart,
-      title: "Start Bisect",
+      title: "Start bisect",
       message: "Use \(selectedCommit.shortHash) as the known bad revision and enter a known good revision.",
       placeholder: "main~10 or a good commit hash",
       defaultValue: "",
@@ -683,35 +683,35 @@ final class RepositoryStore {
     switch request.kind {
     case .createBranch:
       guard !value.isEmpty else { return }
-      await runMutation(title: "Create Branch \(value)") {
+      await runMutation(title: "Create branch \(value)") {
         try await gitClient.createBranch(named: value, startPoint: selectedCommit?.hash, in: requiredRepository())
       }
     case .renameBranch:
       guard let branchToRename, !value.isEmpty else { return }
-      await runMutation(title: "Rename Branch \(branchToRename.shortName)") {
+      await runMutation(title: "Rename branch \(branchToRename.shortName)") {
         try await gitClient.renameBranch(from: branchToRename.shortName, to: value, in: requiredRepository())
       }
     case .createTag:
       guard !value.isEmpty else { return }
-      await runMutation(title: "Create Tag \(value)") {
+      await runMutation(title: "Create tag \(value)") {
         try await gitClient.createTag(named: value, target: selectedCommit?.hash, in: requiredRepository())
       }
     case .createWorktree:
       guard !value.isEmpty else { return }
-      await runMutation(title: "Create Worktree") {
+      await runMutation(title: "Create worktree") {
         try await gitClient.createWorktree(at: value, startPoint: selectedCommit?.hash ?? "HEAD", in: requiredRepository())
       }
     case .stashPush:
-      await runMutation(title: "Create Stash") {
+      await runMutation(title: "Create stash") {
         try await gitClient.stashPush(message: value.isEmpty ? nil : value, in: requiredRepository())
       }
     case .stashPushIncludeUntracked:
-      await runMutation(title: "Create Stash Including Untracked") {
+      await runMutation(title: "Create stash including untracked") {
         try await gitClient.stashPush(message: value.isEmpty ? nil : value, includeUntracked: true, in: requiredRepository())
       }
     case .bisectStart:
       guard let selectedCommit, !value.isEmpty else { return }
-      await runMutation(title: "Start Bisect") {
+      await runMutation(title: "Start bisect") {
         try await gitClient.startBisect(bad: selectedCommit.hash, good: value, in: requiredRepository())
       }
     case .gitFlowFeatureStart:
@@ -762,7 +762,7 @@ final class RepositoryStore {
   }
 
   func unsetUpstream(_ branch: GitRef) async {
-    await runMutation(title: "Unset Upstream \(branch.shortName)") {
+    await runMutation(title: "Unset upstream \(branch.shortName)") {
       try await gitClient.unsetUpstream(for: branch.shortName, in: requiredRepository())
     }
   }
@@ -806,7 +806,7 @@ final class RepositoryStore {
   }
 
   func removeWorktree(_ worktree: GitWorktree) async {
-    await runMutation(title: "Remove Worktree \(worktree.name)") {
+    await runMutation(title: "Remove worktree \(worktree.name)") {
       try await gitClient.removeWorktree(worktree, in: requiredRepository())
     }
   }
@@ -831,13 +831,13 @@ final class RepositoryStore {
   }
 
   func updateSubmodules() async {
-    await runMutation(title: "Update Submodules") {
+    await runMutation(title: "Update submodules") {
       try await gitClient.updateSubmodules(in: requiredRepository())
     }
   }
 
   func updateSubmodule(_ submodule: GitSubmodule) async {
-    await runMutation(title: "Update Submodule \(submodule.path)") {
+    await runMutation(title: "Update submodule \(submodule.path)") {
       try await gitClient.updateSubmodule(submodule, in: requiredRepository())
     }
   }
@@ -852,27 +852,27 @@ final class RepositoryStore {
   }
 
   func lfsPull() async {
-    await runMutation(title: "Git LFS Pull") {
+    await runMutation(title: "Git LFS pull") {
       try await gitClient.lfsPull(in: requiredRepository())
     }
   }
 
   func lfsLockSelectedFile() async {
     guard let path = selectedPreviewPath else { return }
-    await runMutation(title: "Git LFS Lock \(path)") {
+    await runMutation(title: "Git LFS lock \(path)") {
       try await gitClient.lfsLock(path: path, in: requiredRepository())
     }
   }
 
   func lfsUnlockSelectedFile(force: Bool = false) async {
     guard let path = selectedPreviewPath else { return }
-    await runMutation(title: "Git LFS Unlock \(path)") {
+    await runMutation(title: "Git LFS unlock \(path)") {
       try await gitClient.lfsUnlock(path: path, force: force, in: requiredRepository())
     }
   }
 
   func setCommitSigning(_ enabled: Bool) async {
-    await runMutation(title: enabled ? "Enable GPG Signing" : "Disable GPG Signing") {
+    await runMutation(title: enabled ? "Enable GPG signing" : "Disable GPG signing") {
       try await gitClient.setCommitSigning(enabled, in: requiredRepository())
     }
   }
@@ -891,7 +891,7 @@ final class RepositoryStore {
   }
 
   func resetBisect() async {
-    await runMutation(title: "Reset Bisect") {
+    await runMutation(title: "Reset bisect") {
       try await gitClient.resetBisect(in: requiredRepository())
     }
   }
@@ -952,7 +952,7 @@ final class RepositoryStore {
       let entries = try await gitClient.fileHistoryEntries(path: path, in: requiredRepository())
       fileHistoryDocument = GitFileHistoryDocument(path: path, entries: entries)
     } catch {
-      commandResult = CommandResult(title: "File History \(path)", output: error.localizedDescription, isError: true)
+      commandResult = CommandResult(title: "File history \(path)", output: error.localizedDescription, isError: true)
       errorMessage = error.localizedDescription
     }
   }
@@ -971,7 +971,7 @@ final class RepositoryStore {
       )
       lineHistoryDocument = GitLineHistoryDocument(path: path, startLine: startLine, endLine: endLine, entries: entries)
     } catch {
-      commandResult = CommandResult(title: "Line History \(path)", output: error.localizedDescription, isError: true)
+      commandResult = CommandResult(title: "Line history \(path)", output: error.localizedDescription, isError: true)
       errorMessage = error.localizedDescription
     }
   }
@@ -985,12 +985,12 @@ final class RepositoryStore {
         .map { "\($0.repository.fullName): \($0.subject.title)" }
         .joined(separator: "\n")
       commandResult = CommandResult(
-        title: "GitHub Notifications",
+        title: "GitHub notifications",
         output: summary.isEmpty ? "No unread notifications." : summary,
         isError: false
       )
     } catch {
-      commandResult = CommandResult(title: "GitHub Notifications", output: error.localizedDescription, isError: true)
+      commandResult = CommandResult(title: "GitHub notifications", output: error.localizedDescription, isError: true)
       errorMessage = error.localizedDescription
     }
   }
@@ -1001,9 +1001,9 @@ final class RepositoryStore {
     do {
       try await gitHubClient.markNotificationsRead(token: token)
       gitHubNotifications = []
-      commandResult = CommandResult(title: "GitHub Notifications", output: "Marked notifications as read.", isError: false)
+      commandResult = CommandResult(title: "GitHub notifications", output: "Marked notifications as read.", isError: false)
     } catch {
-      commandResult = CommandResult(title: "GitHub Notifications", output: error.localizedDescription, isError: true)
+      commandResult = CommandResult(title: "GitHub notifications", output: error.localizedDescription, isError: true)
       errorMessage = error.localizedDescription
     }
   }
@@ -1066,7 +1066,7 @@ final class RepositoryStore {
     do {
       interactiveRebasePlan = try await gitClient.interactiveRebasePlan(in: requiredRepository())
     } catch {
-      commandResult = CommandResult(title: "Interactive Rebase", output: error.localizedDescription, isError: true)
+      commandResult = CommandResult(title: "Interactive rebase", output: error.localizedDescription, isError: true)
       errorMessage = error.localizedDescription
     }
   }
@@ -1088,7 +1088,7 @@ final class RepositoryStore {
   func startInteractiveRebase() async {
     guard let plan = interactiveRebasePlan else { return }
     interactiveRebasePlan = nil
-    await runMutation(title: "Interactive Rebase") {
+    await runMutation(title: "Interactive rebase") {
       try await gitClient.startInteractiveRebase(plan, in: requiredRepository())
     }
   }

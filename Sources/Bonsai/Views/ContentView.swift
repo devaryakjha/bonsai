@@ -359,7 +359,7 @@ struct ContentView: View {
     }
     .sheet(item: $store.fileHistoryDocument) { document in
       FileHistorySheet(
-        title: "File History",
+        title: "File history",
         path: document.path,
         entries: document.entries,
         onCancel: {
@@ -372,7 +372,7 @@ struct ContentView: View {
     }
     .sheet(item: $store.lineHistoryDocument) { document in
       FileHistorySheet(
-        title: "Line History",
+        title: "Line history",
         path: "\(document.path), \(document.rangeTitle)",
         entries: document.entries,
         onCancel: {
@@ -660,7 +660,7 @@ private struct DiscardChangeSheet: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
-      Text("Discard Change")
+      Text("Discard change")
         .font(.title3)
         .fontWeight(.semibold)
 
@@ -835,7 +835,7 @@ private struct ResetSheet: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
-      Text("Reset Branch")
+      Text("Reset branch")
         .font(.title3)
         .fontWeight(.semibold)
 
@@ -873,7 +873,7 @@ private struct ReflogResetSheet: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
-      Text("Reset to Reflog Entry")
+      Text("Reset to reflog entry")
         .font(.title3)
         .fontWeight(.semibold)
 
@@ -973,7 +973,7 @@ private struct InteractiveRebaseSheet: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Text("Interactive Rebase")
+      Text("Interactive rebase")
         .font(.title3)
         .fontWeight(.semibold)
 
@@ -1016,7 +1016,7 @@ private struct InteractiveRebaseSheet: View {
       HStack {
         Button("Cancel", action: onCancel)
         Spacer()
-        Button("Start Rebase", action: onStart)
+        Button("Start rebase", action: onStart)
           .buttonStyle(.borderedProminent)
           .disabled(store.interactiveRebasePlan?.items.isEmpty != false)
       }
@@ -1087,7 +1087,7 @@ private struct ConflictResolutionSheet: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Text("Resolve Conflict")
+      Text("Resolve conflict")
         .font(.title3)
         .fontWeight(.semibold)
 
@@ -1150,7 +1150,7 @@ private struct RepositorySetupSheet: View {
       }
 
       VStack(alignment: .leading, spacing: 6) {
-        Text(mode == .clone ? "Destination" : "Repository Folder")
+        Text(mode == .clone ? "Destination" : "Repository folder")
           .font(.caption)
           .foregroundStyle(.secondary)
         HStack {

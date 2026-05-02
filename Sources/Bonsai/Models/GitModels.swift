@@ -100,14 +100,14 @@ struct GitRef: Identifiable, Hashable {
   var id: String { "\(kind.rawValue):\(name)" }
   var trackingSummary: String? {
     if upstreamGone {
-      return "Gone"
+      return "gone"
     }
     if ahead == 0 && behind == 0 {
       return nil
     }
     var parts: [String] = []
-    if ahead > 0 { parts.append("up \(ahead)") }
-    if behind > 0 { parts.append("down \(behind)") }
+    if ahead > 0 { parts.append("↑ \(ahead)") }
+    if behind > 0 { parts.append("↓ \(behind)") }
     return parts.joined(separator: " ")
   }
   var pullTitle: String {
@@ -416,7 +416,7 @@ enum GitHubRepositoryOperation: String, Identifiable {
   case delete
 
   var id: String { rawValue }
-  var title: String { self == .create ? "Create GitHub Repository" : "Delete GitHub Repository" }
+  var title: String { self == .create ? "Create GitHub repository" : "Delete GitHub repository" }
   var primaryActionTitle: String { self == .create ? "Create" : "Delete" }
 }
 
@@ -635,7 +635,7 @@ enum RemoteEditorMode: String, Identifiable {
   case edit
 
   var id: String { rawValue }
-  var title: String { self == .add ? "Add Remote" : "Edit Remote" }
+  var title: String { self == .add ? "Add remote" : "Edit remote" }
   var primaryActionTitle: String { self == .add ? "Add" : "Save" }
 }
 
