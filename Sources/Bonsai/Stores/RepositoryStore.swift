@@ -1290,7 +1290,7 @@ final class RepositoryStore {
   }
 
   func fetchGitHubNotifications() async {
-    guard let token = githubToken() else { return }
+    guard let token = githubToken(commandTitle: "GitHub notifications") else { return }
 
     do {
       gitHubNotifications = try await gitHubClient.notifications(token: token)
@@ -1306,7 +1306,7 @@ final class RepositoryStore {
   }
 
   func markGitHubNotificationsRead() async {
-    guard let token = githubToken() else { return }
+    guard let token = githubToken(commandTitle: "GitHub notifications") else { return }
 
     do {
       try await gitHubClient.markNotificationsRead(token: token)
@@ -1341,7 +1341,7 @@ final class RepositoryStore {
   }
 
   func runGitHubRepositoryOperation(_ request: GitHubRepositoryRequest) async {
-    guard let token = githubToken() else { return }
+    guard let token = githubToken(commandTitle: request.operation.title) else { return }
     gitHubRepositoryRequest = nil
 
     do {
@@ -1587,10 +1587,12 @@ final class RepositoryStore {
     projectWorkspaceGroups = ProjectRepositoryScanner.scanDefaultWorkspaceGroups()
   }
 
-  private func githubToken() -> String? {
+  private func githubToken(commandTitle: String) -> String? {
     let token = UserDefaults.standard.string(forKey: "bonsai.githubToken")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     guard !token.isEmpty else {
-      errorMessage = "Add a GitHub personal access token in Settings first."
+      let message = "Add a GitHub personal access token in Settings first."
+      commandResult = CommandResult(title: commandTitle, output: message, isError: true)
+      errorMessage = message
       return nil
     }
     return token

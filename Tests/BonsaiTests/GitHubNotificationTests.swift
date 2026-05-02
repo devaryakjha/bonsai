@@ -58,6 +58,79 @@ final class GitHubNotificationTests: XCTestCase {
     XCTAssertEqual(lines[7], "example/bonsai: Thread 8")
   }
 
+  @MainActor
+  func testMissingGitHubTokenSurfacesNotificationCommandResult() async {
+    let previousToken = UserDefaults.standard.string(forKey: "bonsai.githubToken")
+    UserDefaults.standard.removeObject(forKey: "bonsai.githubToken")
+    defer {
+      if let previousToken {
+        UserDefaults.standard.set(previousToken, forKey: "bonsai.githubToken")
+      } else {
+        UserDefaults.standard.removeObject(forKey: "bonsai.githubToken")
+      }
+    }
+
+    let store = RepositoryStore()
+
+    await store.fetchGitHubNotifications()
+
+    XCTAssertEqual(store.commandResult?.title, "GitHub notifications")
+    XCTAssertEqual(store.commandResult?.isError, true)
+    XCTAssertEqual(store.commandResult?.output, "Add a GitHub personal access token in Settings first.")
+    XCTAssertEqual(store.errorMessage, "Add a GitHub personal access token in Settings first.")
+  }
+
+  @MainActor
+  func testMissingGitHubTokenSurfacesMarkReadCommandResult() async {
+    let previousToken = UserDefaults.standard.string(forKey: "bonsai.githubToken")
+    UserDefaults.standard.removeObject(forKey: "bonsai.githubToken")
+    defer {
+      if let previousToken {
+        UserDefaults.standard.set(previousToken, forKey: "bonsai.githubToken")
+      } else {
+        UserDefaults.standard.removeObject(forKey: "bonsai.githubToken")
+      }
+    }
+
+    let store = RepositoryStore()
+
+    await store.markGitHubNotificationsRead()
+
+    XCTAssertEqual(store.commandResult?.title, "GitHub notifications")
+    XCTAssertEqual(store.commandResult?.isError, true)
+    XCTAssertEqual(store.commandResult?.output, "Add a GitHub personal access token in Settings first.")
+  }
+
+  @MainActor
+  func testMissingGitHubTokenSurfacesRepositoryCommandResultWithoutDismissingRequest() async {
+    let previousToken = UserDefaults.standard.string(forKey: "bonsai.githubToken")
+    UserDefaults.standard.removeObject(forKey: "bonsai.githubToken")
+    defer {
+      if let previousToken {
+        UserDefaults.standard.set(previousToken, forKey: "bonsai.githubToken")
+      } else {
+        UserDefaults.standard.removeObject(forKey: "bonsai.githubToken")
+      }
+    }
+
+    let store = RepositoryStore()
+    let request = GitHubRepositoryRequest(
+      operation: .create,
+      owner: "",
+      name: "bonsai",
+      repositoryDescription: "",
+      isPrivate: false
+    )
+    store.gitHubRepositoryRequest = request
+
+    await store.runGitHubRepositoryOperation(request)
+
+    XCTAssertEqual(store.commandResult?.title, "Create GitHub repository")
+    XCTAssertEqual(store.commandResult?.isError, true)
+    XCTAssertEqual(store.commandResult?.output, "Add a GitHub personal access token in Settings first.")
+    XCTAssertEqual(store.gitHubRepositoryRequest, request)
+  }
+
   func testDecodeGitHubRepository() throws {
     let data = """
     {
