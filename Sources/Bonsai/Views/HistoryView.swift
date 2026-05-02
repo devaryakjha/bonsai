@@ -11,6 +11,15 @@ struct HistoryView: View {
           .foregroundStyle(.secondary)
         TextField("Search commits", text: $store.historySearchText)
           .textFieldStyle(.plain)
+        Menu {
+          Toggle("Show commit details", isOn: $showCommitRowDetails)
+        } label: {
+          Label("History options", systemImage: "slider.horizontal.3")
+            .labelStyle(.iconOnly)
+        }
+        .menuStyle(.borderlessButton)
+        .help("History options")
+        .accessibilityLabel("History options")
       }
       .padding(.horizontal, 12)
       .padding(.vertical, 8)
