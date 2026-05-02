@@ -46,9 +46,29 @@ struct WorkingTreeView: View {
             title: "Unstaged",
             actionSystemImage: "plus.circle",
             actionTitle: "Stage all",
-            isActionAvailable: store.canStageAll
-          ) {
-            Task { await store.stageAll() }
+            isActionAvailable: store.canStageAll,
+            action: {
+              Task { await store.stageAll() }
+            },
+            secondaryActionSystemImage: store.showIgnoredFiles ? "eye.slash" : "eye",
+            secondaryActionTitle: store.showIgnoredFiles ? "Hide ignored files" : "Show ignored files",
+            secondaryAction: {
+              store.toggleIgnoredFiles()
+            }
+          )
+        }
+
+        if store.showIgnoredFiles {
+          Section {
+            if store.ignoredChanges.isEmpty {
+              PlaceholderRow(title: "No ignored files")
+            } else {
+              ForEach(store.ignoredChanges) { entry in
+                IgnoredStatusRow(entry: entry, store: store)
+              }
+            }
+          } header: {
+            Text("Ignored")
           }
         }
       }
@@ -67,6 +87,29 @@ private struct WorkingTreeSectionHeader: View {
   var actionTitle: String
   var isActionAvailable: Bool
   var action: () -> Void
+  var secondaryActionSystemImage: String?
+  var secondaryActionTitle: String?
+  var secondaryAction: (() -> Void)?
+
+  init(
+    title: String,
+    actionSystemImage: String,
+    actionTitle: String,
+    isActionAvailable: Bool,
+    action: @escaping () -> Void,
+    secondaryActionSystemImage: String? = nil,
+    secondaryActionTitle: String? = nil,
+    secondaryAction: (() -> Void)? = nil
+  ) {
+    self.title = title
+    self.actionSystemImage = actionSystemImage
+    self.actionTitle = actionTitle
+    self.isActionAvailable = isActionAvailable
+    self.action = action
+    self.secondaryActionSystemImage = secondaryActionSystemImage
+    self.secondaryActionTitle = secondaryActionTitle
+    self.secondaryAction = secondaryAction
+  }
 
   var body: some View {
     HStack(spacing: 8) {
@@ -83,6 +126,18 @@ private struct WorkingTreeSectionHeader: View {
         .buttonStyle(.borderless)
         .help(actionTitle)
         .accessibilityLabel(actionTitle)
+      }
+
+      if let secondaryActionSystemImage,
+         let secondaryActionTitle,
+         let secondaryAction {
+        Button(action: secondaryAction) {
+          Image(systemName: secondaryActionSystemImage)
+            .imageScale(.medium)
+        }
+        .buttonStyle(.borderless)
+        .help(secondaryActionTitle)
+        .accessibilityLabel(secondaryActionTitle)
       }
     }
   }
@@ -332,6 +387,39 @@ private struct StatusRow: View {
 
   private var canIgnoreDirectory: Bool {
     entry.isUntracked && GitIgnorePattern.directoryPattern(for: entry.path) != nil
+  }
+}
+
+private struct IgnoredStatusRow: View {
+  var entry: GitStatusEntry
+  let store: RepositoryStore
+
+  var body: some View {
+    HStack(spacing: 10) {
+      ChangeStatusBadge(statusEntry: entry)
+
+      Text(entry.path)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .truncationMode(.middle)
+        .help(entry.path)
+
+      Spacer()
+    }
+    .contextMenu {
+      Button("Copy Path") {
+        PasteboardWriter.copy(entry.path)
+      }
+      Button("Copy Absolute Path") {
+        store.copyAbsoluteFilePath(path: entry.path)
+      }
+      Button("Open") {
+        store.openFile(path: entry.path)
+      }
+      Button("Reveal in Finder") {
+        store.revealInFinder(path: entry.path)
+      }
+    }
   }
 }
 

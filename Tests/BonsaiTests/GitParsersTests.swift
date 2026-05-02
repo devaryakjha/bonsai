@@ -10,9 +10,10 @@ final class GitParsersTests: XCTestCase {
     UU Package.swift
     R  Old.swift -> New.swift
     MM Package.resolved
+    !! build/cache.log
     """)
 
-    XCTAssertEqual(entries.count, 7)
+    XCTAssertEqual(entries.count, 8)
     XCTAssertEqual(entries[0].path, "Sources/App.swift")
     XCTAssertFalse(entries[0].isStaged)
     XCTAssertEqual(entries[1].kind, .added)
@@ -25,6 +26,11 @@ final class GitParsersTests: XCTestCase {
     XCTAssertFalse(entries[6].isStaged)
     XCTAssertEqual(entries[5].path, "Package.resolved")
     XCTAssertEqual(entries[6].path, "Package.resolved")
+    XCTAssertEqual(entries[7].path, "build/cache.log")
+    XCTAssertEqual(entries[7].kind, .ignored)
+    XCTAssertTrue(entries[7].isIgnored)
+    XCTAssertFalse(entries[7].isStaged)
+    XCTAssertFalse(entries[7].isUntracked)
   }
 
   func testParseRefsClassifiesLocalRemoteAndTagRefs() {
@@ -343,11 +349,12 @@ final class GitParsersTests: XCTestCase {
      M Modified.swift
      D Deleted.swift
     UU Conflict.swift
+    !! build/cache.log
     """)
 
-    XCTAssertEqual(entries.map(\.statusCode), ["A", "M", "D", "U"])
-    XCTAssertEqual(entries.map(\.statusTitle), ["Added", "Modified", "Deleted", "Conflicted"])
-    XCTAssertEqual(entries.map(\.statusRole), [.added, .modified, .deleted, .conflicted])
+    XCTAssertEqual(entries.map(\.statusCode), ["A", "M", "D", "U", "!"])
+    XCTAssertEqual(entries.map(\.statusTitle), ["Added", "Modified", "Deleted", "Conflicted", "Ignored"])
+    XCTAssertEqual(entries.map(\.statusRole), [.added, .modified, .deleted, .conflicted, .ignored])
   }
 
   func testChangeStatusRoleFollowsConventionalSemanticColors() {
@@ -359,6 +366,7 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(GitChangeStatusRole(code: "C75"), .copied)
     XCTAssertEqual(GitChangeStatusRole(code: "U"), .conflicted)
     XCTAssertEqual(GitChangeStatusRole(code: "?"), .untracked)
+    XCTAssertEqual(GitChangeStatusRole(code: "!"), .ignored)
     XCTAssertEqual(GitChangeStatusRole(code: "X"), .unknown)
 
     XCTAssertEqual(GitChangeStatusRole(code: "A").colorToken, .green)
@@ -369,6 +377,7 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(GitChangeStatusRole(code: "C75").colorToken, .blue)
     XCTAssertEqual(GitChangeStatusRole(code: "U").colorToken, .orange)
     XCTAssertEqual(GitChangeStatusRole(code: "?").colorToken, .neutral)
+    XCTAssertEqual(GitChangeStatusRole(code: "!").colorToken, .neutral)
     XCTAssertEqual(GitChangeStatusRole(code: "X").colorToken, .neutral)
 
     XCTAssertEqual(GitChangeStatusRole(code: "A").colorToken.conventionalName, "green")

@@ -6,6 +6,7 @@ enum GitChangeStatusRole: String {
   case copied
   case conflicted
   case untracked
+  case ignored
   case unknown
 
   init(code: String) {
@@ -24,6 +25,8 @@ enum GitChangeStatusRole: String {
       self = .conflicted
     case "?":
       self = .untracked
+    case "!":
+      self = .ignored
     default:
       self = .unknown
     }
@@ -43,7 +46,7 @@ enum GitChangeStatusRole: String {
       return .blue
     case .conflicted:
       return .orange
-    case .untracked, .unknown:
+    case .untracked, .ignored, .unknown:
       return .neutral
     }
   }

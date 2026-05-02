@@ -122,6 +122,12 @@ struct BonsaiCommands: Commands {
       }
       .disabled(store.selectedRepository == nil)
 
+      Button(store.showIgnoredFiles ? "Hide Ignored Files" : "Show Ignored Files") {
+        store.toggleIgnoredFiles()
+      }
+      .keyboardShortcut(".", modifiers: [.command, .shift])
+      .disabled(store.selectedRepository == nil)
+
       Button("Stage All") {
         Task { await store.stageAll() }
       }

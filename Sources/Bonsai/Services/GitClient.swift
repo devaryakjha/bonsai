@@ -32,8 +32,12 @@ struct GitClient {
     ["init"]
   }
 
-  func snapshot(for repository: GitRepository, selectedCommit: GitCommit?) async throws -> RepositorySnapshot {
-    async let status = status(in: repository)
+  func snapshot(
+    for repository: GitRepository,
+    selectedCommit: GitCommit?,
+    includeIgnoredFiles: Bool = false
+  ) async throws -> RepositorySnapshot {
+    async let status = status(in: repository, includeIgnoredFiles: includeIgnoredFiles)
     async let commits = commits(in: repository)
     async let refs = refs(in: repository)
     async let remotes = remotes(in: repository)
@@ -61,13 +65,17 @@ struct GitClient {
     )
   }
 
-  func status(in repository: GitRepository) async throws -> [GitStatusEntry] {
-    let output = try await git(Self.statusArguments(), in: repository.url)
+  func status(in repository: GitRepository, includeIgnoredFiles: Bool = false) async throws -> [GitStatusEntry] {
+    let output = try await git(Self.statusArguments(includeIgnoredFiles: includeIgnoredFiles), in: repository.url)
     return GitParsers.parseStatus(output.stdout)
   }
 
-  static func statusArguments() -> [String] {
-    ["status", "--porcelain=v1", "--untracked-files=all"]
+  static func statusArguments(includeIgnoredFiles: Bool = false) -> [String] {
+    var arguments = ["status", "--porcelain=v1", "--untracked-files=all"]
+    if includeIgnoredFiles {
+      arguments.append("--ignored=matching")
+    }
+    return arguments
   }
 
   func commits(in repository: GitRepository) async throws -> [GitCommit] {

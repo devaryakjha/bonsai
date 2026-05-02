@@ -12,6 +12,10 @@ final class GitClientCommandArgumentsTests: XCTestCase {
     )
     XCTAssertEqual(GitClient.initializeRepositoryArguments(), ["init"])
     XCTAssertEqual(GitClient.statusArguments(), ["status", "--porcelain=v1", "--untracked-files=all"])
+    XCTAssertEqual(
+      GitClient.statusArguments(includeIgnoredFiles: true),
+      ["status", "--porcelain=v1", "--untracked-files=all", "--ignored=matching"]
+    )
     XCTAssertEqual(GitClient.headVerificationArguments(), ["rev-parse", "--verify", "HEAD"])
     XCTAssertEqual(
       GitClient.commitListArguments(limit: 300),

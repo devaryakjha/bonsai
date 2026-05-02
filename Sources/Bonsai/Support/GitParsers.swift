@@ -548,6 +548,7 @@ enum GitParsers {
     if ["DD", "AU", "UD", "UA", "DU", "AA", "UU"].contains(status) {
       return .conflicted
     }
+    if index == "!" || workTree == "!" { return .ignored }
     if index == "?" || workTree == "?" { return .untracked }
     if index == "R" || workTree == "R" { return .renamed }
     if index == "C" || workTree == "C" { return .copied }

@@ -22,6 +22,7 @@ final class RepositoryStore {
   private let recentsKey = "bonsai.recentRepositories"
   private let recentCommitMessagesKey = "bonsai.recentCommitMessages"
   private let autoRefreshKey = "bonsai.autoRefresh"
+  private let showIgnoredFilesKey = "bonsai.showIgnoredFiles"
 
   var selectedRepository: GitRepository?
   var recentRepositories: [GitRepository] = []
@@ -96,6 +97,12 @@ final class RepositoryStore {
   var repositorySetupRemoteURL = ""
   var repositorySetupDestinationPath = ""
   var isRefreshing = false
+  var showIgnoredFiles = UserDefaults.standard.bool(forKey: "bonsai.showIgnoredFiles") {
+    didSet {
+      UserDefaults.standard.set(showIgnoredFiles, forKey: showIgnoredFilesKey)
+      Task { await refreshAll() }
+    }
+  }
   var errorMessage: String?
   var commitMessage = ""
   var recentCommitMessages: [String] = []
@@ -331,11 +338,15 @@ final class RepositoryStore {
   }
 
   var unstagedChanges: [GitStatusEntry] {
-    snapshot.status.filter { !$0.isStaged && !$0.isConflicted }
+    snapshot.status.filter { !$0.isStaged && !$0.isConflicted && !$0.isIgnored }
   }
 
   var conflictedChanges: [GitStatusEntry] {
     snapshot.status.filter(\.isConflicted)
+  }
+
+  var ignoredChanges: [GitStatusEntry] {
+    showIgnoredFiles ? snapshot.status.filter(\.isIgnored) : []
   }
 
   var localBranches: [GitRef] {
@@ -565,7 +576,11 @@ final class RepositoryStore {
     defer { isRefreshing = false }
 
     do {
-      snapshot = try await gitClient.snapshot(for: repository, selectedCommit: selectedCommit)
+      snapshot = try await gitClient.snapshot(
+        for: repository,
+        selectedCommit: selectedCommit,
+        includeIgnoredFiles: showIgnoredFiles
+      )
       reconcileSelectedStatusEntry()
       if let selectedStash,
          !snapshot.stashes.contains(where: { $0.id == selectedStash.id }) {
@@ -668,6 +683,7 @@ final class RepositoryStore {
   }
 
   func selectStatusEntry(_ entry: GitStatusEntry?) {
+    guard entry?.isIgnored != true else { return }
     selectedStatusEntry = entry
     selectedChangedFile = nil
     selectedStash = nil
@@ -919,6 +935,10 @@ final class RepositoryStore {
     await runMutation(title: "Apply patch") {
       try await gitClient.applyPatch(request.patch, in: requiredRepository())
     }
+  }
+
+  func toggleIgnoredFiles() {
+    showIgnoredFiles.toggle()
   }
 
   func commit() async {
@@ -2120,7 +2140,7 @@ final class RepositoryStore {
     case .changes:
       selectedChangedFile = nil
       if selectedStatusEntry == nil {
-        selectedStatusEntry = snapshot.status.first
+        selectedStatusEntry = snapshot.status.first { !$0.isIgnored }
       }
     }
   }
@@ -2128,7 +2148,7 @@ final class RepositoryStore {
   private func reconcileSelectedStatusEntry() {
     guard let current = selectedStatusEntry else { return }
     selectedStatusEntry = snapshot.status.first {
-      $0.path == current.path && $0.originalPath == current.originalPath
+      !$0.isIgnored && $0.path == current.path && $0.originalPath == current.originalPath
     }
   }
 

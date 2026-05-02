@@ -501,6 +501,53 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(ignoredDiff.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
   }
 
+  func testStoreTogglesIgnoredFilesVisibility() async throws {
+    let previousIgnoredPreference = UserDefaults.standard.object(forKey: "bonsai.showIgnoredFiles")
+    UserDefaults.standard.removeObject(forKey: "bonsai.showIgnoredFiles")
+    defer {
+      if let previousIgnoredPreference {
+        UserDefaults.standard.set(previousIgnoredPreference, forKey: "bonsai.showIgnoredFiles")
+      } else {
+        UserDefaults.standard.removeObject(forKey: "bonsai.showIgnoredFiles")
+      }
+    }
+
+    let repo = try await makeRepository()
+    try write("*.log\n", to: repo.appending(path: ".gitignore"))
+    try await commitAll(in: repo, message: "Ignore log output")
+    try write("cache\n", to: repo.appending(path: "build/cache.log"))
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    let initialStatus = await store.snapshot.status
+    let initialIgnoredChanges = await store.ignoredChanges
+    XCTAssertFalse(initialStatus.contains { $0.path == "build/cache.log" })
+    XCTAssertTrue(initialIgnoredChanges.isEmpty)
+
+    await MainActor.run {
+      store.toggleIgnoredFiles()
+    }
+    await store.refreshAll()
+    let ignoredChanges = await store.ignoredChanges
+    let ignoredEntry = try XCTUnwrap(ignoredChanges.first)
+    XCTAssertEqual(ignoredEntry.path, "build/cache.log")
+    XCTAssertEqual(ignoredEntry.kind, .ignored)
+    XCTAssertTrue(ignoredEntry.isIgnored)
+
+    await MainActor.run {
+      store.selectStatusEntry(ignoredEntry)
+    }
+    let selectedStatusEntry = await store.selectedStatusEntry
+    XCTAssertNil(selectedStatusEntry)
+
+    await MainActor.run {
+      store.toggleIgnoredFiles()
+    }
+    await store.refreshAll()
+    let hiddenIgnoredChanges = await store.ignoredChanges
+    XCTAssertTrue(hiddenIgnoredChanges.isEmpty)
+  }
+
   func testStoreCommitRequiresStagedChangesUnlessAmending() async throws {
     let repo = try await makeRepository()
     try write("initial\n", to: repo.appending(path: "file.txt"))

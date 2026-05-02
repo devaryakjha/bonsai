@@ -23,6 +23,7 @@ struct GitStatusEntry: Identifiable, Hashable {
     case renamed = "Renamed"
     case copied = "Copied"
     case untracked = "Untracked"
+    case ignored = "Ignored"
     case conflicted = "Conflicted"
     case typeChanged = "Type changed"
     case unknown = "Changed"
@@ -37,6 +38,7 @@ struct GitStatusEntry: Identifiable, Hashable {
   var id: String { "\(indexStatus)\(workTreeStatus):\(path)" }
   var isStaged: Bool { indexStatus != " " && indexStatus != "?" && indexStatus != "!" }
   var isUntracked: Bool { indexStatus == "?" || workTreeStatus == "?" }
+  var isIgnored: Bool { indexStatus == "!" || workTreeStatus == "!" }
   var isConflicted: Bool {
     ["DD", "AU", "UD", "UA", "DU", "AA", "UU"].contains("\(indexStatus)\(workTreeStatus)")
   }
@@ -54,6 +56,8 @@ struct GitStatusEntry: Identifiable, Hashable {
       return "C"
     case .untracked:
       return "?"
+    case .ignored:
+      return "!"
     case .conflicted:
       return "U"
     case .typeChanged:
