@@ -53,16 +53,15 @@ struct RichDiffTextView: NSViewRepresentable {
   private static func attributedDiff(_ text: String) -> NSAttributedString {
     let result = NSMutableAttributedString()
     let baseFont = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
-    let metadataFont = NSFont.systemFont(ofSize: 11, weight: .medium)
     let paragraph = NSMutableParagraphStyle()
     paragraph.lineBreakMode = .byClipping
     paragraph.lineSpacing = 1
 
     let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+    let isGitDiff = lines.contains { $0.hasPrefix("diff --git ") }
     for index in lines.indices {
       let line = lines[index]
-      guard !line.hasPrefix("index ") else { continue }
-      let displayLine = displayText(for: line)
+      guard !isHiddenPatchMetadata(line, inGitDiff: isGitDiff) else { continue }
       var attributes: [NSAttributedString.Key: Any] = [
         .font: baseFont,
         .foregroundColor: NSColor.labelColor,
@@ -78,12 +77,9 @@ struct RichDiffTextView: NSViewRepresentable {
       } else if line.hasPrefix("@@") {
         attributes[.foregroundColor] = NSColor.systemBlue
         attributes[.backgroundColor] = NSColor.systemBlue.withAlphaComponent(0.08)
-      } else if line.hasPrefix("diff --git") || line.hasPrefix("index ") || line.hasPrefix("---") || line.hasPrefix("+++") {
-        attributes[.font] = metadataFont
-        attributes[.foregroundColor] = NSColor.secondaryLabelColor
       }
 
-      let lineString = NSMutableAttributedString(string: displayLine + "\n", attributes: attributes)
+      let lineString = NSMutableAttributedString(string: line + "\n", attributes: attributes)
       if let inlineRange = inlineRange(for: line, at: index, in: lines) {
         let highlightColor = line.hasPrefix("+")
           ? NSColor.systemGreen.withAlphaComponent(0.24)
@@ -93,6 +89,14 @@ struct RichDiffTextView: NSViewRepresentable {
       result.append(lineString)
     }
     return result
+  }
+
+  private static func isHiddenPatchMetadata(_ line: String, inGitDiff: Bool) -> Bool {
+    guard inGitDiff else { return false }
+    return line.hasPrefix("diff --git ")
+      || line.hasPrefix("index ")
+      || line.hasPrefix("--- ")
+      || line.hasPrefix("+++ ")
   }
 
   private static func inlineRange(for line: String, at index: Int, in lines: [String]) -> NSRange? {
@@ -123,23 +127,4 @@ struct RichDiffTextView: NSViewRepresentable {
     return NSRange(location: lower, length: length)
   }
 
-  private static func displayText(for line: String) -> String {
-    if line.hasPrefix("diff --git") {
-      let pieces = line.split(separator: " ")
-      if let path = pieces.last {
-        return "File " + cleanedPath(String(path), prefix: "b/")
-      }
-    }
-    if line.hasPrefix("--- ") {
-      return "Before " + cleanedPath(String(line.dropFirst(4)), prefix: "a/")
-    }
-    if line.hasPrefix("+++ ") {
-      return "After  " + cleanedPath(String(line.dropFirst(4)), prefix: "b/")
-    }
-    return line
-  }
-
-  private static func cleanedPath(_ path: String, prefix: String) -> String {
-    path.hasPrefix(prefix) ? String(path.dropFirst(prefix.count)) : path
-  }
 }

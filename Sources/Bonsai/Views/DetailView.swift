@@ -42,7 +42,14 @@ private struct DetailHeaderView: View {
 
   @ViewBuilder
   private var titleView: some View {
-    if let stash = store.selectedStash, store.mainMode == .history {
+    if let file = store.selectedChangedFile, store.mainMode == .history {
+      Text(file.path)
+        .font(.headline)
+        .lineLimit(2)
+      selectedChangedFileContext(file)
+        .font(.caption)
+        .foregroundStyle(.secondary)
+    } else if let stash = store.selectedStash, store.mainMode == .history {
       Text(stash.index)
         .font(.headline)
         .lineLimit(1)
@@ -95,6 +102,30 @@ private struct DetailHeaderView: View {
       Text("Select a commit file or working tree change")
         .font(.caption)
         .foregroundStyle(.secondary)
+    }
+  }
+
+  @ViewBuilder
+  private func selectedChangedFileContext(_ file: GitChangedFile) -> some View {
+    if let stash = store.selectedStash {
+      HStack(spacing: 8) {
+        Text(stash.index)
+          .monospaced()
+        Text(stash.message)
+          .lineLimit(1)
+      }
+      .help(file.oldPath.map { "Renamed from \($0)" } ?? stash.message)
+    } else if let commit = store.selectedCommit {
+      HStack(spacing: 8) {
+        Text(commit.shortHash)
+          .monospaced()
+        Text(commit.subject)
+          .lineLimit(1)
+      }
+      .help(file.oldPath.map { "Renamed from \($0)" } ?? commit.subject)
+    } else if let oldPath = file.oldPath {
+      Text("Renamed from \(oldPath)")
+        .lineLimit(1)
     }
   }
 }
