@@ -16,6 +16,8 @@ Make Git change status indicators immediately meaningful by rendering `M`, `A`,
   orange.
 - Rename and copy scores such as `R100` and `C75` must normalize to `R` and `C`
   visually while retaining a helpful tooltip.
+- Badges must use a saturated semantic foreground, tinted fill, and stable
+  single-line dimensions so status meaning does not depend on surrounding copy.
 - Working tree rows, the detail header, the commit changed-file list, and
   file-history change pills must share the same status presentation.
 - Badge sizing must be stable so rows do not shift between status types.

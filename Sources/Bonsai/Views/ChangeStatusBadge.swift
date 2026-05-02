@@ -21,25 +21,31 @@ struct ChangeStatusBadge: View {
   var body: some View {
     Text(code)
       .font(.caption2.monospaced().weight(.semibold))
+      .lineLimit(1)
+      .minimumScaleFactor(0.85)
       .foregroundStyle(style.foreground)
-      .frame(width: 22, height: 18)
-      .background(style.background, in: RoundedRectangle(cornerRadius: 4))
-      .overlay {
-        RoundedRectangle(cornerRadius: 4)
-          .stroke(style.foreground.opacity(0.30), lineWidth: 0.5)
+      .frame(width: 24, height: 18)
+      .background {
+        RoundedRectangle(cornerRadius: 5, style: .continuous)
+          .fill(style.background)
       }
-      .help(title)
+      .overlay {
+        RoundedRectangle(cornerRadius: 5, style: .continuous)
+          .stroke(style.border, lineWidth: 0.5)
+      }
+      .help("\(title) (\(code))")
       .accessibilityLabel(title)
+      .accessibilityHint("\(role.colorToken.conventionalName) Git change status")
   }
 
-  private var style: (foreground: Color, background: Color) {
+  private var style: (foreground: Color, background: Color, border: Color) {
     switch role.colorToken {
     case .green:
       return palette(.systemGreen)
     case .red:
       return palette(.systemRed)
     case .amber:
-      return palette(.systemYellow)
+      return palette(foreground: .systemOrange, background: .systemYellow)
     case .purple:
       return palette(.systemPurple)
     case .blue:
@@ -47,12 +53,20 @@ struct ChangeStatusBadge: View {
     case .orange:
       return palette(.systemOrange)
     case .neutral:
-      return (.secondary, .secondary.opacity(0.12))
+      return (.secondary, .secondary.opacity(0.14), .secondary.opacity(0.24))
     }
   }
 
-  private func palette(_ color: NSColor) -> (foreground: Color, background: Color) {
-    let accent = Color(nsColor: color)
-    return (accent, accent.opacity(0.28))
+  private func palette(_ color: NSColor) -> (foreground: Color, background: Color, border: Color) {
+    palette(foreground: color, background: color)
+  }
+
+  private func palette(
+    foreground foregroundColor: NSColor,
+    background backgroundColor: NSColor
+  ) -> (foreground: Color, background: Color, border: Color) {
+    let foreground = Color(nsColor: foregroundColor)
+    let background = Color(nsColor: backgroundColor)
+    return (foreground, background.opacity(0.26), foreground.opacity(0.36))
   }
 }

@@ -57,6 +57,25 @@ enum GitChangeStatusColorToken: String {
   case blue
   case orange
   case neutral
+
+  var conventionalName: String {
+    switch self {
+    case .green:
+      return "green"
+    case .red:
+      return "red"
+    case .amber:
+      return "amber"
+    case .purple:
+      return "purple"
+    case .blue:
+      return "blue"
+    case .orange:
+      return "orange"
+    case .neutral:
+      return "neutral"
+    }
+  }
 }
 
 extension GitStatusEntry {

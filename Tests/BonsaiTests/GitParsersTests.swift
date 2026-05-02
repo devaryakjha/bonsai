@@ -268,6 +268,10 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(GitChangeStatusRole(code: "U").colorToken, .orange)
     XCTAssertEqual(GitChangeStatusRole(code: "?").colorToken, .neutral)
     XCTAssertEqual(GitChangeStatusRole(code: "X").colorToken, .neutral)
+
+    XCTAssertEqual(GitChangeStatusRole(code: "A").colorToken.conventionalName, "green")
+    XCTAssertEqual(GitChangeStatusRole(code: "D").colorToken.conventionalName, "red")
+    XCTAssertEqual(GitChangeStatusRole(code: "M").colorToken.conventionalName, "amber")
   }
 
   func testRevisionCommandsOwnCopyAndGitSubcommands() {
