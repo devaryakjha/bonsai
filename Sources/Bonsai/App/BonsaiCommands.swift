@@ -2,8 +2,18 @@ import SwiftUI
 
 struct BonsaiCommands: Commands {
   let store: RepositoryStore
+  @AppStorage("bonsai.showCommitRowDetails") private var showCommitRowDetails = false
 
   var body: some Commands {
+    CommandGroup(after: .sidebar) {
+      Button(showCommitRowDetails ? "Hide Commit Details" : "Show Commit Details") {
+        showCommitRowDetails.toggle()
+      }
+      .keyboardShortcut("d", modifiers: [.command])
+
+      Divider()
+    }
+
     CommandMenu("Repository") {
       Button("Open Repository…") {
         store.presentOpenRepositoryPanel()
