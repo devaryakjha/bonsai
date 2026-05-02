@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct ContentView: View {
@@ -384,6 +385,14 @@ private struct FileHistoryRow: View {
       }
     }
     .padding(.vertical, 5)
+    .contextMenu {
+      Button("Show Commit") {
+        onSelectCommit(entry)
+      }
+      Button("Copy Commit Hash") {
+        copyToPasteboard(entry.hash)
+      }
+    }
   }
 }
 
@@ -513,6 +522,14 @@ private struct BlameRow: View {
     .font(.caption.monospaced())
     .padding(.horizontal, 10)
     .padding(.vertical, 5)
+    .contextMenu {
+      Button("Show Commit") {
+        onSelectCommit(line)
+      }
+      Button("Copy Commit Hash") {
+        copyToPasteboard(line.commitHash)
+      }
+    }
   }
 
   private var dateText: String {
@@ -579,6 +596,11 @@ private struct DropStashSheet: View {
     .padding(20)
     .frame(width: 460)
   }
+}
+
+private func copyToPasteboard(_ value: String) {
+  NSPasteboard.general.clearContents()
+  NSPasteboard.general.setString(value, forType: .string)
 }
 
 private struct GitHubRepositorySheet: View {
