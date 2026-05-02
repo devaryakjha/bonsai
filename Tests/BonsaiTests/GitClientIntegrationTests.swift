@@ -100,6 +100,52 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(staleUnstagedChanges.first?.path, "tracked.txt")
   }
 
+  func testStoreTogglesRepositorySigningConfigAndRefreshesStatus() async throws {
+    let hadAutoRefreshPreference = UserDefaults.standard.object(forKey: "bonsai.autoRefresh") != nil
+    let previousAutoRefreshPreference = UserDefaults.standard.bool(forKey: "bonsai.autoRefresh")
+    UserDefaults.standard.set(true, forKey: "bonsai.autoRefresh")
+    defer {
+      if hadAutoRefreshPreference {
+        UserDefaults.standard.set(previousAutoRefreshPreference, forKey: "bonsai.autoRefresh")
+      } else {
+        UserDefaults.standard.removeObject(forKey: "bonsai.autoRefresh")
+      }
+    }
+
+    let repo = try await makeRepository()
+    try write("initial\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Initial")
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+
+    await MainActor.run {
+      store.signCommit = true
+    }
+    await store.setCommitSigning(true)
+
+    let enabledConfig = try await client.git(["config", "--get", "commit.gpgsign"], in: repo).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+    let enabledStatus = await store.snapshot.integrations.gpgSigningEnabled
+    let enabledResult = await store.commandResult
+    let perCommitSigningAfterEnable = await store.signCommit
+    XCTAssertEqual(enabledConfig, "true")
+    XCTAssertTrue(enabledStatus)
+    XCTAssertEqual(enabledResult?.title, "Enable GPG signing")
+    XCTAssertEqual(enabledResult?.isError, false)
+    XCTAssertTrue(perCommitSigningAfterEnable)
+
+    await store.setCommitSigning(false)
+
+    let disabledConfig = try await client.git(["config", "--get", "commit.gpgsign"], in: repo).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+    let disabledStatus = await store.snapshot.integrations.gpgSigningEnabled
+    let disabledResult = await store.commandResult
+    let perCommitSigningAfterDisable = await store.signCommit
+    XCTAssertEqual(disabledConfig, "false")
+    XCTAssertFalse(disabledStatus)
+    XCTAssertEqual(disabledResult?.title, "Disable GPG signing")
+    XCTAssertEqual(disabledResult?.isError, false)
+    XCTAssertTrue(perCommitSigningAfterDisable)
+  }
+
   func testSelectedStatusEntryStageCommandsReconcileSelection() async throws {
     let hadAutoRefreshPreference = UserDefaults.standard.object(forKey: "bonsai.autoRefresh") != nil
     let previousAutoRefreshPreference = UserDefaults.standard.bool(forKey: "bonsai.autoRefresh")
