@@ -683,11 +683,13 @@ final class RepositoryStore {
 
   func runRepositoryAction(_ action: RepositoryAction) async {
     if action == .pull, let pullReadinessIssue {
+      commandResult = CommandResult(title: "Pull", output: pullReadinessIssue, isError: true)
       errorMessage = pullReadinessIssue
       return
     }
 
     if action == .push, let pushReadinessIssue {
+      commandResult = CommandResult(title: pushActionTitle, output: pushReadinessIssue, isError: true)
       errorMessage = pushReadinessIssue
       return
     }

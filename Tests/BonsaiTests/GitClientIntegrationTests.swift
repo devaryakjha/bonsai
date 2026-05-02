@@ -557,7 +557,11 @@ final class GitClientIntegrationTests: XCTestCase {
 
     await store.runRepositoryAction(.pull)
     let errorMessage = await store.errorMessage
+    let commandResult = await store.commandResult
     XCTAssertEqual(errorMessage, "Set an upstream before pulling.")
+    XCTAssertEqual(commandResult?.title, "Pull")
+    XCTAssertEqual(commandResult?.output, "Set an upstream before pulling.")
+    XCTAssertEqual(commandResult?.isError, true)
   }
 
   func testStorePushRequiresBranchAndRemoteTarget() async throws {
@@ -572,7 +576,11 @@ final class GitClientIntegrationTests: XCTestCase {
 
     await store.runRepositoryAction(.push)
     let errorMessage = await store.errorMessage
+    let commandResult = await store.commandResult
     XCTAssertEqual(errorMessage, "Add a remote before publishing.")
+    XCTAssertEqual(commandResult?.title, "Push")
+    XCTAssertEqual(commandResult?.output, "Add a remote before publishing.")
+    XCTAssertEqual(commandResult?.isError, true)
   }
 
   func testStoreCreatesBranchFromStash() async throws {
