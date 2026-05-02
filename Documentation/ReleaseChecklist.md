@@ -9,6 +9,7 @@ explains the packaging commands; this file defines the release sequence.
   `Specs/0242-v0-parity-evidence.md` if new public surfaces exist.
 - Re-read `Specs/0259-v0-completion-audit.md` and make sure every non-credential
   gate is still covered by current artifacts.
+- Confirm `VERSION` matches the public release version.
 - Confirm the working tree is clean before creating release artifacts.
 
 ## 2. Local Validation
@@ -35,6 +36,8 @@ Validate that the machine has the correct public-distribution credentials:
 ```sh
 export BONSAI_CODESIGN_IDENTITY="Developer ID Application: Example, Inc. (TEAMID)"
 export BONSAI_NOTARY_PROFILE="bonsai-notary"
+export BONSAI_VERSION="$(tr -d '[:space:]' < VERSION)"
+export BONSAI_BUILD_NUMBER="$(git rev-list --count HEAD)"
 ./script/package_release.sh --check-credentials
 ```
 

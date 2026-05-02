@@ -18,6 +18,15 @@ This builds `Bonsai` with `swift build -c release`, stages
 the code signature. This proves the bundle is structurally signable without
 requiring an Apple Developer account.
 
+The package version defaults to the root `VERSION` file. The build number
+defaults to `git rev-list --count HEAD`. Release automation may override either
+value:
+
+```sh
+export BONSAI_VERSION="0.1.0"
+export BONSAI_BUILD_NUMBER="42"
+```
+
 ## Signed Archive
 
 Set a Developer ID Application identity before creating a distributable archive:

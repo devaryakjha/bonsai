@@ -7,6 +7,7 @@ BUNDLE_ID="dev.bonsai.Bonsai"
 MIN_SYSTEM_VERSION="14.0"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VERSION_FILE="$ROOT_DIR/VERSION"
 DIST_DIR="$ROOT_DIR/dist/release"
 APP_BUNDLE="$DIST_DIR/$APP_NAME.app"
 APP_CONTENTS="$APP_BUNDLE/Contents"
@@ -30,6 +31,8 @@ usage: script/package_release.sh [--verify|--archive|--notarize|--check-credenti
 Environment:
   BONSAI_CODESIGN_IDENTITY  Required for --archive and --notarize.
   BONSAI_NOTARY_PROFILE     Required for --notarize; xcrun notarytool keychain profile.
+  BONSAI_VERSION            Optional CFBundleShortVersionString override.
+  BONSAI_BUILD_NUMBER       Optional CFBundleVersion override.
 USAGE
 }
 
@@ -46,9 +49,29 @@ build_release_binary() {
   swift build -c release
 }
 
+app_version() {
+  if [[ -n "${BONSAI_VERSION:-}" ]]; then
+    printf '%s' "$BONSAI_VERSION"
+    return
+  fi
+
+  tr -d '[:space:]' <"$VERSION_FILE"
+}
+
+build_number() {
+  if [[ -n "${BONSAI_BUILD_NUMBER:-}" ]]; then
+    printf '%s' "$BONSAI_BUILD_NUMBER"
+    return
+  fi
+
+  git -C "$ROOT_DIR" rev-list --count HEAD 2>/dev/null || printf '0'
+}
+
 stage_app_bundle() {
-  local build_binary
+  local app_version build_binary build_number
   build_binary="$(swift build -c release --show-bin-path)/$APP_NAME"
+  app_version="$(app_version)"
+  build_number="$(build_number)"
 
   require_file "$build_binary"
   require_file "$APP_ICON_SOURCE"
@@ -76,6 +99,10 @@ stage_app_bundle() {
   <string>$APP_NAME</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>$app_version</string>
+  <key>CFBundleVersion</key>
+  <string>$build_number</string>
   <key>LSMinimumSystemVersion</key>
   <string>$MIN_SYSTEM_VERSION</string>
   <key>NSPrincipalClass</key>
@@ -130,6 +157,20 @@ validate_app_bundle() {
   icon_file="$(/usr/libexec/PlistBuddy -c "Print :CFBundleIconFile" "$INFO_PLIST")"
   if [[ "$icon_file" != "Bonsai" ]]; then
     echo "unexpected CFBundleIconFile: $icon_file" >&2
+    exit 1
+  fi
+
+  local short_version
+  short_version="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$INFO_PLIST")"
+  if [[ -z "$short_version" ]]; then
+    echo "missing CFBundleShortVersionString" >&2
+    exit 1
+  fi
+
+  local bundle_version
+  bundle_version="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$INFO_PLIST")"
+  if [[ -z "$bundle_version" ]]; then
+    echo "missing CFBundleVersion" >&2
     exit 1
   fi
 

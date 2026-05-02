@@ -107,6 +107,7 @@ Useful project paths:
 - `Documentation/ReleasePackaging.md` - release packaging, signing, and
   notarization workflow
 - `Documentation/ReleaseChecklist.md` - first public release checklist
+- `VERSION` - bundle marketing version used by package scripts
 
 ## Contributing
 

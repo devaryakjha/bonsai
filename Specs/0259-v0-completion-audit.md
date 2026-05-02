@@ -32,6 +32,7 @@ development, regular checkpoint commits, and OSS-ready project structure.
 | Hosted OSS validation | `.github/workflows/ci.yml` runs non-credentialed macOS validation for pushes and pull requests | Covered |
 | OSS contribution intake | GitHub issue forms and pull request template keep bug, feature, security, and validation details structured | Covered |
 | Public release handoff | `Documentation/ReleaseChecklist.md` defines the v0 evidence, validation, notarization, artifact, and post-release sequence | Covered |
+| Release version metadata | `VERSION` plus package scripts stamp `CFBundleShortVersionString` and `CFBundleVersion` into app bundles | Covered |
 
 ## Current Blocking Evidence
 

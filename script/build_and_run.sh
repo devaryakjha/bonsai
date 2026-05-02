@@ -7,6 +7,7 @@ BUNDLE_ID="dev.bonsai.Bonsai"
 MIN_SYSTEM_VERSION="14.0"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VERSION_FILE="$ROOT_DIR/VERSION"
 DIST_DIR="$ROOT_DIR/dist"
 APP_BUNDLE="$DIST_DIR/$APP_NAME.app"
 APP_CONTENTS="$APP_BUNDLE/Contents"
@@ -17,11 +18,31 @@ INFO_PLIST="$APP_CONTENTS/Info.plist"
 APP_ICON_SOURCE="$ROOT_DIR/Assets/AppIcon/Bonsai.icns"
 APP_MARK_SOURCE="$ROOT_DIR/Assets/AppIcon/bonsai-worktree-topology.svg"
 
+app_version() {
+  if [[ -n "${BONSAI_VERSION:-}" ]]; then
+    printf '%s' "$BONSAI_VERSION"
+    return
+  fi
+
+  tr -d '[:space:]' <"$VERSION_FILE"
+}
+
+build_number() {
+  if [[ -n "${BONSAI_BUILD_NUMBER:-}" ]]; then
+    printf '%s' "$BONSAI_BUILD_NUMBER"
+    return
+  fi
+
+  git -C "$ROOT_DIR" rev-list --count HEAD 2>/dev/null || printf '0'
+}
+
 pkill -x "$APP_NAME" >/dev/null 2>&1 || true
 
 cd "$ROOT_DIR"
 swift build
 BUILD_BINARY="$(swift build --show-bin-path)/$APP_NAME"
+APP_VERSION="$(app_version)"
+BUILD_NUMBER="$(build_number)"
 
 rm -rf "$APP_BUNDLE"
 mkdir -p "$APP_MACOS" "$APP_RESOURCES"
@@ -45,6 +66,10 @@ cat >"$INFO_PLIST" <<PLIST
   <string>$APP_NAME</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>$APP_VERSION</string>
+  <key>CFBundleVersion</key>
+  <string>$BUILD_NUMBER</string>
   <key>LSMinimumSystemVersion</key>
   <string>$MIN_SYSTEM_VERSION</string>
   <key>NSPrincipalClass</key>
