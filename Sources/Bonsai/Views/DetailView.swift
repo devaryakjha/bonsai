@@ -137,7 +137,7 @@ private struct DiffHeaderControls: View {
           }
         }
       } label: {
-        Label("Diff Options", systemImage: "slider.horizontal.3")
+        Label("Diff options", systemImage: "slider.horizontal.3")
       }
       .controlSize(.small)
       .help("Diff options")
@@ -166,7 +166,7 @@ private struct DiffView: View {
         TreeBlobPreview(path: entry.path, text: store.treeBlobText)
       } else if store.diffText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
         ContentUnavailableView(
-          "No Diff Selected",
+          "No diff selected",
           systemImage: "doc.text.magnifyingglass",
           description: Text("Choose a file or working tree change to inspect it here.")
         )

@@ -167,7 +167,7 @@ private struct ChangedFilesView: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       HStack {
-        Picker("Commit Panel", selection: $mode) {
+        Picker("Commit panel", selection: $mode) {
           ForEach(CommitFilePanelMode.allCases) { mode in
             Text(mode.title).tag(mode)
           }

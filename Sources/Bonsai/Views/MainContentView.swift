@@ -45,7 +45,7 @@ private struct EmptyRepositoryView: View {
       Button {
         store.presentOpenRepositoryPanel()
       } label: {
-        Label("Open Repository", systemImage: "folder")
+        Label("Open repository", systemImage: "folder")
       }
       .buttonStyle(.borderedProminent)
 

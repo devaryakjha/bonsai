@@ -724,7 +724,7 @@ enum RepositorySetupMode: String, Identifiable {
   case create
 
   var id: String { rawValue }
-  var title: String { self == .clone ? "Clone Repository" : "Create Repository" }
+  var title: String { self == .clone ? "Clone repository" : "Create repository" }
   var primaryActionTitle: String { self == .clone ? "Clone" : "Create" }
 }
 

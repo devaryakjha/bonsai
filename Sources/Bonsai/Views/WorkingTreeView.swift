@@ -16,7 +16,7 @@ struct WorkingTreeView: View {
 
         Section("Staged") {
           if store.stagedChanges.isEmpty {
-            PlaceholderRow(title: "No staged changes")
+            PlaceholderRow(title: "Nothing staged")
           } else {
             ForEach(store.stagedChanges) { entry in
               StatusRow(entry: entry, store: store)
@@ -26,7 +26,7 @@ struct WorkingTreeView: View {
 
         Section("Unstaged") {
           if store.unstagedChanges.isEmpty {
-            PlaceholderRow(title: "No unstaged changes")
+            PlaceholderRow(title: "Nothing unstaged")
           } else {
             ForEach(store.unstagedChanges) { entry in
               StatusRow(entry: entry, store: store)
@@ -74,26 +74,44 @@ private struct StatusRow: View {
       }
 
       Button {
-        store.presentDiscardChange(entry)
-      } label: {
-        Image(systemName: "trash")
-      }
-      .buttonStyle(.borderless)
-      .help("Discard change")
-
-      Button {
-        Task {
-          if entry.isStaged {
-            await store.unstage(entry)
-          } else {
-            await store.stage(entry)
-          }
-        }
+        stageOrUnstage()
       } label: {
         Image(systemName: entry.isStaged ? "minus.circle" : "plus.circle")
       }
       .buttonStyle(.borderless)
       .help(entry.isStaged ? "Unstage" : "Stage")
+
+      Menu {
+        Button("Blame") {
+          showBlame()
+        }
+        Button("File History") {
+          showFileHistory()
+        }
+        if store.snapshot.integrations.lfsAvailable {
+          Divider()
+          Button("Git LFS Lock") {
+            store.selectStatusEntry(entry)
+            Task { await store.lfsLockSelectedFile() }
+          }
+          Button("Git LFS Unlock") {
+            store.selectStatusEntry(entry)
+            Task { await store.lfsUnlockSelectedFile() }
+          }
+        }
+        Divider()
+        Button("Reveal in Finder") {
+          revealInFinder()
+        }
+        Button("Discard Change", role: .destructive) {
+          store.presentDiscardChange(entry)
+        }
+      } label: {
+        Image(systemName: "ellipsis.circle")
+      }
+      .menuStyle(.borderlessButton)
+      .help("File actions")
+      .accessibilityLabel("File actions for \(entry.path)")
     }
     .contentShape(Rectangle())
     .onTapGesture {
@@ -101,21 +119,13 @@ private struct StatusRow: View {
     }
     .contextMenu {
       Button(entry.isStaged ? "Unstage" : "Stage") {
-        Task {
-          if entry.isStaged {
-            await store.unstage(entry)
-          } else {
-            await store.stage(entry)
-          }
-        }
+        stageOrUnstage()
       }
       Button("Blame") {
-        store.selectStatusEntry(entry)
-        Task { await store.showBlameForSelection() }
+        showBlame()
       }
       Button("File History") {
-        store.selectStatusEntry(entry)
-        Task { await store.showFileHistoryForSelection() }
+        showFileHistory()
       }
       if store.snapshot.integrations.lfsAvailable {
         Button("Git LFS Lock") {
@@ -137,12 +147,36 @@ private struct StatusRow: View {
         }
       }
       Button("Reveal in Finder") {
-        if let repository = store.selectedRepository {
-          NSWorkspace.shared.activateFileViewerSelecting([
-            URL(filePath: repository.path).appending(path: entry.path)
-          ])
-        }
+        revealInFinder()
       }
+    }
+  }
+
+  private func stageOrUnstage() {
+    Task {
+      if entry.isStaged {
+        await store.unstage(entry)
+      } else {
+        await store.stage(entry)
+      }
+    }
+  }
+
+  private func showBlame() {
+    store.selectStatusEntry(entry)
+    Task { await store.showBlameForSelection() }
+  }
+
+  private func showFileHistory() {
+    store.selectStatusEntry(entry)
+    Task { await store.showFileHistoryForSelection() }
+  }
+
+  private func revealInFinder() {
+    if let repository = store.selectedRepository {
+      NSWorkspace.shared.activateFileViewerSelecting([
+        URL(filePath: repository.path).appending(path: entry.path)
+      ])
     }
   }
 
@@ -189,15 +223,25 @@ private struct CommitComposerView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 10) {
-      TextEditor(text: $store.commitMessage)
-        .font(.body.monospaced())
-        .frame(height: 92)
-        .overlay {
-          RoundedRectangle(cornerRadius: 6)
-            .stroke(.quaternary)
-        }
+      ZStack(alignment: .topLeading) {
+        TextEditor(text: $store.commitMessage)
+          .font(.body.monospaced())
+          .frame(height: 92)
 
-      HStack {
+        if store.commitMessage.isEmpty {
+          Text("Commit message")
+            .foregroundStyle(.tertiary)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 8)
+            .allowsHitTesting(false)
+        }
+      }
+      .overlay {
+        RoundedRectangle(cornerRadius: 6)
+          .stroke(.quaternary)
+      }
+
+      HStack(spacing: 8) {
         if !store.recentCommitMessages.isEmpty {
           Menu {
             ForEach(store.recentCommitMessages, id: \.self) { message in
@@ -206,23 +250,62 @@ private struct CommitComposerView: View {
               }
             }
           } label: {
-            Label("Recent", systemImage: "clock")
+            Label("Recent messages", systemImage: "clock")
+              .lineLimit(1)
           }
           .menuStyle(.borderlessButton)
         }
 
-        Toggle("Amend", isOn: $store.amendCommit)
-        Toggle("Sign", isOn: $store.signCommit)
+        Menu {
+          Toggle("Amend Last Commit", isOn: $store.amendCommit)
+          Toggle("Sign Commit", isOn: $store.signCommit)
+        } label: {
+          Label("Commit settings", systemImage: "slider.horizontal.3")
+            .lineLimit(1)
+        }
+        .menuStyle(.borderlessButton)
+        .help(commitOptionsHelp)
+
+        if !commitOptionsSummary.isEmpty {
+          Text(commitOptionsSummary)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .help(commitOptionsHelp)
+        }
+
         Spacer()
+
         Button {
           Task { await store.commit() }
         } label: {
-          Label(store.amendCommit ? "Amend" : "Commit", systemImage: "checkmark.circle")
+          Label(store.amendCommit ? "Amend commit" : "Commit", systemImage: "checkmark.circle")
+            .lineLimit(1)
         }
         .buttonStyle(.borderedProminent)
         .disabled(store.commitMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
       }
     }
     .padding(12)
+  }
+
+  private var commitOptionsSummary: String {
+    switch (store.amendCommit, store.signCommit) {
+    case (true, true):
+      return "Amend, signed"
+    case (true, false):
+      return "Amend"
+    case (false, true):
+      return "Signed"
+    case (false, false):
+      return ""
+    }
+  }
+
+  private var commitOptionsHelp: String {
+    if commitOptionsSummary.isEmpty {
+      return "Commit options"
+    }
+    return "Commit options: \(commitOptionsSummary)"
   }
 }

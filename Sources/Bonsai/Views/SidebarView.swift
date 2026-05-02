@@ -103,7 +103,7 @@ struct SidebarView: View {
       }
 
       if !store.localBranches.isEmpty {
-        Section("Local Branches") {
+        Section("Local branches") {
           ForEach(store.localBranches) { branch in
             BranchRow(branch: branch)
               .help(branch.upstream.map { "Upstream: \($0)" } ?? "No upstream configured")
@@ -133,21 +133,21 @@ struct SidebarView: View {
           repositoryDetailsRows
           integrationRows
         } label: {
-          Label("Repository Details", systemImage: "info.circle")
+          Label("Repository details", systemImage: "info.circle")
         }
 
         if !store.remoteBranches.isEmpty || !store.tags.isEmpty {
           DisclosureGroup(isExpanded: $referencesExpanded) {
             referenceRows
           } label: {
-            Label("Remote Branches & Tags", systemImage: "tag")
+            Label("Remote branches and tags", systemImage: "tag")
           }
         }
 
         DisclosureGroup(isExpanded: $advancedExpanded) {
           advancedRows
         } label: {
-          Label("Remotes, Worktrees & Modules", systemImage: "slider.horizontal.3")
+          Label("Remotes, worktrees and modules", systemImage: "slider.horizontal.3")
         }
       }
     }
@@ -289,7 +289,7 @@ struct SidebarView: View {
       Button {
         store.presentCreateWorktree()
       } label: {
-        Label("Create Worktree", systemImage: "plus.circle")
+        Label("Create worktree", systemImage: "plus.circle")
       }
       .buttonStyle(.plain)
     }
@@ -337,7 +337,7 @@ struct SidebarView: View {
     Button {
       store.presentAddRemote()
     } label: {
-      Label("Add Remote", systemImage: "plus.circle")
+      Label("Add remote", systemImage: "plus.circle")
     }
     .buttonStyle(.plain)
   }
