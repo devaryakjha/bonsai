@@ -36,6 +36,7 @@ covered by tests and the app verifier can still launch the bundle.
 | GPG | Signing config detection, repository signing toggle, per-commit sign state, and command-result feedback | Verified |
 | Provider notifications | Token-gated GitHub notifications, mark-read, browser targets, repository create/delete sheets, and provider error copy | Verified |
 | App identity and OSS shape | MIT license, contribution/security docs, README logo, bundled app icon, About panel branding, specs, and tests | Verified |
+| Release packaging readiness | Dedicated release packaging script, credential-free ad-hoc verification, Developer ID signing hook, notarization hook, and release documentation | Verified |
 
 ## Latest Fork Release-Note Delta
 
@@ -64,8 +65,9 @@ surfaces that are not all represented in the older homepage matrix.
   rendering, including split diff and image diff paths.
 - Do visual QA on the actual running app for sidebar density, toolbar wrapping,
   sheet sizing, and split diff completeness at compact and wide window sizes.
-- Package, sign, and notarization readiness remain outside the current v0
-  verifier and need a dedicated release gate before distribution.
+- Run the credentialed Developer ID signing and notarization path before any
+  public binary distribution. The local release packaging verifier proves bundle
+  structure and signability, not Apple notarization success.
 
 ## Acceptance
 

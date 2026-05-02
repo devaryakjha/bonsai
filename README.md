@@ -68,12 +68,19 @@ Build, launch, and verify that the app process is running:
 ./script/build_and_run.sh --verify
 ```
 
+Build and validate a release-style app bundle without Apple credentials:
+
+```sh
+./script/package_release.sh --verify
+```
+
 Run the standard validation gates before submitting changes:
 
 ```sh
 git diff --check
 swift test
 ./script/build_and_run.sh --verify
+./script/package_release.sh --verify
 ```
 
 ## Development
@@ -89,6 +96,8 @@ Useful project paths:
 - `Sources/Bonsai/Services` - Git, GitHub, and process execution services
 - `Sources/Bonsai/Support` - parsers, rendering helpers, launchers, and policies
 - `Tests/BonsaiTests` - focused parser, command, workflow, and integration tests
+- `Documentation/ReleasePackaging.md` - release packaging, signing, and
+  notarization workflow
 
 ## Contributing
 
