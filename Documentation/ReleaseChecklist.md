@@ -81,6 +81,8 @@ that final zip.
 
 ## 5. GitHub Release
 
+- Follow `Documentation/GitHubReleaseSetup.md` when configuring GitHub Actions
+  release credentials for the first time.
 - Configure the protected `release` environment with these secrets:
   `BONSAI_CODESIGN_IDENTITY`,
   `BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64`,

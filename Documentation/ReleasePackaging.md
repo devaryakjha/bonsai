@@ -70,6 +70,9 @@ keychain path so the release script passes it to `notarytool`:
 export BONSAI_NOTARY_KEYCHAIN="$RUNNER_TEMP/bonsai-signing.keychain-db"
 ```
 
+For the repository's manual GitHub release workflow, see
+`Documentation/GitHubReleaseSetup.md`.
+
 ## Signed Archive
 
 Set a Developer ID Application identity before creating a distributable archive:
