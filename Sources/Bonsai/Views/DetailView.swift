@@ -23,6 +23,7 @@ struct DetailView: View {
         .id(result.id)
       }
     }
+    .focusedSceneValue(\.diffFindVisible, $isDiffSearchVisible)
   }
 }
 

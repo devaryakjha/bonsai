@@ -41,7 +41,7 @@ struct BonsaiCommands: Commands {
       Button("Fetch") {
         Task { await store.runRepositoryAction(.fetch) }
       }
-      .keyboardShortcut("f", modifiers: [.command])
+      .keyboardShortcut("f", modifiers: [.command, .shift])
       .disabled(store.selectedRepository == nil)
 
       Button(store.currentBranch?.pullTitle ?? "Pull") {

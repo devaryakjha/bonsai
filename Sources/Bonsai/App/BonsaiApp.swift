@@ -13,6 +13,7 @@ struct BonsaiApp: App {
     }
     .commands {
       BonsaiCommands(store: repositoryStore)
+      DiffFindCommands()
     }
 
     Settings {
