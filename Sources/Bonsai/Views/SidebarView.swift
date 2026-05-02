@@ -82,6 +82,33 @@ struct SidebarView: View {
         SidebarMetricRow(title: "Worktrees", value: store.snapshot.worktrees.count, systemImage: "square.stack.3d.up")
       }
 
+      if store.snapshot.inProgressOperation.active {
+        Section("Operation") {
+          IntegrationRow(
+            title: store.snapshot.inProgressOperation.kind?.title ?? "Git",
+            detail: "In progress",
+            systemImage: "exclamationmark.triangle",
+            isEnabled: true
+          )
+          HStack {
+            Button("Continue") {
+              Task { await store.runInProgressOperation(.continueOperation) }
+            }
+            .buttonStyle(.borderless)
+            Button("Skip") {
+              Task { await store.runInProgressOperation(.skip) }
+            }
+            .disabled(!(store.snapshot.inProgressOperation.kind?.canSkip ?? false))
+            .buttonStyle(.borderless)
+            Button("Abort") {
+              Task { await store.runInProgressOperation(.abort) }
+            }
+            .buttonStyle(.borderless)
+          }
+          .font(.caption)
+        }
+      }
+
       Section("Integrations") {
         IntegrationRow(
           title: "Git LFS",

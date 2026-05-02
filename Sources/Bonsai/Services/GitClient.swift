@@ -29,6 +29,7 @@ struct GitClient {
     async let submodules = submodules(in: repository)
     async let worktrees = worktrees(in: repository)
     async let integrations = integrations(in: repository)
+    async let inProgressOperation = inProgressOperation(in: repository)
 
     let resolvedCommits = try await commits
     let commitForFiles = selectedCommit ?? resolvedCommits.first
@@ -43,7 +44,8 @@ struct GitClient {
       stashes: stashes,
       submodules: submodules,
       worktrees: worktrees,
-      integrations: integrations
+      integrations: integrations,
+      inProgressOperation: inProgressOperation
     )
   }
 
@@ -413,6 +415,10 @@ struct GitClient {
     try await runRaw(["config", "commit.gpgsign", enabled ? "true" : "false"], in: repository)
   }
 
+  func runInProgressOperation(_ action: GitInProgressOperationAction, kind: GitInProgressOperationKind, in repository: GitRepository) async throws -> String {
+    try await runRaw([kind.command, action.flag], in: repository)
+  }
+
   func startBisect(bad: String, good: String, in repository: GitRepository) async throws -> String {
     try await runRaw(["bisect", "start", bad, good], in: repository)
   }
@@ -597,6 +603,37 @@ struct GitClient {
     guard let output = try? await git(["config", "--get", key], in: repository.url) else { return nil }
     let value = output.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
     return value.isEmpty ? nil : value
+  }
+
+  private func inProgressOperation(in repository: GitRepository) async -> GitInProgressOperationStatus {
+    let rebaseMergeExists = await gitPathExists("rebase-merge", in: repository)
+    let rebaseApplyExists = await gitPathExists("rebase-apply", in: repository)
+    if rebaseMergeExists || rebaseApplyExists {
+      return GitInProgressOperationStatus(kind: .rebase)
+    }
+    if await gitPathExists("MERGE_HEAD", in: repository) {
+      return GitInProgressOperationStatus(kind: .merge)
+    }
+    if await gitPathExists("CHERRY_PICK_HEAD", in: repository) {
+      return GitInProgressOperationStatus(kind: .cherryPick)
+    }
+    if await gitPathExists("REVERT_HEAD", in: repository) {
+      return GitInProgressOperationStatus(kind: .revert)
+    }
+    return GitInProgressOperationStatus()
+  }
+
+  private func gitPathExists(_ path: String, in repository: GitRepository) async -> Bool {
+    guard let output = try? await git(["rev-parse", "--git-path", path], in: repository.url) else { return false }
+    let resolvedPath = output.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !resolvedPath.isEmpty else { return false }
+    let url: URL
+    if resolvedPath.hasPrefix("/") {
+      url = URL(filePath: resolvedPath)
+    } else {
+      url = URL(filePath: resolvedPath, relativeTo: repository.url).standardizedFileURL
+    }
+    return FileManager.default.fileExists(atPath: url.path(percentEncoded: false))
   }
 
   private func bisectStatus(in repository: GitRepository) async -> GitBisectStatus {

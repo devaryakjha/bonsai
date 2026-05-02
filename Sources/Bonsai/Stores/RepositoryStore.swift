@@ -877,6 +877,13 @@ final class RepositoryStore {
     }
   }
 
+  func runInProgressOperation(_ action: GitInProgressOperationAction) async {
+    guard let kind = snapshot.inProgressOperation.kind else { return }
+    await runMutation(title: "\(kind.title) \(action.title)") {
+      try await gitClient.runInProgressOperation(action, kind: kind, in: requiredRepository())
+    }
+  }
+
   func markBisect(_ mark: GitBisectMark) async {
     await runMutation(title: "Bisect \(mark.title)") {
       try await gitClient.markBisect(mark, in: requiredRepository())

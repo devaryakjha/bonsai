@@ -289,6 +289,64 @@ enum GitBisectMark: String, CaseIterable, Identifiable {
   var title: String { rawValue.capitalized }
 }
 
+enum GitInProgressOperationKind: String, Identifiable {
+  case merge
+  case rebase
+  case cherryPick
+  case revert
+
+  var id: String { rawValue }
+  var title: String {
+    switch self {
+    case .merge:
+      return "Merge"
+    case .rebase:
+      return "Rebase"
+    case .cherryPick:
+      return "Cherry-pick"
+    case .revert:
+      return "Revert"
+    }
+  }
+  var command: String {
+    switch self {
+    case .cherryPick:
+      return "cherry-pick"
+    default:
+      return rawValue
+    }
+  }
+  var canSkip: Bool {
+    self != .merge
+  }
+}
+
+enum GitInProgressOperationAction: String, Identifiable {
+  case continueOperation = "continue"
+  case abort
+  case skip
+
+  var id: String { rawValue }
+  var title: String {
+    switch self {
+    case .continueOperation:
+      return "Continue"
+    case .abort:
+      return "Abort"
+    case .skip:
+      return "Skip"
+    }
+  }
+  var flag: String { "--\(rawValue)" }
+}
+
+struct GitInProgressOperationStatus: Hashable {
+  var kind: GitInProgressOperationKind?
+
+  var active: Bool { kind != nil }
+  var title: String { kind.map { "\($0.title) in progress" } ?? "No operation" }
+}
+
 struct GitIntegrationStatus: Hashable {
   var lfsAvailable = false
   var lfsFiles: [GitLFSFile] = []
@@ -382,6 +440,7 @@ struct RepositorySnapshot {
   var submodules: [GitSubmodule] = []
   var worktrees: [GitWorktree] = []
   var integrations = GitIntegrationStatus()
+  var inProgressOperation = GitInProgressOperationStatus()
 }
 
 struct CommandResult: Identifiable, Hashable {

@@ -104,6 +104,19 @@ struct ContentView: View {
           }
           .disabled(store.selectedCommit == nil)
           Divider()
+          Button("Continue Current Operation") {
+            Task { await store.runInProgressOperation(.continueOperation) }
+          }
+          .disabled(!store.snapshot.inProgressOperation.active)
+          Button("Skip Current Operation") {
+            Task { await store.runInProgressOperation(.skip) }
+          }
+          .disabled(!(store.snapshot.inProgressOperation.kind?.canSkip ?? false))
+          Button("Abort Current Operation") {
+            Task { await store.runInProgressOperation(.abort) }
+          }
+          .disabled(!store.snapshot.inProgressOperation.active)
+          Divider()
           Button("Interactive Rebase...") {
             Task { await store.presentInteractiveRebase() }
           }

@@ -254,6 +254,48 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(currentHash, firstHash)
   }
 
+  func testInProgressOperationStatusSupportsMergeAbortAndCherryPickSkip() async throws {
+    let repo = try await makeRepository()
+    let file = repo.appending(path: "story.txt")
+    try write("base\n", to: file)
+    try await commitAll(in: repo, message: "Base")
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    _ = try await client.createBranch(named: "side", startPoint: nil, in: repository)
+    _ = try await client.checkout("side", in: repository)
+    try write("side\n", to: file)
+    try await commitAll(in: repo, message: "Side change")
+    let sideHash = try await client.git(["rev-parse", "HEAD"], in: repo).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    _ = try await client.checkout("main", in: repository)
+    try write("main\n", to: file)
+    try await commitAll(in: repo, message: "Main change")
+
+    do {
+      _ = try await client.runRaw(["merge", "side"], in: repository)
+      XCTFail("Expected merge conflict")
+    } catch {
+      var operation = try await client.snapshot(for: repository, selectedCommit: nil).inProgressOperation
+      XCTAssertEqual(operation.kind, .merge)
+      XCTAssertFalse(operation.kind?.canSkip ?? true)
+      _ = try await client.runInProgressOperation(.abort, kind: .merge, in: repository)
+      operation = try await client.snapshot(for: repository, selectedCommit: nil).inProgressOperation
+      XCTAssertFalse(operation.active)
+    }
+
+    do {
+      _ = try await client.runRaw(["cherry-pick", sideHash], in: repository)
+      XCTFail("Expected cherry-pick conflict")
+    } catch {
+      var operation = try await client.snapshot(for: repository, selectedCommit: nil).inProgressOperation
+      XCTAssertEqual(operation.kind, .cherryPick)
+      XCTAssertTrue(operation.kind?.canSkip ?? false)
+      _ = try await client.runInProgressOperation(.skip, kind: .cherryPick, in: repository)
+      operation = try await client.snapshot(for: repository, selectedCommit: nil).inProgressOperation
+      XCTAssertFalse(operation.active)
+    }
+  }
+
   func testBisectWorkflowTracksActiveStateAndMarksRevisions() async throws {
     let repo = try await makeRepository()
     let file = repo.appending(path: "file.txt")
