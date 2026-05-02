@@ -123,6 +123,17 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.dropStashRequest) { request in
+      DropStashSheet(
+        request: request,
+        onCancel: {
+          store.dropStashRequest = nil
+        },
+        onDrop: {
+          Task { await store.dropRequestedStash() }
+        }
+      )
+    }
     .sheet(isPresented: Binding(
       get: { store.interactiveRebasePlan != nil },
       set: { if !$0 { store.interactiveRebasePlan = nil } }
@@ -503,6 +514,37 @@ private struct DiscardChangeSheet: View {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Discard", role: .destructive, action: onDiscard)
+          .buttonStyle(.borderedProminent)
+      }
+    }
+    .padding(20)
+    .frame(width: 460)
+  }
+}
+
+private struct DropStashSheet: View {
+  var request: DropStashRequest
+  var onCancel: () -> Void
+  var onDrop: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text(request.title)
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      Text(request.message)
+        .font(.body.monospaced())
+        .lineLimit(2)
+
+      Text(request.detail)
+        .foregroundStyle(.secondary)
+        .lineLimit(3)
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button("Drop", role: .destructive, action: onDrop)
           .buttonStyle(.borderedProminent)
       }
     }

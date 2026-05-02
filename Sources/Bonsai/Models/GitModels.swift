@@ -732,6 +732,17 @@ struct DiscardChangeRequest: Identifiable, Hashable {
   var id: String { entry.id }
 }
 
+struct DropStashRequest: Identifiable, Hashable {
+  var stash: GitStash
+
+  var id: String { stash.id }
+  var title: String { "Drop stash" }
+  var message: String { "Drop \(stash.index)." }
+  var detail: String {
+    stash.message.isEmpty ? "The stash entry will be removed." : stash.message
+  }
+}
+
 enum RemoteEditorMode: String, Identifiable {
   case add
   case edit

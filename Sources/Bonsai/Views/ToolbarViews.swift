@@ -91,8 +91,8 @@ struct RepositoryToolbarActionsMenu: View {
             Button("Pop") {
               Task { await store.applyStash(stash, pop: true) }
             }
-            Button("Drop") {
-              Task { await store.dropStash(stash) }
+            Button("Drop", role: .destructive) {
+              store.presentDropStash(stash)
             }
           }
         }

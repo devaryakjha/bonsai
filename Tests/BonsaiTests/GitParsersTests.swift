@@ -238,6 +238,15 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(DeleteRefRequest(ref: tag).message, "Delete tag v0.1.0.")
   }
 
+  func testDropStashRequestCopyNamesStashAndMessage() {
+    let stash = GitStash(index: "stash@{0}", branch: "main", message: "WIP on main")
+    let request = DropStashRequest(stash: stash)
+
+    XCTAssertEqual(request.title, "Drop stash")
+    XCTAssertEqual(request.message, "Drop stash@{0}.")
+    XCTAssertEqual(request.detail, "WIP on main")
+  }
+
   func testParseLineHistoryEntriesReadsCommitsAndSkipsPatchBodies() {
     let entries = GitParsers.parseLineHistoryEntries("""
     \u{1e}abcdef1234567890\u{1f}abcdef1\u{1f}Asha\u{1f}asha@example.test\u{1f}2026-05-02T10:00:00+05:30\u{1f}Update line

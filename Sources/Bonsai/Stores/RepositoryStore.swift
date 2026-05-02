@@ -44,6 +44,7 @@ final class RepositoryStore {
   var branchRenameSource: GitRef?
   var conflictResolutionRequest: ConflictResolutionRequest?
   var discardChangeRequest: DiscardChangeRequest?
+  var dropStashRequest: DropStashRequest?
   var interactiveRebasePlan: InteractiveRebasePlan?
   var resetRequest: ResetRequest?
   var deleteRefRequest: DeleteRefRequest?
@@ -836,7 +837,17 @@ final class RepositoryStore {
     }
   }
 
-  func dropStash(_ stash: GitStash) async {
+  func presentDropStash(_ stash: GitStash) {
+    dropStashRequest = DropStashRequest(stash: stash)
+  }
+
+  func dropRequestedStash() async {
+    guard let request = dropStashRequest else { return }
+    dropStashRequest = nil
+    await dropStash(request.stash)
+  }
+
+  private func dropStash(_ stash: GitStash) async {
     await runMutation(title: "Drop \(stash.index)") {
       try await gitClient.stashDrop(stash, in: requiredRepository())
     }

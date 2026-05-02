@@ -39,7 +39,7 @@ struct HistoryView: View {
                     Task { await store.applyStash(stash, pop: true) }
                   }
                   Button("Drop", role: .destructive) {
-                    Task { await store.dropStash(stash) }
+                    store.presentDropStash(stash)
                   }
                 }
             }
