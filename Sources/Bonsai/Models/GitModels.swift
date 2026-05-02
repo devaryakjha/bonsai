@@ -1395,6 +1395,23 @@ struct DiscardPatchRequest: Identifiable, Hashable {
   }
 }
 
+struct ApplyPatchRequest: Identifiable, Hashable {
+  var patch: String
+
+  var id: Int { patch.hashValue }
+  var title: String { "Apply patch" }
+  var message: String { "Apply patch from clipboard." }
+  var previewText: String {
+    let lines = patch.split(separator: "\n", omittingEmptySubsequences: false)
+    let preview = lines.prefix(12).joined(separator: "\n")
+    return lines.count > 12 ? "\(preview)\n..." : preview
+  }
+  var detail: String {
+    let lines = patch.split(separator: "\n", omittingEmptySubsequences: false).count
+    return "\(lines.formatted()) lines"
+  }
+}
+
 struct DropStashRequest: Identifiable, Hashable {
   var stash: GitStash
 

@@ -182,7 +182,7 @@ struct BonsaiCommands: Commands {
       .disabled(!store.canCopyCurrentPatch)
 
       Button("Apply Patch from Clipboard") {
-        Task { await store.applyPatchFromClipboard() }
+        store.presentApplyPatchFromClipboard()
       }
       .disabled(store.selectedRepository == nil)
 

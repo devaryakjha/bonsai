@@ -72,6 +72,7 @@ final class RepositoryStore {
   var gitIgnoreTemplateRequest: GitIgnoreTemplateRequest?
   var selectedGitIgnoreTemplateID = GitIgnoreTemplateCatalog.defaultTemplateID
   var discardPatchRequest: DiscardPatchRequest?
+  var applyPatchRequest: ApplyPatchRequest?
   var dropStashRequest: DropStashRequest?
   var interactiveRebasePlan: InteractiveRebasePlan?
   var revisionCommandRequest: RevisionCommandRequest?
@@ -901,16 +902,22 @@ final class RepositoryStore {
     commandResult = CommandResult(title: "Copy patch", output: "Copied current diff to the clipboard.", isError: false)
   }
 
-  func applyPatchFromClipboard() async {
-    let patch = NSPasteboard.general.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-    guard !patch.isEmpty else {
+  func presentApplyPatchFromClipboard() {
+    let patch = NSPasteboard.general.string(forType: .string) ?? ""
+    guard !patch.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
       commandResult = CommandResult(title: "Apply patch", output: "The clipboard does not contain patch text.", isError: true)
       errorMessage = "The clipboard does not contain patch text."
       return
     }
 
+    applyPatchRequest = ApplyPatchRequest(patch: patch)
+  }
+
+  func applyRequestedPatch() async {
+    guard let request = applyPatchRequest else { return }
+    applyPatchRequest = nil
     await runMutation(title: "Apply patch") {
-      try await gitClient.applyPatch(patch, in: requiredRepository())
+      try await gitClient.applyPatch(request.patch, in: requiredRepository())
     }
   }
 

@@ -132,7 +132,7 @@ struct RepositoryToolbarActionsMenu: View {
         }
         .disabled(!store.canCopyCurrentPatch)
         Button("Apply Patch from Clipboard") {
-          Task { await store.applyPatchFromClipboard() }
+          store.presentApplyPatchFromClipboard()
         }
         Button("Open Selected File") {
           store.openSelectedFile()

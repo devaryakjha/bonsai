@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import XCTest
 @testable import Bonsai
@@ -1236,6 +1237,56 @@ final class GitClientIntegrationTests: XCTestCase {
     _ = try await client.applyPatch(patch, in: repository)
 
     XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), "after\n")
+  }
+
+  func testStoreConfirmsPatchBeforeApplyingClipboardText() async throws {
+    let repo = try await makeRepository()
+    let file = repo.appending(path: "README.md")
+    try write("before\n", to: file)
+    try await commitAll(in: repo, message: "Initial")
+
+    try write("after\n", to: file)
+    let patch = try await client.git(["diff", "--", "README.md"], in: repo).stdout
+    _ = try await client.git(["restore", "--", "README.md"], in: repo)
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    await MainActor.run {
+      NSPasteboard.general.clearContents()
+      NSPasteboard.general.setString(patch, forType: .string)
+      store.presentApplyPatchFromClipboard()
+    }
+
+    let request = await store.applyPatchRequest
+    XCTAssertEqual(request?.patch, patch)
+    XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), "before\n")
+
+    await store.applyRequestedPatch()
+
+    let commandResult = await store.commandResult
+    let clearedRequest = await store.applyPatchRequest
+    XCTAssertNil(clearedRequest)
+    XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), "after\n")
+    XCTAssertEqual(commandResult?.title, "Apply patch")
+    XCTAssertEqual(commandResult?.isError, false)
+  }
+
+  func testStoreReportsEmptyClipboardBeforePatchConfirmation() async throws {
+    let repo = try await makeRepository()
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    await MainActor.run {
+      NSPasteboard.general.clearContents()
+      store.presentApplyPatchFromClipboard()
+    }
+
+    let commandResult = await store.commandResult
+    let request = await store.applyPatchRequest
+    let errorMessage = await store.errorMessage
+    XCTAssertNil(request)
+    XCTAssertEqual(commandResult?.title, "Apply patch")
+    XCTAssertEqual(commandResult?.isError, true)
+    XCTAssertEqual(errorMessage, "The clipboard does not contain patch text.")
   }
 
   func testImageDiffSnapshotsReadWorkingTreeIndexAndCommitBlobs() async throws {

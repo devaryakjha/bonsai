@@ -163,6 +163,17 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.applyPatchRequest) { request in
+      ApplyPatchSheet(
+        request: request,
+        onCancel: {
+          store.applyPatchRequest = nil
+        },
+        onApply: {
+          Task { await store.applyRequestedPatch() }
+        }
+      )
+    }
     .sheet(item: $store.dropStashRequest) { request in
       DropStashSheet(
         request: request,
@@ -855,6 +866,49 @@ private struct DiscardPatchSheet: View {
     }
     .padding(20)
     .frame(width: 460)
+  }
+}
+
+private struct ApplyPatchSheet: View {
+  var request: ApplyPatchRequest
+  var onCancel: () -> Void
+  var onApply: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text(request.title)
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      Text(request.message)
+
+      Text(request.detail)
+        .font(.caption)
+        .foregroundStyle(.secondary)
+
+      ScrollView([.horizontal, .vertical]) {
+        Text(request.previewText)
+          .font(.caption.monospaced())
+          .textSelection(.enabled)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(10)
+      }
+      .frame(minHeight: 180, maxHeight: 240)
+      .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
+      .overlay {
+        RoundedRectangle(cornerRadius: 8)
+          .stroke(.quaternary)
+      }
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button("Apply", action: onApply)
+          .buttonStyle(.borderedProminent)
+      }
+    }
+    .padding(20)
+    .frame(width: 560)
   }
 }
 
