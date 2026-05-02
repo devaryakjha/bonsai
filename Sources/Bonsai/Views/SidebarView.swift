@@ -179,11 +179,11 @@ struct SidebarView: View {
               Button("Merge into Current Branch") {
                 Task { await store.mergeBranch(branch) }
               }
-              .disabled(branch.isHead)
+              .disabled(store.currentBranch == nil || branch.isHead)
               Button("Rebase Current onto Branch") {
                 Task { await store.rebaseOntoBranch(branch) }
               }
-              .disabled(branch.isHead)
+              .disabled(store.currentBranch == nil || branch.isHead)
               if branch.upstream != nil {
                 Button(branch.pullTitle) {
                   Task { await store.pullBranch(branch) }
@@ -413,6 +413,10 @@ struct SidebarView: View {
             Task { await store.setCurrentBranchUpstream(branch) }
           }
           .disabled(store.currentBranch == nil)
+          Button("Merge into Current Branch") {
+            Task { await store.mergeBranch(branch) }
+          }
+          .disabled(store.currentBranch == nil || branch.remoteBranchName == nil)
           Divider()
           ReferenceCopyMenu(ref: branch)
           Divider()

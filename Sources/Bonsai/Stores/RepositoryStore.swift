@@ -1244,17 +1244,22 @@ final class RepositoryStore {
   }
 
   func mergeBranch(_ branch: GitRef) async {
-    guard branch.kind == .localBranch, !branch.isHead else { return }
+    guard canUseAsBranchOperationTarget(branch) else { return }
     await runMutation(title: "Merge \(branch.shortName)") {
       try await gitClient.mergeBranch(branch, in: requiredRepository())
     }
   }
 
   func rebaseOntoBranch(_ branch: GitRef) async {
-    guard branch.kind == .localBranch, !branch.isHead else { return }
+    guard canUseAsBranchOperationTarget(branch) else { return }
     await runMutation(title: "Rebase onto \(branch.shortName)") {
       try await gitClient.rebaseOntoBranch(branch, in: requiredRepository())
     }
+  }
+
+  private func canUseAsBranchOperationTarget(_ branch: GitRef) -> Bool {
+    guard currentBranch != nil, !branch.isHead else { return false }
+    return branch.kind == .localBranch || branch.remoteBranchName != nil
   }
 
   func unsetUpstream(_ branch: GitRef) async {
