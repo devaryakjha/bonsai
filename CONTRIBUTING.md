@@ -31,8 +31,15 @@ swift test
 
 For UI-only documentation changes, `git diff --check` is the minimum gate. Run
 the Swift validation commands when source, package, or script behavior changes.
+If you change GitHub Actions workflows and have `actionlint` installed, run:
+
+```sh
+actionlint .github/workflows/ci.yml .github/workflows/release.yml
+```
+
 GitHub Actions mirrors the non-credentialed gates on macOS: shell syntax,
-`swift test`, and the package verifier modes, including artifact verification.
+`swift test`, and the package verifier modes, including archive and artifact
+verification.
 
 ## Pull Requests
 

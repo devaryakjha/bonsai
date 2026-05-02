@@ -26,8 +26,9 @@
 
 ## Status
 
-Bonsai is under highly active development. Expect frequent commits, fast-moving
-specs, and occasional rough edges while the v0 surface is completed.
+Bonsai is under highly active development. The v0 app surface is implemented and
+is being hardened for the first public release. Public binary distribution is
+still pending Developer ID signing and Apple notarization credentials.
 
 The v0 goal is practical feature parity with Fork's public macOS feature set:
 repository management, commit history, staging, rich unified and split diffs,
@@ -80,6 +81,18 @@ Run the opt-in large repository performance smoke:
 ./script/perf_large_repo.sh
 ```
 
+Check local distribution credential readiness:
+
+```sh
+./script/package_release.sh --doctor
+./script/package_release.sh --check-credentials
+```
+
+The credential checks are expected to fail on machines without a Developer ID
+Application certificate and a valid notarytool profile. Maintainer release setup
+is documented in `Documentation/ReleaseChecklist.md`,
+`Documentation/ReleasePackaging.md`, and `Documentation/GitHubReleaseSetup.md`.
+
 Run the standard validation gates before submitting changes:
 
 ```sh
@@ -106,8 +119,8 @@ Useful project paths:
 - `Sources/Bonsai/Services` - Git, GitHub, and process execution services
 - `Sources/Bonsai/Support` - parsers, rendering helpers, launchers, and policies
 - `Tests/BonsaiTests` - focused parser, command, workflow, and integration tests
-- `Documentation/ReleasePackaging.md` - release packaging, signing, and
-  notarization workflow
+- `Documentation/ReleasePackaging.md` - release packaging, signing, notarization,
+  and artifact verification workflow
 - `Documentation/ReleaseChecklist.md` - first public release checklist
 - `VERSION` - bundle marketing version used by package scripts
 

@@ -48,12 +48,12 @@ Current public Fork sources list these v0 parity surfaces:
 
 - Main window: `NavigationSplitView` with repository/sidebar, history/working
   tree center, and details/diff inspector.
-- Repository manager: first-run empty state, add existing repo, clone placeholder,
-  recents, and workspace groups.
+- Repository manager: first-run empty state, add existing repo, clone/create
+  setup, recents, and workspace groups.
 - Working tree: staged/unstaged/conflicted/untracked groups, stage/unstage,
   discard confirmation, commit message, amend/sign toggles.
-- History: commit list with graph lane placeholder, branch/tag labels, commit
-  details, changed files, diff.
+- History: commit list with graph lanes, branch/tag labels, commit details,
+  changed files, and diff.
 - References: local branches, remote branches, tags, remotes.
 - Operations: fetch, pull, push, branch, tag, stash, merge, rebase,
   cherry-pick, revert, checkout, reset.

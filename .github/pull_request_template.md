@@ -12,6 +12,8 @@
 - [ ] `swift test`
 - [ ] `./script/build_and_run.sh --verify`
 - [ ] `./script/package_release.sh --verify`
+- [ ] `./script/package_release.sh --verify-archive`
+- [ ] `./script/package_release.sh --verify-artifacts`
 
 ## UI Evidence
 
