@@ -1209,12 +1209,17 @@ enum GitRevisionCommand: String, CaseIterable, Identifiable {
   var id: String { rawValue }
   var gitSubcommand: String { rawValue }
 
-  func arguments(commitHash: String) -> [String] {
+  func arguments(commitHash: String, updateRefs: Bool = false) -> [String] {
     switch self {
     case .cherryPick, .revert, .merge:
       return [gitSubcommand, "--no-edit", commitHash]
     case .rebase:
-      return [gitSubcommand, commitHash]
+      var arguments = [gitSubcommand]
+      if updateRefs {
+        arguments.append("--update-refs")
+      }
+      arguments.append(commitHash)
+      return arguments
     }
   }
 

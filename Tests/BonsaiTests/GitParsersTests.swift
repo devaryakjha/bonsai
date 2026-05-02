@@ -395,6 +395,8 @@ final class GitParsersTests: XCTestCase {
 
     XCTAssertEqual(GitRevisionCommand.rebase.gitSubcommand, "rebase")
     XCTAssertEqual(GitRevisionCommand.rebase.arguments(commitHash: "abc1234"), ["rebase", "abc1234"])
+    XCTAssertEqual(GitRevisionCommand.rebase.arguments(commitHash: "abc1234", updateRefs: true), ["rebase", "--update-refs", "abc1234"])
+    XCTAssertEqual(GitRevisionCommand.merge.arguments(commitHash: "abc1234", updateRefs: true), ["merge", "--no-edit", "abc1234"])
     XCTAssertEqual(GitRevisionCommand.rebase.historyTitle, "Rebase onto")
     XCTAssertEqual(GitRevisionCommand.rebase.selectedCommitTitle, "Rebase onto selected commit")
   }

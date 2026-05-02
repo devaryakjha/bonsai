@@ -739,8 +739,13 @@ struct GitClient {
     return output.combinedOutput
   }
 
-  func runRevisionCommand(_ command: GitRevisionCommand, commit: GitCommit, in repository: GitRepository) async throws -> String {
-    try await runRaw(command.arguments(commitHash: commit.hash), in: repository)
+  func runRevisionCommand(
+    _ command: GitRevisionCommand,
+    commit: GitCommit,
+    updateRefs: Bool = false,
+    in repository: GitRepository
+  ) async throws -> String {
+    try await runRaw(command.arguments(commitHash: commit.hash, updateRefs: updateRefs), in: repository)
   }
 
   func createBranch(named name: String, startPoint: String?, in repository: GitRepository) async throws -> String {

@@ -75,6 +75,7 @@ final class RepositoryStore {
   var dropStashRequest: DropStashRequest?
   var interactiveRebasePlan: InteractiveRebasePlan?
   var revisionCommandRequest: RevisionCommandRequest?
+  var revisionCommandUpdateRefs = false
   var resetRequest: ResetRequest?
   var deleteRefRequest: DeleteRefRequest?
   var deleteRefForce = false
@@ -1628,14 +1629,22 @@ final class RepositoryStore {
 
   func presentRevisionCommand(_ command: GitRevisionCommand) {
     guard let selectedCommit else { return }
+    revisionCommandUpdateRefs = false
     revisionCommandRequest = RevisionCommandRequest(command: command, commit: selectedCommit)
   }
 
   func runRequestedRevisionCommand() async {
     guard let request = revisionCommandRequest else { return }
+    let updateRefs = revisionCommandUpdateRefs
     revisionCommandRequest = nil
+    revisionCommandUpdateRefs = false
     await runMutation(title: request.command.resultTitle(shortHash: request.commit.shortHash)) {
-      try await gitClient.runRevisionCommand(request.command, commit: request.commit, in: requiredRepository())
+      try await gitClient.runRevisionCommand(
+        request.command,
+        commit: request.commit,
+        updateRefs: updateRefs,
+        in: requiredRepository()
+      )
     }
   }
 

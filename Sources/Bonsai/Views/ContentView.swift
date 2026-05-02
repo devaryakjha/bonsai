@@ -177,8 +177,10 @@ struct ContentView: View {
     .sheet(item: $store.revisionCommandRequest) { request in
       RevisionCommandSheet(
         request: request,
+        updateRefs: $store.revisionCommandUpdateRefs,
         onCancel: {
           store.revisionCommandRequest = nil
+          store.revisionCommandUpdateRefs = false
         },
         onConfirm: {
           Task { await store.runRequestedRevisionCommand() }
@@ -889,6 +891,7 @@ private struct DropStashSheet: View {
 
 private struct RevisionCommandSheet: View {
   var request: RevisionCommandRequest
+  @Binding var updateRefs: Bool
   var onCancel: () -> Void
   var onConfirm: () -> Void
 
@@ -905,6 +908,11 @@ private struct RevisionCommandSheet: View {
       Text(request.detail)
         .foregroundStyle(.secondary)
         .lineLimit(3)
+
+      if request.command == .rebase {
+        Toggle("Update refs", isOn: $updateRefs)
+          .help("Move branch refs that point into the rewritten range")
+      }
 
       HStack {
         Spacer()
