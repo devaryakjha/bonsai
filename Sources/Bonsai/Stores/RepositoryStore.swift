@@ -9,6 +9,7 @@ final class RepositoryStore {
   private let gitHubClient = GitHubClient()
   private let recentsKey = "bonsai.recentRepositories"
   private let recentCommitMessagesKey = "bonsai.recentCommitMessages"
+  private let autoRefreshKey = "bonsai.autoRefresh"
 
   var selectedRepository: GitRepository?
   var recentRepositories: [GitRepository] = []
@@ -1472,11 +1473,20 @@ final class RepositoryStore {
     do {
       let output = try await operation()
       commandResult = CommandResult(title: title, output: output.isEmpty ? "Completed." : output, isError: false)
-      await refreshAll()
+      if autoRefreshAfterMutations {
+        await refreshAll()
+      }
     } catch {
       commandResult = CommandResult(title: title, output: error.localizedDescription, isError: true)
       errorMessage = error.localizedDescription
     }
+  }
+
+  private var autoRefreshAfterMutations: Bool {
+    guard UserDefaults.standard.object(forKey: autoRefreshKey) != nil else {
+      return true
+    }
+    return UserDefaults.standard.bool(forKey: autoRefreshKey)
   }
 
   private func runReadOnlyCommand(title: String, operation: () async throws -> String) async {

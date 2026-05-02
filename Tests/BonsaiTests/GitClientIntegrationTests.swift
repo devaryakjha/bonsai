@@ -52,6 +52,32 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertFalse(diffText.contains("Initial"))
   }
 
+  func testStoreMutationHonorsAutoRefreshPreference() async throws {
+    UserDefaults.standard.set(false, forKey: "bonsai.autoRefresh")
+    defer { UserDefaults.standard.removeObject(forKey: "bonsai.autoRefresh") }
+
+    let repo = try await makeRepository()
+    let file = repo.appending(path: "tracked.txt")
+    try write("before\n", to: file)
+    try await commitAll(in: repo, message: "Initial")
+    try write("after\n", to: file)
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    let unstagedBeforeStage = await store.unstagedChanges
+    let entry = try XCTUnwrap(unstagedBeforeStage.first)
+
+    await store.stage(entry)
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let gitStatus = try await client.status(in: repository)
+    let staleStagedChanges = await store.stagedChanges
+    let staleUnstagedChanges = await store.unstagedChanges
+    XCTAssertTrue(gitStatus.contains { $0.path == "tracked.txt" && $0.isStaged })
+    XCTAssertTrue(staleStagedChanges.isEmpty)
+    XCTAssertEqual(staleUnstagedChanges.first?.path, "tracked.txt")
+  }
+
   func testWorkingTreeHunkCommitAndReadOnlyActions() async throws {
     let repo = try await makeRepository()
     let file = repo.appending(path: "file.txt")
