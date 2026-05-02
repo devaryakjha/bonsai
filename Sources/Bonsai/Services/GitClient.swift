@@ -311,6 +311,10 @@ struct GitClient {
     return try await runRaw(args, in: repository)
   }
 
+  func renameBranch(from oldName: String, to newName: String, in repository: GitRepository) async throws -> String {
+    try await runRaw(["branch", "-m", oldName, newName], in: repository)
+  }
+
   func createTag(named name: String, target: String?, in repository: GitRepository) async throws -> String {
     var args = ["tag", name]
     if let target, !target.isEmpty {

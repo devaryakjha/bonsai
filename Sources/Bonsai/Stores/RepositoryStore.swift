@@ -41,6 +41,7 @@ final class RepositoryStore {
   var gitHubNotifications: [GitHubNotification] = []
   var operationRequest: GitOperationRequest?
   var operationInput = ""
+  var branchRenameSource: GitRef?
   var conflictResolutionRequest: ConflictResolutionRequest?
   var discardChangeRequest: DiscardChangeRequest?
   var interactiveRebasePlan: InteractiveRebasePlan?
@@ -562,6 +563,7 @@ final class RepositoryStore {
   }
 
   func presentCreateBranch() {
+    branchRenameSource = nil
     operationInput = ""
     operationRequest = GitOperationRequest(
       kind: .createBranch,
@@ -573,7 +575,21 @@ final class RepositoryStore {
     )
   }
 
+  func presentRenameBranch(_ branch: GitRef) {
+    branchRenameSource = branch
+    operationInput = branch.shortName
+    operationRequest = GitOperationRequest(
+      kind: .renameBranch,
+      title: "Rename Branch",
+      message: "Rename \(branch.shortName).",
+      placeholder: "feature/new-name",
+      defaultValue: branch.shortName,
+      primaryActionTitle: "Rename"
+    )
+  }
+
   func presentCreateTag() {
+    branchRenameSource = nil
     operationInput = ""
     operationRequest = GitOperationRequest(
       kind: .createTag,
@@ -643,13 +659,20 @@ final class RepositoryStore {
   func confirmOperation() async {
     guard let request = operationRequest else { return }
     let value = operationInput.trimmingCharacters(in: .whitespacesAndNewlines)
+    let branchToRename = branchRenameSource
     operationRequest = nil
+    branchRenameSource = nil
 
     switch request.kind {
     case .createBranch:
       guard !value.isEmpty else { return }
       await runMutation(title: "Create Branch \(value)") {
         try await gitClient.createBranch(named: value, startPoint: selectedCommit?.hash, in: requiredRepository())
+      }
+    case .renameBranch:
+      guard let branchToRename, !value.isEmpty else { return }
+      await runMutation(title: "Rename Branch \(branchToRename.shortName)") {
+        try await gitClient.renameBranch(from: branchToRename.shortName, to: value, in: requiredRepository())
       }
     case .createTag:
       guard !value.isEmpty else { return }

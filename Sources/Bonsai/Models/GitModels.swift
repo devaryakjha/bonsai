@@ -567,6 +567,7 @@ enum RepositoryAction: String {
 
 enum GitOperationKind: String, Identifiable {
   case createBranch
+  case renameBranch
   case createTag
   case createWorktree
   case stashPush

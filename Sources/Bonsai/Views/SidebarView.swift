@@ -146,6 +146,9 @@ struct SidebarView: View {
               Button("Checkout") {
                 Task { await store.checkout(branch) }
               }
+              Button("Rename...") {
+                store.presentRenameBranch(branch)
+              }
               Button("Delete") {
                 Task { await store.delete(branch) }
               }
