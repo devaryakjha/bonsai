@@ -126,14 +126,22 @@ final class RepositoryStore {
 
   func revealRepositoryInFinder() {
     guard let selectedRepository else { return }
+    revealRepositoryInFinder(selectedRepository)
+  }
+
+  func revealRepositoryInFinder(_ repository: GitRepository) {
     NSWorkspace.shared.activateFileViewerSelecting([
-      RepositoryFileLocator.repositoryURL(selectedRepository)
+      RepositoryFileLocator.repositoryURL(repository)
     ])
   }
 
   func copyRepositoryPath() {
     guard let selectedRepository else { return }
-    PasteboardWriter.copy(selectedRepository.path)
+    copyRepositoryPath(selectedRepository)
+  }
+
+  func copyRepositoryPath(_ repository: GitRepository) {
+    PasteboardWriter.copy(repository.path)
   }
 
   var commitReadinessIssue: String? {
@@ -329,6 +337,11 @@ final class RepositoryStore {
     Task {
       await refreshAll()
     }
+  }
+
+  func removeRecentRepository(_ repository: GitRepository) {
+    recentRepositories.removeAll { $0.path == repository.path }
+    saveRecents()
   }
 
   func rescanProjectsDirectory() {

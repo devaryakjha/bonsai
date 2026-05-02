@@ -44,6 +44,19 @@ struct SidebarView: View {
               Label(repository.name, systemImage: "clock")
             }
             .buttonStyle(.plain)
+            .help(repository.path)
+            .contextMenu {
+              Button("Copy Path") {
+                store.copyRepositoryPath(repository)
+              }
+              Button("Reveal in Finder") {
+                store.revealRepositoryInFinder(repository)
+              }
+              Divider()
+              Button("Remove from Recents", role: .destructive) {
+                store.removeRecentRepository(repository)
+              }
+            }
           }
         }
       }
