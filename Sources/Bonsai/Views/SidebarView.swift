@@ -164,6 +164,15 @@ struct SidebarView: View {
               Button("Rename...") {
                 store.presentRenameBranch(branch)
               }
+              if !store.branchPushRemotes.isEmpty {
+                Menu("Push to Remote") {
+                  ForEach(store.branchPushRemotes) { remote in
+                    Button(remote.name) {
+                      Task { await store.pushBranch(branch, to: remote) }
+                    }
+                  }
+                }
+              }
               if branch.upstream != nil {
                 Button("Unset Upstream") {
                   Task { await store.unsetUpstream(branch) }

@@ -279,6 +279,10 @@ final class RepositoryStore {
     snapshot.remotes.filter { $0.fetchURL != nil || $0.pushURL != nil }
   }
 
+  var branchPushRemotes: [GitRemote] {
+    tagPushRemotes
+  }
+
   var filteredCommits: [GitCommit] {
     CommitFilter.filter(snapshot.commits, query: historySearchText)
   }
@@ -1082,6 +1086,12 @@ final class RepositoryStore {
   func pushTag(_ tag: GitRef, to remote: GitRemote) async {
     await runMutation(title: "Push tag \(tag.shortName)") {
       try await gitClient.pushTag(tag.shortName, remote: remote.name, in: requiredRepository())
+    }
+  }
+
+  func pushBranch(_ branch: GitRef, to remote: GitRemote) async {
+    await runMutation(title: "Push branch \(branch.shortName)") {
+      try await gitClient.publishBranch(branch.shortName, remote: remote.name, in: requiredRepository())
     }
   }
 

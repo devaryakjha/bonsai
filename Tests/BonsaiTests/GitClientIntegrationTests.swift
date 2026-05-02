@@ -677,6 +677,34 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(commandResult?.isError, false)
   }
 
+  func testStorePushesNonCurrentBranchToRemote() async throws {
+    let repo = try await makeRepository()
+    let bare = try await makeBareRepository()
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    try write("initial\n", to: repo.appending(path: "file.txt"))
+    try await commitAll(in: repo, message: "Initial")
+    _ = try await client.addRemote(name: "origin", url: bare.path(percentEncoded: false), in: repository)
+    _ = try await client.createBranch(named: "feature/publish", startPoint: nil, in: repository)
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    let branches = await store.localBranches
+    let remotes = await store.branchPushRemotes
+    let branch = try XCTUnwrap(branches.first { $0.shortName == "feature/publish" })
+    let remote = try XCTUnwrap(remotes.first { $0.name == "origin" })
+
+    await store.pushBranch(branch, to: remote)
+
+    let remoteRefs = try await client.git(["ls-remote", "--heads", bare.path(percentEncoded: false)], in: repo).stdout
+    let refs = try await client.refs(in: repository)
+    let pushedBranch = try XCTUnwrap(refs.first { $0.shortName == "feature/publish" })
+    let commandResult = await store.commandResult
+    XCTAssertTrue(remoteRefs.contains("refs/heads/feature/publish"))
+    XCTAssertEqual(pushedBranch.upstream, "origin/feature/publish")
+    XCTAssertEqual(commandResult?.title, "Push branch feature/publish")
+    XCTAssertEqual(commandResult?.isError, false)
+  }
+
   func testLineChangeStagingLeavesOtherChangesUnstaged() async throws {
     let repo = try await makeRepository()
     let file = repo.appending(path: "file.txt")
