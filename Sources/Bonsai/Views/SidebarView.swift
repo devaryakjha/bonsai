@@ -696,9 +696,10 @@ private struct RepositoryHeaderRow: View {
 
   var body: some View {
     HStack(alignment: .top, spacing: 10) {
-      Image(systemName: "externaldrive")
-        .foregroundStyle(.secondary)
-        .frame(width: 16)
+      BonsaiLogoMark()
+        .frame(width: 17, height: 17)
+        .padding(.top, 1)
+        .accessibilityHidden(true)
 
       VStack(alignment: .leading, spacing: 2) {
         Text(repository.name)
