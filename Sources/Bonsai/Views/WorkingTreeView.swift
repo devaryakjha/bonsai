@@ -113,27 +113,25 @@ private struct StatusRow: View {
 
       Spacer()
 
-      if entry.isConflicted {
-        Button {
-          Task { await store.presentConflictResolver(for: entry) }
-        } label: {
-          Image(systemName: "wrench.and.screwdriver")
-        }
-        .buttonStyle(.borderless)
-        .help("Resolve conflict")
-        .accessibilityLabel("Resolve conflict for \(entry.path)")
-      }
-
       Button {
-        stageOrUnstage()
+        runPrimaryAction()
       } label: {
-        Image(systemName: entry.isStaged ? "minus.circle" : "plus.circle")
+        Image(systemName: entry.primaryRowAction.systemImage)
       }
       .buttonStyle(.borderless)
-      .help(entry.isStaged ? "Unstage" : "Stage")
-      .accessibilityLabel(entry.isStaged ? "Unstage \(entry.path)" : "Stage \(entry.path)")
+      .help(entry.primaryRowAction.title)
+      .accessibilityLabel("\(entry.primaryRowAction.title) \(entry.path)")
 
       Menu {
+        if entry.isConflicted {
+          Button("Resolve Conflict") {
+            resolveConflict()
+          }
+        }
+        Button(entry.isStaged ? "Unstage" : "Stage") {
+          stageOrUnstage()
+        }
+        Divider()
         Button("Blame") {
           showBlame()
         }
@@ -199,9 +197,15 @@ private struct StatusRow: View {
       store.selectStatusEntry(entry)
     }
     .contextMenu {
+      if entry.isConflicted {
+        Button("Resolve Conflict") {
+          resolveConflict()
+        }
+      }
       Button(entry.isStaged ? "Unstage" : "Stage") {
         stageOrUnstage()
       }
+      Divider()
       Button("Blame") {
         showBlame()
       }
@@ -254,11 +258,15 @@ private struct StatusRow: View {
       Button("Discard Change", role: .destructive) {
         store.presentDiscardChange(entry)
       }
-      if entry.isConflicted {
-        Button("Resolve Conflict") {
-          Task { await store.presentConflictResolver(for: entry) }
-        }
-      }
+    }
+  }
+
+  private func runPrimaryAction() {
+    switch entry.primaryRowAction {
+    case .stage, .unstage:
+      stageOrUnstage()
+    case .resolveConflict:
+      resolveConflict()
     }
   }
 
@@ -280,6 +288,10 @@ private struct StatusRow: View {
   private func showFileHistory() {
     store.selectStatusEntry(entry)
     Task { await store.showFileHistoryForSelection() }
+  }
+
+  private func resolveConflict() {
+    Task { await store.presentConflictResolver(for: entry) }
   }
 
   private func copyPath() {
