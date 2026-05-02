@@ -68,4 +68,55 @@ final class ProjectRepositoryScannerTests: XCTestCase {
     XCTAssertEqual(groups.first { $0.name == "mobile" }?.repositories.map(\.name), ["chibi"])
     XCTAssertEqual(groups.first { $0.name == "services" }?.repositories.map(\.name), ["api"])
   }
+
+  func testConfiguredSourceDirectoriesTrimExpandAndDedupePaths() {
+    let directories = ProjectRepositoryScanner.configuredSourceDirectories(rawValue: """
+      ~/projects
+
+      ~/projects
+      /tmp/repos
+    """)
+
+    XCTAssertEqual(directories.map { $0.path(percentEncoded: false) }, [
+      NSHomeDirectory() + "/projects",
+      "/tmp/repos"
+    ])
+  }
+
+  func testConfiguredSourceDirectoriesFallsBackToProjectsWhenEmpty() {
+    let directories = ProjectRepositoryScanner.configuredSourceDirectories(rawValue: " \n ")
+
+    XCTAssertEqual(directories.map { $0.path(percentEncoded: false) }, [
+      ProjectRepositoryScanner.defaultSourceDirectoryText
+    ])
+  }
+
+  func testWorkspaceGroupsCanScanMultipleSourceDirectories() throws {
+    let firstRoot = FileManager.default.temporaryDirectory
+      .appending(path: "bonsai-source-a-\(UUID().uuidString)", directoryHint: .isDirectory)
+    let secondRoot = FileManager.default.temporaryDirectory
+      .appending(path: "bonsai-source-b-\(UUID().uuidString)", directoryHint: .isDirectory)
+    let firstDirect = firstRoot.appending(path: "bonsai", directoryHint: .isDirectory)
+    let firstNested = firstRoot.appending(path: "tools/loadwright", directoryHint: .isDirectory)
+    let secondDirect = secondRoot.appending(path: "kite", directoryHint: .isDirectory)
+
+    try FileManager.default.createDirectory(at: firstDirect.appending(path: ".git"), withIntermediateDirectories: true)
+    try FileManager.default.createDirectory(at: firstNested.appending(path: ".git"), withIntermediateDirectories: true)
+    try FileManager.default.createDirectory(at: secondDirect.appending(path: ".git"), withIntermediateDirectories: true)
+    defer {
+      try? FileManager.default.removeItem(at: firstRoot)
+      try? FileManager.default.removeItem(at: secondRoot)
+    }
+
+    let groups = ProjectRepositoryScanner.workspaceGroups(under: [firstRoot, secondRoot], maxDepth: 2)
+
+    XCTAssertEqual(groups.map(\.name), [
+      firstRoot.lastPathComponent,
+      "\(firstRoot.lastPathComponent) / tools",
+      secondRoot.lastPathComponent
+    ])
+    XCTAssertEqual(groups.first { $0.name == firstRoot.lastPathComponent }?.repositories.map(\.name), ["bonsai"])
+    XCTAssertEqual(groups.first { $0.name.hasSuffix("tools") }?.repositories.map(\.name), ["loadwright"])
+    XCTAssertEqual(groups.first { $0.name == secondRoot.lastPathComponent }?.repositories.map(\.name), ["kite"])
+  }
 }

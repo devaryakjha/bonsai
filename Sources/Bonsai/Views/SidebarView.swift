@@ -117,7 +117,7 @@ struct SidebarView: View {
           }
         } header: {
           HStack {
-            Text("~/projects")
+            Text("Source directories")
             Spacer()
             Button {
               store.rescanProjectsDirectory()
@@ -125,8 +125,8 @@ struct SidebarView: View {
               Image(systemName: "arrow.clockwise")
             }
             .buttonStyle(.borderless)
-            .help("Rescan ~/projects")
-            .accessibilityLabel("Rescan ~/projects")
+            .help("Rescan source directories")
+            .accessibilityLabel("Rescan source directories")
           }
         }
       }

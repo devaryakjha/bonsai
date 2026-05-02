@@ -2191,7 +2191,7 @@ final class RepositoryStore {
   }
 
   private func refreshProjectRepositories() {
-    projectRepositories = ProjectRepositoryScanner.scanDefaultProjectsDirectory()
+    projectRepositories = ProjectRepositoryScanner.scanConfiguredRepositories()
     projectWorkspaceGroups = ProjectRepositoryScanner.scanDefaultWorkspaceGroups()
   }
 

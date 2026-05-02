@@ -8,6 +8,7 @@ struct SettingsView: View {
   @AppStorage("bonsai.diffWhitespaceMode") private var diffWhitespaceMode = DiffWhitespaceMode.show.rawValue
   @AppStorage("bonsai.diffDisplayMode") private var diffDisplayMode = DiffDisplayMode.unified.rawValue
   @AppStorage("bonsai.githubToken") private var githubToken = ""
+  @AppStorage(ProjectRepositoryScanner.sourceDirectoriesDefaultsKey) private var sourceDirectories = ProjectRepositoryScanner.defaultSourceDirectoryText
 
   var body: some View {
     VStack(alignment: .leading, spacing: 22) {
@@ -26,6 +27,14 @@ struct SettingsView: View {
           Toggle("", isOn: $autoRefresh)
             .labelsHidden()
             .accessibilityLabel("Auto refresh")
+        }
+        SettingsRow("Source directories") {
+          TextEditor(text: $sourceDirectories)
+            .font(.body.monospaced())
+            .frame(minHeight: 58, maxHeight: 74)
+            .scrollContentBackground(.hidden)
+            .help("One source directory per line")
+            .accessibilityLabel("Source directories")
         }
       }
 
