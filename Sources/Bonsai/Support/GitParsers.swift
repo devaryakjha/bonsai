@@ -4,8 +4,8 @@ enum GitParsers {
   static func parseStatus(_ output: String) -> [GitStatusEntry] {
     output
       .split(separator: "\n", omittingEmptySubsequences: true)
-      .compactMap { line -> GitStatusEntry? in
-        guard line.count >= 4 else { return nil }
+      .flatMap { line -> [GitStatusEntry] in
+        guard line.count >= 4 else { return [] }
         let index = line[line.startIndex]
         let workTree = line[line.index(after: line.startIndex)]
         let pathStart = line.index(line.startIndex, offsetBy: 3)
@@ -13,14 +13,33 @@ enum GitParsers {
         let renameParts = rawPath.components(separatedBy: " -> ")
         let path = renameParts.last ?? rawPath
         let originalPath = renameParts.count > 1 ? renameParts.first : nil
-        let kind = changeKind(index: index, workTree: workTree)
-        return GitStatusEntry(
+
+        if shouldSplitStatus(index: index, workTree: workTree) {
+          return [
+            GitStatusEntry(
+              path: path,
+              originalPath: originalPath,
+              indexStatus: index,
+              workTreeStatus: " ",
+              kind: changeKind(index: index, workTree: " ")
+            ),
+            GitStatusEntry(
+              path: path,
+              originalPath: nil,
+              indexStatus: " ",
+              workTreeStatus: workTree,
+              kind: changeKind(index: " ", workTree: workTree)
+            )
+          ]
+        }
+
+        return [GitStatusEntry(
           path: path,
           originalPath: originalPath,
           indexStatus: index,
           workTreeStatus: workTree,
-          kind: kind
-        )
+          kind: changeKind(index: index, workTree: workTree)
+        )]
       }
   }
 
@@ -219,6 +238,85 @@ enum GitParsers {
     return SplitDiff(oldText: oldLines.joined(separator: "\n"), newText: newLines.joined(separator: "\n"))
   }
 
+  static func parseDiffLineChanges(_ hunk: DiffHunk) -> [DiffLineChange] {
+    guard let ranges = parseHunkRanges(hunk.header) else { return [] }
+    var changes: [DiffLineChange] = []
+    var oldLine = ranges.oldStart
+    var newLine = ranges.newStart
+    var index = 0
+
+    while index < hunk.lines.count {
+      let line = hunk.lines[index]
+
+      if line.hasPrefix(" ") {
+        oldLine += 1
+        newLine += 1
+        index += 1
+        continue
+      }
+
+      if line.hasPrefix("-") {
+        let oldStart = oldLine
+        let newStart = newLine
+        var patchLines: [String] = []
+        var oldCount = 0
+        var newCount = 0
+
+        while index < hunk.lines.count, hunk.lines[index].hasPrefix("-") {
+          patchLines.append(hunk.lines[index])
+          oldLine += 1
+          oldCount += 1
+          index += 1
+        }
+
+        while index < hunk.lines.count, hunk.lines[index].hasPrefix("+") {
+          patchLines.append(hunk.lines[index])
+          newLine += 1
+          newCount += 1
+          index += 1
+        }
+
+        let kind: DiffLineChange.Kind = newCount > 0 ? .replacement : .deletion
+        changes.append(DiffLineChange(
+          id: "\(hunk.id)-\(changes.count)",
+          hunkID: hunk.id,
+          kind: kind,
+          oldStart: oldStart,
+          oldCount: oldCount,
+          newStart: kind == .deletion ? max(newStart - 1, 0) : newStart,
+          newCount: newCount,
+          lines: patchLines,
+          fileHeader: hunk.fileHeader
+        ))
+        continue
+      }
+
+      if line.hasPrefix("+") {
+        let oldStart = max(oldLine - 1, 0)
+        let newStart = newLine
+        let change = DiffLineChange(
+          id: "\(hunk.id)-\(changes.count)",
+          hunkID: hunk.id,
+          kind: .addition,
+          oldStart: oldStart,
+          oldCount: 0,
+          newStart: newStart,
+          newCount: 1,
+          lines: [line],
+          fileHeader: hunk.fileHeader
+        )
+        changes.append(change)
+        newLine += 1
+        index += 1
+        continue
+      }
+
+      index += 1
+    }
+
+    return changes
+  }
+
   private static func changeKind(index: Character, workTree: Character) -> GitStatusEntry.ChangeKind {
     let status = "\(index)\(workTree)"
     if ["DD", "AU", "UD", "UA", "DU", "AA", "UU"].contains(status) {
@@ -232,5 +330,31 @@ enum GitParsers {
     if index == "T" || workTree == "T" { return .typeChanged }
     if index == "M" || workTree == "M" { return .modified }
     return .unknown
+  }
+
+  private static func shouldSplitStatus(index: Character, workTree: Character) -> Bool {
+    guard index != " ", workTree != " " else { return false }
+    guard index != "?", workTree != "?", index != "!", workTree != "!" else { return false }
+    return !["DD", "AU", "UD", "UA", "DU", "AA", "UU"].contains("\(index)\(workTree)")
+  }
+
+  private static func parseHunkRanges(_ header: String) -> (oldStart: Int, newStart: Int)? {
+    let pieces = header.split(separator: " ")
+    guard pieces.count >= 3,
+          pieces[1].hasPrefix("-"),
+          pieces[2].hasPrefix("+") else {
+      return nil
+    }
+
+    func start(_ token: Substring) -> Int? {
+      let value = token.dropFirst().split(separator: ",").first.map(String.init) ?? ""
+      return Int(value)
+    }
+
+    guard let oldStart = start(pieces[1]),
+          let newStart = start(pieces[2]) else {
+      return nil
+    }
+    return (oldStart, newStart)
   }
 }

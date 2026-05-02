@@ -220,6 +220,40 @@ struct DiffHunk: Identifiable, Hashable {
   }
 }
 
+struct DiffLineChange: Identifiable, Hashable {
+  enum Kind: String {
+    case addition = "Addition"
+    case deletion = "Deletion"
+    case replacement = "Replacement"
+  }
+
+  var id: String
+  var hunkID: Int
+  var kind: Kind
+  var oldStart: Int
+  var oldCount: Int
+  var newStart: Int
+  var newCount: Int
+  var lines: [String]
+  var fileHeader: [String]
+
+  var patch: String {
+    let header = "@@ -\(oldStart),\(oldCount) +\(newStart),\(newCount) @@"
+    return (fileHeader + [header] + lines).joined(separator: "\n") + "\n"
+  }
+
+  var title: String {
+    switch kind {
+    case .addition:
+      return "Add line \(newStart)"
+    case .deletion:
+      return "Remove line \(oldStart)"
+    case .replacement:
+      return "Replace line \(oldStart)"
+    }
+  }
+}
+
 enum ConflictResolutionChoice: String {
   case ours = "Accept Ours"
   case theirs = "Accept Theirs"

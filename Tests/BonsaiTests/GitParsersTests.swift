@@ -9,9 +9,10 @@ final class GitParsersTests: XCTestCase {
     ?? scratch.txt
     UU Package.swift
     R  Old.swift -> New.swift
+    MM Package.resolved
     """)
 
-    XCTAssertEqual(entries.count, 5)
+    XCTAssertEqual(entries.count, 7)
     XCTAssertEqual(entries[0].path, "Sources/App.swift")
     XCTAssertFalse(entries[0].isStaged)
     XCTAssertEqual(entries[1].kind, .added)
@@ -20,6 +21,10 @@ final class GitParsersTests: XCTestCase {
     XCTAssertTrue(entries[3].isConflicted)
     XCTAssertEqual(entries[4].originalPath, "Old.swift")
     XCTAssertEqual(entries[4].path, "New.swift")
+    XCTAssertTrue(entries[5].isStaged)
+    XCTAssertFalse(entries[6].isStaged)
+    XCTAssertEqual(entries[5].path, "Package.resolved")
+    XCTAssertEqual(entries[6].path, "Package.resolved")
   }
 
   func testParseRefsClassifiesLocalRemoteAndTagRefs() {
@@ -71,6 +76,31 @@ final class GitParsersTests: XCTestCase {
     XCTAssertFalse(hunks[0].patch.contains("@@ -10,2 +10,3 @@"))
     XCTAssertTrue(hunks[1].patch.contains("@@ -10,2 +10,3 @@"))
     XCTAssertTrue(hunks[1].patch.hasSuffix("\n"))
+  }
+
+  func testParseDiffLineChangesBuildsZeroContextPatches() throws {
+    let hunk = try XCTUnwrap(GitParsers.parseDiffHunks("""
+    diff --git a/file.txt b/file.txt
+    index 1111111..2222222 100644
+    --- a/file.txt
+    +++ b/file.txt
+    @@ -1,4 +1,5 @@
+     one
+    -two
+    +deux
+     three
+    +four
+    """).first)
+
+    let changes = GitParsers.parseDiffLineChanges(hunk)
+
+    XCTAssertEqual(changes.count, 2)
+    XCTAssertEqual(changes[0].kind, .replacement)
+    XCTAssertTrue(changes[0].patch.contains("@@ -2,1 +2,1 @@"))
+    XCTAssertTrue(changes[0].patch.contains("-two\n+deux"))
+    XCTAssertEqual(changes[1].kind, .addition)
+    XCTAssertTrue(changes[1].patch.contains("@@ -3,0 +4,1 @@"))
+    XCTAssertTrue(changes[1].patch.contains("+four"))
   }
 
   func testParseSplitDiffSeparatesOldAndNewSides() {

@@ -210,6 +210,16 @@ struct GitClient {
     return output.combinedOutput
   }
 
+  func stageLineChange(_ change: DiffLineChange, in repository: GitRepository) async throws -> String {
+    let output = try await git(["apply", "--cached", "--unidiff-zero"], in: repository.url, standardInput: change.patch)
+    return output.combinedOutput
+  }
+
+  func unstageLineChange(_ change: DiffLineChange, in repository: GitRepository) async throws -> String {
+    let output = try await git(["apply", "--cached", "--reverse", "--unidiff-zero"], in: repository.url, standardInput: change.patch)
+    return output.combinedOutput
+  }
+
   func commit(message: String, amend: Bool, sign: Bool, in repository: GitRepository) async throws -> String {
     var args = ["commit", "-m", message]
     if amend { args.append("--amend") }

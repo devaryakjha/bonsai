@@ -67,6 +67,10 @@ final class RepositoryStore {
     GitParsers.parseDiffHunks(diffText)
   }
 
+  var diffLineChanges: [DiffLineChange] {
+    diffHunks.flatMap(GitParsers.parseDiffLineChanges)
+  }
+
   var splitDiff: SplitDiff {
     GitParsers.parseSplitDiff(diffText)
   }
@@ -331,6 +335,18 @@ final class RepositoryStore {
   func unstageHunk(_ hunk: DiffHunk) async {
     await runMutation(title: "Unstage Hunk") {
       try await gitClient.unstageHunk(hunk, in: requiredRepository())
+    }
+  }
+
+  func stageLineChange(_ change: DiffLineChange) async {
+    await runMutation(title: "Stage \(change.title)") {
+      try await gitClient.stageLineChange(change, in: requiredRepository())
+    }
+  }
+
+  func unstageLineChange(_ change: DiffLineChange) async {
+    await runMutation(title: "Unstage \(change.title)") {
+      try await gitClient.unstageLineChange(change, in: requiredRepository())
     }
   }
 

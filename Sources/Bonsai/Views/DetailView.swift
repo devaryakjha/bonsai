@@ -120,13 +120,23 @@ private struct DiffView: View {
         if shouldShowHunks {
           HunkActionStrip(
             hunks: store.diffHunks,
+            lineChanges: store.diffLineChanges,
             isStaged: store.selectedStatusEntry?.isStaged == true,
-            onSelect: { hunk in
+            onSelectHunk: { hunk in
               Task {
                 if store.selectedStatusEntry?.isStaged == true {
                   await store.unstageHunk(hunk)
                 } else {
                   await store.stageHunk(hunk)
+                }
+              }
+            },
+            onSelectLine: { change in
+              Task {
+                if store.selectedStatusEntry?.isStaged == true {
+                  await store.unstageLineChange(change)
+                } else {
+                  await store.stageLineChange(change)
                 }
               }
             }
@@ -231,21 +241,40 @@ private struct ImageDiffPane: View {
 
 private struct HunkActionStrip: View {
   var hunks: [DiffHunk]
+  var lineChanges: [DiffLineChange]
   var isStaged: Bool
-  var onSelect: (DiffHunk) -> Void
+  var onSelectHunk: (DiffHunk) -> Void
+  var onSelectLine: (DiffLineChange) -> Void
 
   var body: some View {
     ScrollView(.horizontal) {
       HStack(spacing: 8) {
         ForEach(hunks) { hunk in
           Button {
-            onSelect(hunk)
+            onSelectHunk(hunk)
           } label: {
             Label(isStaged ? "Unstage Hunk \(hunk.id + 1)" : "Stage Hunk \(hunk.id + 1)", systemImage: isStaged ? "minus.circle" : "plus.circle")
           }
           .buttonStyle(.bordered)
           .controlSize(.small)
           .help(hunk.header)
+        }
+
+        if !lineChanges.isEmpty {
+          Divider()
+            .frame(height: 18)
+
+          Menu {
+            ForEach(lineChanges) { change in
+              Button(change.title) {
+                onSelectLine(change)
+              }
+            }
+          } label: {
+            Label(isStaged ? "Unstage Line" : "Stage Line", systemImage: "text.line.first.and.arrowtriangle.forward")
+          }
+          .menuStyle(.borderedButton)
+          .controlSize(.small)
         }
       }
       .padding(.horizontal, 10)

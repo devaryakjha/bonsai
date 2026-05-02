@@ -102,6 +102,46 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(fileHistory.contains("Update file"))
   }
 
+  func testLineChangeStagingLeavesOtherChangesUnstaged() async throws {
+    let repo = try await makeRepository()
+    let file = repo.appending(path: "file.txt")
+    try write((1...20).map { "line \($0)" }.joined(separator: "\n") + "\n", to: file)
+    try await commitAll(in: repo, message: "Initial file")
+
+    try write((1...20).map { index in
+      if index == 2 { return "line two changed" }
+      if index == 18 { return "line eighteen changed" }
+      return "line \(index)"
+    }.joined(separator: "\n") + "\n", to: file)
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let initialStatus = try await client.status(in: repository)
+    let entry = try XCTUnwrap(initialStatus.first)
+    let diff = try await client.diffForWorkingTreeFile(entry, staged: false, algorithm: .histogram, in: repository)
+    let firstHunk = try XCTUnwrap(GitParsers.parseDiffHunks(diff).first)
+    let firstLineChange = try XCTUnwrap(GitParsers.parseDiffLineChanges(firstHunk).first)
+
+    _ = try await client.stageLineChange(firstLineChange, in: repository)
+
+    let status = try await client.status(in: repository)
+    let stagedEntry = try XCTUnwrap(status.first { $0.isStaged })
+    let unstagedEntry = try XCTUnwrap(status.first { !$0.isStaged })
+    let stagedDiff = try await client.diffForWorkingTreeFile(stagedEntry, staged: true, algorithm: .histogram, in: repository)
+    let unstagedDiff = try await client.diffForWorkingTreeFile(unstagedEntry, staged: false, algorithm: .histogram, in: repository)
+
+    XCTAssertTrue(stagedDiff.contains("line two changed"))
+    XCTAssertFalse(stagedDiff.contains("line eighteen changed"))
+    XCTAssertTrue(unstagedDiff.contains("line eighteen changed"))
+
+    _ = try await client.unstageLineChange(firstLineChange, in: repository)
+    let finalStatus = try await client.status(in: repository)
+    XCTAssertFalse(finalStatus.contains { $0.isStaged })
+    let finalEntry = try XCTUnwrap(finalStatus.first)
+    let finalDiff = try await client.diffForWorkingTreeFile(finalEntry, staged: false, algorithm: .histogram, in: repository)
+    XCTAssertTrue(finalDiff.contains("line two changed"))
+    XCTAssertTrue(finalDiff.contains("line eighteen changed"))
+  }
+
   func testImageDiffSnapshotsReadWorkingTreeIndexAndCommitBlobs() async throws {
     let repo = try await makeRepository()
     let image = repo.appending(path: "image.png")
