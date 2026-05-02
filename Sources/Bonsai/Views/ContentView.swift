@@ -196,6 +196,17 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.forcePushRequest) { request in
+      ForcePushSheet(
+        request: request,
+        onCancel: {
+          store.forcePushRequest = nil
+        },
+        onConfirm: {
+          Task { await store.forcePushRequestedBranch() }
+        }
+      )
+    }
     .sheet(isPresented: Binding(
       get: { !store.reflogEntries.isEmpty },
       set: { if !$0 { store.reflogEntries = [] } }
@@ -1171,6 +1182,36 @@ private struct DeleteRefSheet: View {
     }
     .padding(20)
     .frame(width: 460)
+  }
+}
+
+private struct ForcePushSheet: View {
+  var request: ForcePushRequest
+  var onCancel: () -> Void
+  var onConfirm: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text(request.title)
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      Text(request.message)
+        .font(.body.monospaced())
+        .lineLimit(2)
+
+      Text(request.detail)
+        .foregroundStyle(.secondary)
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button("Force push", role: .destructive, action: onConfirm)
+          .buttonStyle(.borderedProminent)
+      }
+    }
+    .padding(20)
+    .frame(width: 480)
   }
 }
 

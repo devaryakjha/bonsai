@@ -1059,6 +1059,16 @@ struct DeleteRefRequest: Identifiable, Hashable {
   }
 }
 
+struct ForcePushRequest: Identifiable, Hashable {
+  var branch: GitRef
+
+  var id: String { branch.id }
+  var upstream: String { branch.upstream ?? "" }
+  var title: String { "Force push with lease" }
+  var message: String { "Force push \(branch.shortName)." }
+  var detail: String { "Update \(upstream) only if the remote has not changed." }
+}
+
 struct DiscardChangeRequest: Identifiable, Hashable {
   var entry: GitStatusEntry
 

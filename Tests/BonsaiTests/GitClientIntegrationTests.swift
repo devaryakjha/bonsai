@@ -1486,6 +1486,17 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(refs.contains { $0.shortName == "origin/feature/publish" && $0.kind == .remoteBranch })
     _ = try await client.checkout("main", in: repository)
 
+    let forcePushStore = await RepositoryStore()
+    await forcePushStore.openRepository(at: repo)
+    await MainActor.run {
+      forcePushStore.presentForcePushCurrentBranch()
+    }
+    let forcePushRequest = await forcePushStore.forcePushRequest
+    XCTAssertNotNil(forcePushRequest)
+    await MainActor.run {
+      forcePushStore.forcePushRequest = nil
+    }
+
     let createBranchStore = await RepositoryStore()
     await createBranchStore.openRepository(at: repo)
     let localBranchRefs = await createBranchStore.localBranches
@@ -1741,6 +1752,71 @@ final class GitClientIntegrationTests: XCTestCase {
 
     worktrees = try await client.worktrees(in: repository)
     XCTAssertFalse(worktrees.contains { $0.path.hasSuffix("/\(worktreeName)") })
+  }
+
+  func testStoreForcePushesCurrentBranchWithLease() async throws {
+    let remote = try await makeBareRepository()
+    let repo = try await makeRepository()
+
+    try write("seed\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Seed")
+    _ = try await client.git(["remote", "add", "origin", remote.path(percentEncoded: false)], in: repo)
+    _ = try await client.git(["push", "-u", "origin", "main"], in: repo)
+
+    try write("first\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "First")
+    _ = try await client.git(["push", "origin", "main"], in: repo)
+
+    try write("rewritten\n", to: repo.appending(path: "README.md"))
+    _ = try await client.git(["add", "."], in: repo)
+    _ = try await client.git(["commit", "--amend", "-m", "Rewritten"], in: repo)
+    let localHash = try await client.git(["rev-parse", "HEAD"], in: repo).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    let canForcePush = await store.canForcePushCurrentBranch
+    XCTAssertTrue(canForcePush)
+    await MainActor.run {
+      store.presentForcePushCurrentBranch()
+    }
+    let pendingRequest = await store.forcePushRequest
+    let request = try XCTUnwrap(pendingRequest)
+    XCTAssertEqual(request.branch.shortName, "main")
+    XCTAssertEqual(request.upstream, "origin/main")
+
+    await store.forcePushRequestedBranch()
+
+    let remoteHash = try await client.git(["rev-parse", "main"], in: remote).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let commandResult = await store.commandResult
+    XCTAssertEqual(remoteHash, localHash)
+    XCTAssertEqual(commandResult?.title, "Force push main")
+    XCTAssertEqual(commandResult?.isError, false)
+    let completedRequest = await store.forcePushRequest
+    XCTAssertNil(completedRequest)
+  }
+
+  func testForcePushRequestRequiresUsableUpstream() async throws {
+    let repo = try await makeRepository()
+    try write("seed\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Seed")
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    let canForcePush = await store.canForcePushCurrentBranch
+    XCTAssertFalse(canForcePush)
+
+    await MainActor.run {
+      store.presentForcePushCurrentBranch()
+    }
+
+    let commandResult = await store.commandResult
+    let request = await store.forcePushRequest
+    XCTAssertNil(request)
+    XCTAssertEqual(commandResult?.title, "Force push with lease")
+    XCTAssertEqual(commandResult?.isError, true)
+    XCTAssertEqual(commandResult?.output, "Set a usable upstream before force pushing.")
   }
 
   func testStorePrunesWorktreesAndRefreshesSnapshot() async throws {

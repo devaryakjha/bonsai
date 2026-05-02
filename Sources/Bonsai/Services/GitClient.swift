@@ -400,6 +400,19 @@ struct GitClient {
     try await runRaw(["push", "-u", remote, branch], in: repository)
   }
 
+  func forcePushWithLease(_ branch: GitRef, in repository: GitRepository) async throws -> String {
+    guard let remoteName = branch.upstreamRemoteName,
+          let upstreamBranchName = branch.upstreamBranchName else {
+      throw GitClientError.invalidBranchUpstream(branch.shortName)
+    }
+    return try await runRaw([
+      "push",
+      "--force-with-lease",
+      remoteName,
+      "\(branch.shortName):\(upstreamBranchName)"
+    ], in: repository)
+  }
+
   func pullBranch(_ branch: GitRef, in repository: GitRepository) async throws -> String {
     if branch.isHead {
       return try await runRaw(["pull", "--ff-only"], in: repository)

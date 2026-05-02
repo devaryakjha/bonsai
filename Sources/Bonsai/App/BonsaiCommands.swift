@@ -61,6 +61,11 @@ struct BonsaiCommands: Commands {
       .keyboardShortcut("p", modifiers: [.command, .shift])
       .disabled(store.selectedRepository == nil || !store.canPush)
 
+      Button("Force Push with Lease...") {
+        store.presentForcePushCurrentBranch()
+      }
+      .disabled(store.selectedRepository == nil || !store.canForcePushCurrentBranch)
+
       Divider()
 
       Button("Refresh") {

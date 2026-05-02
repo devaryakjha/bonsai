@@ -14,6 +14,10 @@ struct RepositoryToolbarActionsMenu: View {
           store.presentCreateTag()
         }
         Divider()
+        Button("Force Push with Lease...") {
+          store.presentForcePushCurrentBranch()
+        }
+        .disabled(!store.canForcePushCurrentBranch)
         Button("Checkout Selected Revision") {
           Task { await store.checkoutSelectedCommit() }
         }

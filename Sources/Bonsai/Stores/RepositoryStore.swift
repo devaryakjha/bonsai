@@ -56,6 +56,7 @@ final class RepositoryStore {
   var resetRequest: ResetRequest?
   var deleteRefRequest: DeleteRefRequest?
   var deleteRefForce = false
+  var forcePushRequest: ForcePushRequest?
   var reflogEntries: [GitReflogEntry] = []
   var reflogResetRequest: ReflogResetRequest?
   var remoteEditorRequest: RemoteEditorRequest?
@@ -344,6 +345,10 @@ final class RepositoryStore {
 
   var canPush: Bool {
     pushReadinessIssue == nil
+  }
+
+  var canForcePushCurrentBranch: Bool {
+    currentBranch?.upstream != nil && currentBranch?.upstreamGone == false
   }
 
   var pushActionTitle: String {
@@ -881,6 +886,24 @@ final class RepositoryStore {
 
     await runMutation(title: action.rawValue) {
       try await gitClient.runAction(action, in: requiredRepository())
+    }
+  }
+
+  func presentForcePushCurrentBranch() {
+    guard let currentBranch, canForcePushCurrentBranch else {
+      let message = currentBranch == nil ? "Checkout a branch before force pushing." : "Set a usable upstream before force pushing."
+      commandResult = CommandResult(title: "Force push with lease", output: message, isError: true)
+      errorMessage = message
+      return
+    }
+    forcePushRequest = ForcePushRequest(branch: currentBranch)
+  }
+
+  func forcePushRequestedBranch() async {
+    guard let request = forcePushRequest else { return }
+    forcePushRequest = nil
+    await runMutation(title: "Force push \(request.branch.shortName)") {
+      try await gitClient.forcePushWithLease(request.branch, in: requiredRepository())
     }
   }
 
