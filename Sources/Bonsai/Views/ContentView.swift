@@ -470,8 +470,9 @@ private struct BlameSheet: View {
 private struct BlameHeaderRow: View {
   var body: some View {
     HStack(spacing: 12) {
-      Text("")
+      Color.clear
         .frame(width: 22)
+        .accessibilityHidden(true)
       Text("Line")
         .frame(width: 52, alignment: .trailing)
       Text("Commit")
@@ -503,6 +504,7 @@ private struct BlameRow: View {
       }
       .buttonStyle(.borderless)
       .help("Show commit")
+      .accessibilityLabel("Show commit \(line.shortHash)")
       .frame(width: 22)
 
       Text("\(line.finalLine)")
