@@ -684,6 +684,20 @@ struct GitClient {
     }
   }
 
+  func conflictPreviews(_ entry: GitStatusEntry, in repository: GitRepository) async -> [ConflictPreview] {
+    var previews: [ConflictPreview] = []
+    for side in ConflictPreviewSide.allCases {
+      let text: String
+      if let stage = side.gitStage {
+        text = await conflictStageText(stage: stage, side: side, path: entry.path, in: repository)
+      } else {
+        text = workingTreeConflictText(path: entry.path, side: side, in: repository)
+      }
+      previews.append(ConflictPreview(side: side, text: text))
+    }
+    return previews
+  }
+
   func interactiveRebasePlan(in repository: GitRepository, count: Int = 10) async throws -> InteractiveRebasePlan {
     let format = "%H%x1f%h%x1f%s"
     let output = try await git([
@@ -819,6 +833,32 @@ struct GitClient {
       "--indent-heuristic",
       "--diff-algorithm=\(algorithm.rawValue)"
     ] + whitespaceMode.gitArguments + suffix
+  }
+
+  private func workingTreeConflictText(path: String, side: ConflictPreviewSide, in repository: GitRepository) -> String {
+    let fileURL = repository.url.appending(path: path)
+    guard let text = try? String(contentsOf: fileURL, encoding: .utf8) else {
+      return side.unavailableText
+    }
+    return limitedConflictPreview(text)
+  }
+
+  private func conflictStageText(stage: Int, side: ConflictPreviewSide, path: String, in repository: GitRepository) async -> String {
+    do {
+      let output = try await gitData(["show", ":\(stage):\(path)"], in: repository.url)
+      guard let text = String(data: output.stdout, encoding: .utf8) else {
+        return "\(side.title) is not UTF-8 text."
+      }
+      return limitedConflictPreview(text)
+    } catch {
+      return side.unavailableText
+    }
+  }
+
+  private func limitedConflictPreview(_ text: String) -> String {
+    let limit = 80_000
+    guard text.count > limit else { return text }
+    return String(text.prefix(limit)) + "\n\n[Preview truncated]"
   }
 
   private func commandSucceeds(_ arguments: [String], in repository: GitRepository) async -> Bool {

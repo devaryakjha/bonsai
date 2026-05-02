@@ -115,7 +115,7 @@ private struct StatusRow: View {
 
       if entry.isConflicted {
         Button {
-          store.presentConflictResolver(for: entry)
+          Task { await store.presentConflictResolver(for: entry) }
         } label: {
           Image(systemName: "wrench.and.screwdriver")
         }
@@ -248,7 +248,7 @@ private struct StatusRow: View {
       }
       if entry.isConflicted {
         Button("Resolve Conflict") {
-          store.presentConflictResolver(for: entry)
+          Task { await store.presentConflictResolver(for: entry) }
         }
       }
     }

@@ -1468,6 +1468,7 @@ private struct ConflictResolutionSheet: View {
   var request: ConflictResolutionRequest
   var onCancel: () -> Void
   var onResolve: (ConflictResolutionChoice) -> Void
+  @State private var selectedSide: ConflictPreviewSide = .workingTree
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
@@ -1479,7 +1480,17 @@ private struct ConflictResolutionSheet: View {
         .foregroundStyle(.secondary)
         .lineLimit(1)
 
-      RichDiffTextView(text: request.preview)
+      Picker("Conflict side", selection: $selectedSide) {
+        ForEach(request.previews) { preview in
+          Text(preview.title).tag(preview.side)
+        }
+      }
+      .pickerStyle(.segmented)
+      .labelsHidden()
+      .frame(width: 420)
+      .accessibilityLabel("Conflict side")
+
+      RichDiffTextView(text: selectedPreviewText)
         .frame(minWidth: 720, minHeight: 420)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay {
@@ -1503,6 +1514,11 @@ private struct ConflictResolutionSheet: View {
       }
     }
     .padding(20)
+  }
+
+  private var selectedPreviewText: String {
+    request.previews.first(where: { $0.side == selectedSide })?.text
+      ?? request.preview
   }
 }
 

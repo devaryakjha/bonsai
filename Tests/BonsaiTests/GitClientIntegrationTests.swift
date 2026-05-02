@@ -1988,6 +1988,12 @@ final class GitClientIntegrationTests: XCTestCase {
     } catch {
       let conflicted = try await client.status(in: repository).first { $0.isConflicted }
       let entry = try XCTUnwrap(conflicted)
+      let previews = await client.conflictPreviews(entry, in: repository)
+      XCTAssertEqual(previews.count, ConflictPreviewSide.allCases.count)
+      XCTAssertTrue(previews.first { $0.side == .workingTree }?.text.contains("<<<<<<<") ?? false)
+      XCTAssertEqual(previews.first { $0.side == .base }?.text, "base\nsecond\nthird\n")
+      XCTAssertEqual(previews.first { $0.side == .ours }?.text, "main\n")
+      XCTAssertEqual(previews.first { $0.side == .theirs }?.text, "side\n")
       _ = try await client.resolveConflict(entry, choice: .ours, in: repository)
       let status = try await client.status(in: repository)
       XCTAssertFalse(status.contains { $0.isConflicted })

@@ -693,11 +693,14 @@ final class RepositoryStore {
     }
   }
 
-  func presentConflictResolver(for entry: GitStatusEntry) {
+  func presentConflictResolver(for entry: GitStatusEntry) async {
+    guard let selectedRepository else { return }
     selectedStatusEntry = entry
     selectedChangedFile = nil
-    let preview = conflictPreview(for: entry)
-    conflictResolutionRequest = ConflictResolutionRequest(entry: entry, preview: preview)
+    conflictResolutionRequest = ConflictResolutionRequest(
+      entry: entry,
+      previews: await gitClient.conflictPreviews(entry, in: selectedRepository)
+    )
     Task {
       await refreshDiff()
     }
@@ -2125,19 +2128,6 @@ final class RepositoryStore {
       throw RepositoryStoreError.noRepository
     }
     return selectedRepository
-  }
-
-  private func conflictPreview(for entry: GitStatusEntry) -> String {
-    guard let selectedRepository else { return "" }
-    let fileURL = URL(filePath: selectedRepository.path, directoryHint: .isDirectory).appending(path: entry.path)
-    guard let content = try? String(contentsOf: fileURL, encoding: .utf8) else {
-      return "Bonsai could not preview this file as UTF-8 text."
-    }
-    let limit = 80_000
-    if content.count > limit {
-      return String(content.prefix(limit)) + "\n\n[Preview truncated]"
-    }
-    return content
   }
 
   private func remember(_ repository: GitRepository) {

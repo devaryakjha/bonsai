@@ -944,11 +944,71 @@ enum ConflictResolutionChoice: String {
   case markResolved = "Mark resolved"
 }
 
+enum ConflictPreviewSide: String, CaseIterable, Identifiable {
+  case workingTree
+  case base
+  case ours
+  case theirs
+
+  var id: String { rawValue }
+
+  var title: String {
+    switch self {
+    case .workingTree:
+      "Working tree"
+    case .base:
+      "Base"
+    case .ours:
+      "Ours"
+    case .theirs:
+      "Theirs"
+    }
+  }
+
+  var gitStage: Int? {
+    switch self {
+    case .workingTree:
+      nil
+    case .base:
+      1
+    case .ours:
+      2
+    case .theirs:
+      3
+    }
+  }
+
+  var unavailableText: String {
+    switch self {
+    case .workingTree:
+      "Working-tree preview is unavailable."
+    case .base:
+      "No base version is available for this conflict."
+    case .ours:
+      "No ours version is available for this conflict."
+    case .theirs:
+      "No theirs version is available for this conflict."
+    }
+  }
+}
+
+struct ConflictPreview: Identifiable, Hashable {
+  var side: ConflictPreviewSide
+  var text: String
+
+  var id: String { side.rawValue }
+  var title: String { side.title }
+}
+
 struct ConflictResolutionRequest: Identifiable, Hashable {
   var entry: GitStatusEntry
-  var preview: String
+  var previews: [ConflictPreview]
 
   var id: String { entry.id }
+
+  var preview: String {
+    previews.first(where: { $0.side == .workingTree })?.text ?? previews.first?.text ?? ""
+  }
 }
 
 enum DiffAlgorithm: String, CaseIterable, Identifiable {
