@@ -42,6 +42,20 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(refs[2].kind, .tag)
   }
 
+  func testParseCommitsKeepsGraphLaneAndSkipsContinuationRows() {
+    let commits = GitParsers.parseCommits("""
+    *   \u{1f}abc123456789\u{1f}abc1234\u{1f}Asha\u{1f}asha@example.test\u{1f}2026-05-02T08:50:16+05:30\u{1f}Merge branch\u{1f}HEAD -> main
+    |\\
+    | * \u{1f}def123456789\u{1f}def1234\u{1f}Asha\u{1f}asha@example.test\u{1f}2026-05-02T08:49:16+05:30\u{1f}Side work\u{1f}side
+    """)
+
+    XCTAssertEqual(commits.count, 2)
+    XCTAssertEqual(commits[0].graph, "*   ")
+    XCTAssertEqual(commits[0].subject, "Merge branch")
+    XCTAssertEqual(commits[0].decorations, ["HEAD -> main"])
+    XCTAssertEqual(commits[1].graph, "| * ")
+  }
+
   func testParseRemotesMergesFetchAndPushURLs() {
     let remotes = GitParsers.parseRemotes("""
     origin\tgit@github.com:example/bonsai.git (fetch)

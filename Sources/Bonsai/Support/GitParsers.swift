@@ -53,19 +53,21 @@ enum GitParsers {
       .split(separator: "\n", omittingEmptySubsequences: true)
       .compactMap { line -> GitCommit? in
         let parts = line.split(separator: "\u{1f}", omittingEmptySubsequences: false).map(String.init)
-        guard parts.count >= 7 else { return nil }
-        let decorations = parts[6]
+        let offset = parts.count >= 8 ? 1 : 0
+        guard parts.count >= offset + 7 else { return nil }
+        let decorations = parts[offset + 6]
           .split(separator: ",")
           .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
           .filter { !$0.isEmpty }
         return GitCommit(
-          hash: parts[0],
-          shortHash: parts[1],
-          authorName: parts[2],
-          authorEmail: parts[3],
-          date: formatter.date(from: parts[4]) ?? fallbackFormatter.date(from: parts[4]),
-          subject: parts[5],
-          decorations: decorations
+          hash: parts[offset],
+          shortHash: parts[offset + 1],
+          authorName: parts[offset + 2],
+          authorEmail: parts[offset + 3],
+          date: formatter.date(from: parts[offset + 4]) ?? fallbackFormatter.date(from: parts[offset + 4]),
+          subject: parts[offset + 5],
+          decorations: decorations,
+          graph: offset == 1 ? parts[0] : ""
         )
       }
   }

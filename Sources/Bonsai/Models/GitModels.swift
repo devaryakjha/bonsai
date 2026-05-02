@@ -49,6 +49,7 @@ struct GitCommit: Identifiable, Hashable {
   var date: Date?
   var subject: String
   var decorations: [String]
+  var graph: String = ""
 
   var id: String { hash }
 }

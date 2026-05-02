@@ -123,6 +123,11 @@ private struct CommitRow: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       HStack(spacing: 8) {
+        Text(commit.graph.isEmpty ? "*" : commit.graph)
+          .font(.caption.monospaced())
+          .foregroundStyle(.secondary)
+          .lineLimit(1)
+          .frame(width: 42, alignment: .leading)
         Text(commit.subject)
           .lineLimit(1)
           .fontWeight(.medium)
@@ -134,6 +139,8 @@ private struct CommitRow: View {
       }
 
       HStack(spacing: 8) {
+        Spacer()
+          .frame(width: 42)
         Text(commit.authorName)
         if let date = commit.date {
           Text(date, style: .relative)

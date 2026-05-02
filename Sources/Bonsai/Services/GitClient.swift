@@ -53,9 +53,10 @@ struct GitClient {
   }
 
   func commits(in repository: GitRepository) async throws -> [GitCommit] {
-    let format = "%H%x1f%h%x1f%an%x1f%ae%x1f%ad%x1f%s%x1f%D"
+    let format = "%x1f%H%x1f%h%x1f%an%x1f%ae%x1f%ad%x1f%s%x1f%D"
     let output = try await git([
       "log",
+      "--graph",
       "--date=iso-strict",
       "--decorate=short",
       "--pretty=format:\(format)",
