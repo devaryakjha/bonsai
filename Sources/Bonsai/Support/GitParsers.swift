@@ -135,6 +135,25 @@ enum GitParsers {
       }
   }
 
+  static func parseReflogEntries(_ output: String) -> [GitReflogEntry] {
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime]
+
+    return output
+      .split(separator: "\n", omittingEmptySubsequences: true)
+      .compactMap { line -> GitReflogEntry? in
+        let parts = line.split(separator: "\u{1f}", omittingEmptySubsequences: false).map(String.init)
+        guard parts.count >= 5 else { return nil }
+        return GitReflogEntry(
+          hash: parts[0],
+          shortHash: parts[1],
+          selector: parts[2],
+          subject: parts[3],
+          date: formatter.date(from: parts[4])
+        )
+      }
+  }
+
   static func parseSubmodules(_ output: String) -> [GitSubmodule] {
     output
       .split(separator: "\n", omittingEmptySubsequences: true)

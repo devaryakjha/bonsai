@@ -93,11 +93,11 @@ final class GitClientIntegrationTests: XCTestCase {
     let changedFile = try XCTUnwrap(changedFiles.first)
     XCTAssertEqual(changedFile.path, "file.txt")
     let commitDiff = try await client.diffForCommitFile(changedFile, commit: commit, algorithm: .histogram, in: repository)
-    let reflog = try await client.reflog(in: repository)
+    let reflog = try await client.reflogEntries(in: repository)
     let blame = try await client.blame(path: "file.txt", in: repository)
     let fileHistory = try await client.fileHistory(path: "file.txt", in: repository)
     XCTAssertTrue(commitDiff.contains("line twenty changed"))
-    XCTAssertTrue(reflog.contains("Update file"))
+    XCTAssertTrue(reflog.contains { $0.subject.contains("Update file") })
     XCTAssertTrue(blame.contains("line twenty changed"))
     XCTAssertTrue(fileHistory.contains("Update file"))
   }
@@ -202,6 +202,24 @@ final class GitClientIntegrationTests: XCTestCase {
 
     status = try await client.status(in: repository)
     XCTAssertTrue(status.isEmpty)
+  }
+
+  func testReflogEntryCanResetHeadToPreviousCommit() async throws {
+    let repo = try await makeRepository()
+    try write("one\n", to: repo.appending(path: "file.txt"))
+    try await commitAll(in: repo, message: "First")
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let firstHash = try await client.git(["rev-parse", "HEAD"], in: repo).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    try write("two\n", to: repo.appending(path: "file.txt"))
+    try await commitAll(in: repo, message: "Second")
+
+    let entries = try await client.reflogEntries(in: repository)
+    let firstEntry = try XCTUnwrap(entries.first { $0.hash == firstHash })
+    _ = try await client.reset(to: firstEntry, mode: .hard, in: repository)
+    let currentHash = try await client.git(["rev-parse", "HEAD"], in: repo).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    XCTAssertEqual(currentHash, firstHash)
   }
 
   func testRefsStashesRemotesAndRepositoryActions() async throws {

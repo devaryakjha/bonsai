@@ -108,6 +108,19 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(submodules[3].statusTitle, "Conflicted")
   }
 
+  func testParseReflogEntriesReadsRecoveryFields() {
+    let entries = GitParsers.parseReflogEntries("""
+    abcdef1234567890\u{1f}abcdef1\u{1f}HEAD@{0}\u{1f}commit: recover me\u{1f}2026-05-02T08:45:15+05:30
+    """)
+
+    XCTAssertEqual(entries.count, 1)
+    XCTAssertEqual(entries[0].hash, "abcdef1234567890")
+    XCTAssertEqual(entries[0].shortHash, "abcdef1")
+    XCTAssertEqual(entries[0].selector, "HEAD@{0}")
+    XCTAssertEqual(entries[0].subject, "commit: recover me")
+    XCTAssertNotNil(entries[0].date)
+  }
+
   func testParseDiffHunksReconstructsPatchPerHunk() {
     let hunks = GitParsers.parseDiffHunks("""
     diff --git a/file.txt b/file.txt

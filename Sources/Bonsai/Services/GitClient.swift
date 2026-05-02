@@ -304,6 +304,10 @@ struct GitClient {
     try await runRaw(["reset", mode.flag, commit.hash], in: repository)
   }
 
+  func reset(to entry: GitReflogEntry, mode: ResetMode, in repository: GitRepository) async throws -> String {
+    try await runRaw(["reset", mode.flag, entry.hash], in: repository)
+  }
+
   func deleteBranch(_ name: String, force: Bool, in repository: GitRepository) async throws -> String {
     try await runRaw(["branch", force ? "-D" : "-d", name], in: repository)
   }
@@ -442,6 +446,17 @@ struct GitClient {
 
   func reflog(in repository: GitRepository) async throws -> String {
     try await runRaw(["reflog", "--date=iso"], in: repository)
+  }
+
+  func reflogEntries(in repository: GitRepository) async throws -> [GitReflogEntry] {
+    let output = try await git([
+      "log",
+      "-g",
+      "--pretty=format:%H%x1f%h%x1f%gd%x1f%gs%x1f%aI",
+      "-n",
+      "100"
+    ], in: repository.url)
+    return GitParsers.parseReflogEntries(output.stdout)
   }
 
   func blame(path: String, in repository: GitRepository) async throws -> String {

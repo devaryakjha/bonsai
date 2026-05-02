@@ -112,6 +112,16 @@ struct GitStash: Identifiable, Hashable {
   var id: String { index }
 }
 
+struct GitReflogEntry: Identifiable, Hashable {
+  var hash: String
+  var shortHash: String
+  var selector: String
+  var subject: String
+  var date: Date?
+
+  var id: String { "\(selector):\(hash)" }
+}
+
 struct GitSubmodule: Identifiable, Hashable {
   var path: String
   var commit: String
@@ -401,6 +411,13 @@ struct ResetRequest: Identifiable, Hashable {
   var mode: ResetMode = .mixed
 
   var id: String { commit.hash }
+}
+
+struct ReflogResetRequest: Identifiable, Hashable {
+  var entry: GitReflogEntry
+  var mode: ResetMode = .mixed
+
+  var id: String { entry.id }
 }
 
 struct DiscardChangeRequest: Identifiable, Hashable {

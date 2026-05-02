@@ -283,6 +283,34 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(isPresented: Binding(
+      get: { !store.reflogEntries.isEmpty },
+      set: { if !$0 { store.reflogEntries = [] } }
+    )) {
+      ReflogSheet(
+        entries: store.reflogEntries,
+        onCancel: {
+          store.reflogEntries = []
+        },
+        onCheckout: { entry in
+          Task { await store.checkoutReflogEntry(entry) }
+        },
+        onReset: { entry in
+          store.presentResetToReflogEntry(entry)
+        }
+      )
+    }
+    .sheet(item: $store.reflogResetRequest) { request in
+      ReflogResetSheet(
+        request: request,
+        onCancel: {
+          store.reflogResetRequest = nil
+        },
+        onConfirm: { mode in
+          Task { await store.resetToReflogEntry(mode: mode) }
+        }
+      )
+    }
     .sheet(item: $store.remoteEditorRequest) { request in
       RemoteEditorSheet(
         request: request,
@@ -504,6 +532,105 @@ private struct ResetSheet: View {
     }
     .padding(20)
     .frame(width: 460)
+  }
+}
+
+private struct ReflogResetSheet: View {
+  var request: ReflogResetRequest
+  var onCancel: () -> Void
+  var onConfirm: (ResetMode) -> Void
+  @State private var mode: ResetMode = .mixed
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text("Reset to Reflog Entry")
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      Text("\(request.entry.selector) \(request.entry.shortHash)")
+        .font(.body.monospaced())
+
+      Text("Hard reset discards working tree changes.")
+        .foregroundStyle(.secondary)
+
+      Picker("Mode", selection: $mode) {
+        ForEach(ResetMode.allCases) { mode in
+          Text(mode.title).tag(mode)
+        }
+      }
+      .pickerStyle(.segmented)
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button("Reset") {
+          onConfirm(mode)
+        }
+        .buttonStyle(.borderedProminent)
+      }
+    }
+    .padding(20)
+    .frame(width: 480)
+  }
+}
+
+private struct ReflogSheet: View {
+  var entries: [GitReflogEntry]
+  var onCancel: () -> Void
+  var onCheckout: (GitReflogEntry) -> Void
+  var onReset: (GitReflogEntry) -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      HStack {
+        Text("Reflog")
+          .font(.title3)
+          .fontWeight(.semibold)
+        Spacer()
+        Button("Close", action: onCancel)
+      }
+
+      Text("Recover a previous HEAD by checking it out or resetting the current branch.")
+        .foregroundStyle(.secondary)
+
+      List(entries) { entry in
+        HStack(spacing: 10) {
+          VStack(alignment: .leading, spacing: 4) {
+            HStack {
+              Text(entry.selector)
+                .font(.caption.monospaced())
+                .foregroundStyle(.secondary)
+              Text(entry.shortHash)
+                .font(.caption.monospaced())
+                .foregroundStyle(.secondary)
+            }
+            Text(entry.subject)
+              .lineLimit(1)
+            if let date = entry.date {
+              Text(date, style: .date)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+          }
+
+          Spacer()
+
+          Button("Checkout") {
+            onCheckout(entry)
+          }
+          .buttonStyle(.borderless)
+
+          Button("Reset...") {
+            onReset(entry)
+          }
+          .buttonStyle(.borderless)
+        }
+        .padding(.vertical, 4)
+      }
+      .frame(minHeight: 360)
+    }
+    .padding(20)
+    .frame(minWidth: 720, minHeight: 480)
   }
 }
 

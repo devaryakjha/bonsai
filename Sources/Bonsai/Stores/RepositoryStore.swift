@@ -42,6 +42,8 @@ final class RepositoryStore {
   var discardChangeRequest: DiscardChangeRequest?
   var interactiveRebasePlan: InteractiveRebasePlan?
   var resetRequest: ResetRequest?
+  var reflogEntries: [GitReflogEntry] = []
+  var reflogResetRequest: ReflogResetRequest?
   var remoteEditorRequest: RemoteEditorRequest?
   var gitHubRepositoryRequest: GitHubRepositoryRequest?
   var repositorySetupMode: RepositorySetupMode?
@@ -643,6 +645,15 @@ final class RepositoryStore {
     }
   }
 
+  func resetToReflogEntry(mode: ResetMode) async {
+    guard let request = reflogResetRequest else { return }
+    reflogResetRequest = nil
+    reflogEntries = []
+    await runMutation(title: "Reset \(request.entry.shortHash)") {
+      try await gitClient.reset(to: request.entry, mode: mode, in: requiredRepository())
+    }
+  }
+
   func delete(_ ref: GitRef) async {
     await runMutation(title: "Delete \(ref.shortName)") {
       switch ref.kind {
@@ -744,9 +755,24 @@ final class RepositoryStore {
   }
 
   func showReflog() async {
-    await runReadOnlyCommand(title: "Reflog") {
-      try await gitClient.reflog(in: requiredRepository())
+    do {
+      reflogEntries = try await gitClient.reflogEntries(in: requiredRepository())
+    } catch {
+      commandResult = CommandResult(title: "Reflog", output: error.localizedDescription, isError: true)
+      errorMessage = error.localizedDescription
     }
+  }
+
+  func checkoutReflogEntry(_ entry: GitReflogEntry) async {
+    reflogEntries = []
+    await runMutation(title: "Checkout \(entry.shortHash)") {
+      try await gitClient.checkout(entry.hash, in: requiredRepository())
+    }
+  }
+
+  func presentResetToReflogEntry(_ entry: GitReflogEntry) {
+    reflogEntries = []
+    reflogResetRequest = ReflogResetRequest(entry: entry)
   }
 
   func showBlameForSelection() async {
