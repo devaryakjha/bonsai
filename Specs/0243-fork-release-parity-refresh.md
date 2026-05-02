@@ -37,7 +37,7 @@ implementation evidence.
 | Worktree icon for branches checked out elsewhere | Covered by branch worktree indicators |
 | SVG and TGA image diffs | Covered by this spec |
 | External editor reveal/open-in additions | Covered by `Specs/0244-external-editor-open-in.md` |
-| Claude branch review and generated commit messages | Generated commit messages covered by `Specs/0251-claude-generated-commit-message.md`; branch review remains open |
+| Claude branch review and generated commit messages | Covered by `Specs/0251-claude-generated-commit-message.md` and `Specs/0252-claude-branch-review.md` |
 | Conflict-resolved diffs after external merge tools | Covered by `Specs/0245-conflict-resolved-diff.md` |
 | Repository benchmark | Covered by `Specs/0246-repository-benchmark.md` |
 | Repository treemap | Covered by `Specs/0247-repository-treemap.md` |

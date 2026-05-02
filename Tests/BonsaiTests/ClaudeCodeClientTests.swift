@@ -53,4 +53,45 @@ final class ClaudeCodeClientTests: XCTestCase {
       ["diff", "--cached", "--find-renames", "--find-copies", "--"]
     )
   }
+
+  func testBranchReviewBaseCandidatesPreferUpstreamAndDedupeFallbacks() {
+    let branch = GitRef(
+      name: "refs/heads/main",
+      shortName: "main",
+      objectName: "abc",
+      upstream: "origin/main",
+      isHead: true,
+      kind: .localBranch
+    )
+
+    XCTAssertEqual(
+      ClaudeCodeClient.branchReviewBaseCandidates(for: branch),
+      ["origin/main", "origin/master", "main", "master"]
+    )
+  }
+
+  func testBranchReviewArgumentsStayReadOnly() {
+    XCTAssertEqual(ClaudeCodeClient.branchReviewBaseArguments(candidate: "origin/main"), ["merge-base", "HEAD", "origin/main"])
+    XCTAssertEqual(ClaudeCodeClient.branchReviewDiffStatArguments(diffRange: "abc...HEAD"), ["diff", "--stat", "abc...HEAD"])
+    XCTAssertEqual(
+      ClaudeCodeClient.branchReviewDiffArguments(diffRange: "abc...HEAD"),
+      ["diff", "--find-renames", "--find-copies", "abc...HEAD", "--"]
+    )
+  }
+
+  func testBranchReviewPromptIncludesBranchBaseAndBoundedDiff() {
+    let diff = String(repeating: "+review\n", count: 12_000)
+    let prompt = ClaudeCodeClient.branchReviewPrompt(
+      branchName: "feature/review",
+      baseReference: "abcdef1",
+      diffStat: " Sources/App.swift | 3 +++",
+      branchDiff: diff
+    )
+
+    XCTAssertTrue(prompt.contains("Branch: feature/review"))
+    XCTAssertTrue(prompt.contains("Base: abcdef1"))
+    XCTAssertTrue(prompt.contains("Lead with findings ordered by severity."))
+    XCTAssertTrue(prompt.contains("[Diff truncated to 60000 characters]"))
+    XCTAssertLessThan(prompt.count, diff.count)
+  }
 }

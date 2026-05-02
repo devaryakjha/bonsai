@@ -128,6 +128,17 @@ struct ContentView: View {
         store.repositoryTreemapReport = nil
       }
     }
+    .sheet(item: $store.claudeBranchReviewDocument) { document in
+      ClaudeBranchReviewSheet(
+        document: document,
+        onCopy: {
+          store.copyClaudeBranchReview()
+        },
+        onClose: {
+          store.claudeBranchReviewDocument = nil
+        }
+      )
+    }
     .sheet(item: $store.conflictResolutionRequest) { request in
       ConflictResolutionSheet(
         request: request,
@@ -429,6 +440,54 @@ struct ContentView: View {
     } message: {
       Text(store.errorMessage ?? "")
     }
+  }
+}
+
+private struct ClaudeBranchReviewSheet: View {
+  var document: ClaudeBranchReviewDocument
+  var onCopy: () -> Void
+  var onClose: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      HStack(alignment: .firstTextBaseline) {
+        VStack(alignment: .leading, spacing: 3) {
+          Text("Claude branch review")
+            .font(.title3)
+            .fontWeight(.semibold)
+            .lineLimit(1)
+          Text("\(document.branchName) against \(document.baseReference)")
+            .font(.caption.monospaced())
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .help("\(document.branchName) against \(document.baseReference)")
+        }
+
+        Spacer()
+
+        Button {
+          onCopy()
+        } label: {
+          Label("Copy review", systemImage: "doc.on.doc")
+        }
+        Button("Close", action: onClose)
+      }
+
+      ScrollView {
+        Text(document.text)
+          .font(.body.monospaced())
+          .textSelection(.enabled)
+          .frame(maxWidth: .infinity, alignment: .leading)
+      }
+      .frame(minWidth: 720, minHeight: 420)
+      .clipShape(RoundedRectangle(cornerRadius: 8))
+      .overlay {
+        RoundedRectangle(cornerRadius: 8)
+          .stroke(.quaternary)
+      }
+    }
+    .padding(20)
   }
 }
 

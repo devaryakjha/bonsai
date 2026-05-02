@@ -55,6 +55,7 @@ final class RepositoryStore {
   var stashChangedFiles: [GitChangedFile] = []
   var treeBlobText = ""
   var commandResult: CommandResult?
+  var claudeBranchReviewDocument: ClaudeBranchReviewDocument?
   var repositoryBenchmarkReport: RepositoryBenchmarkReport?
   var repositoryTreemapReport: RepositoryTreemapReport?
   var isRunningRepositoryBenchmark = false
@@ -116,6 +117,7 @@ final class RepositoryStore {
   var amendCommit = false
   var signCommit = false
   var isGeneratingCommitMessage = false
+  var isRunningClaudeBranchReview = false
   var diffAlgorithm: DiffAlgorithm = DiffAlgorithm(
     rawValue: UserDefaults.standard.string(forKey: "bonsai.diffAlgorithm") ?? ""
   ) ?? .histogram {
@@ -361,6 +363,20 @@ final class RepositoryStore {
       return "Stage changes before generating a commit message"
     }
     return "Generate commit message with Claude Code"
+  }
+
+  var canReviewCurrentBranchWithClaude: Bool {
+    selectedRepository != nil && currentBranch != nil && !isRunningClaudeBranchReview
+  }
+
+  var reviewCurrentBranchWithClaudeHelp: String {
+    if isRunningClaudeBranchReview {
+      return "Reviewing current branch"
+    }
+    if currentBranch == nil {
+      return "Checkout a branch before running branch review"
+    }
+    return "Review current branch with Claude Code"
   }
 
   var commitOptionsSummary: String {
@@ -1089,6 +1105,30 @@ final class RepositoryStore {
     } catch {
       commandResult = CommandResult(title: "Generate commit message", output: error.localizedDescription, isError: true)
     }
+  }
+
+  func reviewCurrentBranchWithClaude() async {
+    guard let repository = selectedRepository else { return }
+    guard let currentBranch else {
+      let output = ClaudeCodeClientError.noCurrentBranch.localizedDescription
+      commandResult = CommandResult(title: "Claude branch review", output: output, isError: true)
+      return
+    }
+
+    isRunningClaudeBranchReview = true
+    defer { isRunningClaudeBranchReview = false }
+
+    do {
+      claudeBranchReviewDocument = try await claudeCodeClient.reviewCurrentBranch(currentBranch, in: repository)
+    } catch {
+      commandResult = CommandResult(title: "Claude branch review", output: error.localizedDescription, isError: true)
+    }
+  }
+
+  func copyClaudeBranchReview() {
+    guard let text = claudeBranchReviewDocument?.text else { return }
+    PasteboardWriter.copy(text)
+    commandResult = CommandResult(title: "Claude branch review", output: "Copied branch review to the clipboard.", isError: false)
   }
 
   func runRepositoryAction(_ action: RepositoryAction) async {
@@ -2458,6 +2498,7 @@ final class RepositoryStore {
     blameDocument = nil
     fileHistoryDocument = nil
     lineHistoryDocument = nil
+    claudeBranchReviewDocument = nil
     createWorktreeRequest = nil
     createWorktreeDestinationPath = ""
     createWorktreeBranchName = ""

@@ -133,6 +133,12 @@ struct RepositoryToolbarActionsMenu: View {
             Task { await store.showFileHistoryForSelection() }
           }
           .disabled(store.selectedChangedFile == nil && store.selectedStatusEntry == nil)
+          Divider()
+          Button("Review Current Branch with Claude") {
+            Task { await store.reviewCurrentBranchWithClaude() }
+          }
+          .disabled(!store.canReviewCurrentBranchWithClaude)
+          .help(store.reviewCurrentBranchWithClaudeHelp)
         }
         Menu(ToolbarToolsMenuCopy.patchMenuTitle) {
           Button("Copy Current Patch") {

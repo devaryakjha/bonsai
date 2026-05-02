@@ -51,7 +51,7 @@ surfaces that are not all represented in the older homepage matrix.
 | Worktree branch icon | Verified |
 | SVG and TGA image support | Verified |
 | External editor reveal/open-in integrations | Verified |
-| Claude branch review and generated commit messages | Generated commit messages covered by `Specs/0251-claude-generated-commit-message.md`; branch review remains open |
+| Claude branch review and generated commit messages | Verified through `Specs/0251-claude-generated-commit-message.md` and `Specs/0252-claude-branch-review.md` |
 | Conflict-resolved diffs after external merge tools | Verified |
 | Repository benchmark | Verified |
 | Repository treemap | Verified |
