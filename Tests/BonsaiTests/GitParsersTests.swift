@@ -678,4 +678,14 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(file.sidebarDetail, "2f9c2a4d3b")
     XCTAssertEqual(file.sidebarHelpText, "Path: Assets/image.png\nObject ID: 2f9c2a4d3b123456")
   }
+
+  func testLFSFileURLResolvesRelativeToRepository() {
+    let repository = GitRepository(path: "/Users/arya/projects/bonsai app")
+    let file = GitLFSFile(oid: "2f9c2a4d3b123456", path: "Assets/Large Image.png")
+
+    XCTAssertEqual(
+      file.fileURL(in: repository).path(percentEncoded: false),
+      "/Users/arya/projects/bonsai app/Assets/Large Image.png"
+    )
+  }
 }

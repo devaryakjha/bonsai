@@ -366,6 +366,13 @@ struct SidebarView: View {
         ForEach(store.snapshot.integrations.lfsFiles) { file in
           LFSFileSidebarRow(file: file)
             .contextMenu {
+              Button("Open") {
+                store.openLFSFile(file)
+              }
+              Button("Reveal in Finder") {
+                store.revealLFSFileInFinder(file)
+              }
+              Divider()
               Button("Copy Path") {
                 PasteboardWriter.copy(file.path)
               }

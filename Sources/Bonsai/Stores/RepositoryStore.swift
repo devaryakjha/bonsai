@@ -1435,6 +1435,17 @@ final class RepositoryStore {
     }
   }
 
+  func openLFSFile(_ file: GitLFSFile) {
+    openFile(path: file.path)
+  }
+
+  func revealLFSFileInFinder(_ file: GitLFSFile) {
+    guard let selectedRepository else { return }
+    NSWorkspace.shared.activateFileViewerSelecting([
+      file.fileURL(in: selectedRepository)
+    ])
+  }
+
   func lfsLockSelectedFile() async {
     guard let path = selectedPreviewPath else { return }
     await lfsLock(path: path)

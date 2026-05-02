@@ -396,6 +396,10 @@ struct GitLFSFile: Identifiable, Hashable {
   var shortOID: String { String(oid.prefix(10)) }
   var sidebarTitle: String { path }
   var sidebarDetail: String { shortOID }
+  func fileURL(in repository: GitRepository) -> URL {
+    RepositoryFileLocator.fileURL(repository: repository, path: path)
+  }
+
   var sidebarHelpText: String {
     """
     Path: \(path)
