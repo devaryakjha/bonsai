@@ -230,6 +230,11 @@ struct BonsaiCommands: Commands {
         }
         .disabled(store.selectedRepository == nil || !store.snapshot.integrations.lfsAvailable)
 
+        Button("Prune") {
+          Task { await store.lfsPrune() }
+        }
+        .disabled(store.selectedRepository == nil || !store.snapshot.integrations.lfsAvailable)
+
         Button("Lock Selected File") {
           Task { await store.lfsLockSelectedFile() }
         }

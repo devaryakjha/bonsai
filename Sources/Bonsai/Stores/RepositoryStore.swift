@@ -1676,6 +1676,12 @@ final class RepositoryStore {
     }
   }
 
+  func lfsPrune() async {
+    await runMutation(title: "Git LFS prune") {
+      try await gitClient.lfsPrune(in: requiredRepository())
+    }
+  }
+
   func openLFSFile(_ file: GitLFSFile) {
     openFile(path: file.path)
   }

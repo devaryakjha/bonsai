@@ -624,6 +624,14 @@ struct GitClient {
     try await runRaw(["lfs", "pull"], in: repository)
   }
 
+  func lfsPrune(in repository: GitRepository) async throws -> String {
+    try await runRaw(Self.lfsPruneArguments(), in: repository)
+  }
+
+  static func lfsPruneArguments() -> [String] {
+    ["lfs", "prune"]
+  }
+
   func lfsLock(path: String, in repository: GitRepository) async throws -> String {
     try await runRaw(["lfs", "lock", path], in: repository)
   }

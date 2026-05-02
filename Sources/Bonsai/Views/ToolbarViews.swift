@@ -162,6 +162,10 @@ struct RepositoryToolbarActionsMenu: View {
             Task { await store.lfsPull() }
           }
           .disabled(!store.snapshot.integrations.lfsAvailable)
+          Button("Prune") {
+            Task { await store.lfsPrune() }
+          }
+          .disabled(!store.snapshot.integrations.lfsAvailable)
           Button("Lock Selected File") {
             Task { await store.lfsLockSelectedFile() }
           }
