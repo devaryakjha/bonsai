@@ -11,7 +11,10 @@ struct DetailView: View {
       DiffView(store: store)
       if let result = store.commandResult {
         Divider()
-        CommandResultView(result: result)
+        CommandResultView(result: result) {
+          store.commandResult = nil
+        }
+        .id(result.id)
       }
     }
   }
@@ -471,23 +474,64 @@ private struct DiffSummary {
 
 private struct CommandResultView: View {
   var result: CommandResult
+  var onDismiss: () -> Void
+  @State private var isExpanded: Bool
+
+  init(result: CommandResult, onDismiss: @escaping () -> Void) {
+    self.result = result
+    self.onDismiss = onDismiss
+    _isExpanded = State(initialValue: result.isError)
+  }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 6) {
-      HStack {
-        Image(systemName: result.isError ? "exclamationmark.triangle" : "checkmark.circle")
-          .foregroundStyle(result.isError ? .orange : .green)
-        Text(result.title)
-          .font(.headline)
-        Spacer()
+    VStack(alignment: .leading, spacing: 8) {
+      HStack(spacing: 8) {
+        statusIcon
+        DisclosureGroup(isExpanded: $isExpanded) {
+          Text(result.output)
+            .font(.caption.monospaced())
+            .foregroundStyle(.secondary)
+            .lineLimit(8)
+            .textSelection(.enabled)
+            .padding(.top, 6)
+        } label: {
+          VStack(alignment: .leading, spacing: 2) {
+            Text(result.title)
+              .font(.subheadline.weight(.semibold))
+            Text(summary)
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .lineLimit(1)
+          }
+        }
+
+        Spacer(minLength: 8)
+
+        Button {
+          onDismiss()
+        } label: {
+          Image(systemName: "xmark")
+        }
+        .buttonStyle(.borderless)
+        .controlSize(.small)
+        .help("Dismiss output")
+        .accessibilityLabel("Dismiss command output")
       }
-      Text(result.output)
-        .font(.caption.monospaced())
-        .foregroundStyle(.secondary)
-        .lineLimit(5)
-        .textSelection(.enabled)
     }
-    .padding(12)
-    .background(.quaternary)
+    .padding(.horizontal, 12)
+    .padding(.vertical, 8)
+    .background(.bar)
+  }
+
+  private var statusIcon: some View {
+    Image(systemName: result.isError ? "exclamationmark.triangle" : "checkmark.circle")
+      .foregroundStyle(result.isError ? .orange : .green)
+      .frame(width: 16)
+  }
+
+  private var summary: String {
+    let trimmed = result.output.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return result.isError ? "Failed" : "Completed" }
+    return trimmed.components(separatedBy: .newlines).first ?? trimmed
   }
 }
