@@ -14,7 +14,7 @@ struct WorkingTreeView: View {
           }
         }
 
-        Section("Staged") {
+        Section {
           if store.stagedChanges.isEmpty {
             PlaceholderRow(title: "Nothing staged")
           } else {
@@ -22,15 +22,33 @@ struct WorkingTreeView: View {
               StatusRow(entry: entry, store: store)
             }
           }
+        } header: {
+          WorkingTreeSectionHeader(
+            title: "Staged",
+            actionSystemImage: "minus.circle",
+            actionTitle: "Unstage all",
+            isActionAvailable: store.canUnstageAll
+          ) {
+            Task { await store.unstageAll() }
+          }
         }
 
-        Section("Unstaged") {
+        Section {
           if store.unstagedChanges.isEmpty {
             PlaceholderRow(title: "Nothing unstaged")
           } else {
             ForEach(store.unstagedChanges) { entry in
               StatusRow(entry: entry, store: store)
             }
+          }
+        } header: {
+          WorkingTreeSectionHeader(
+            title: "Unstaged",
+            actionSystemImage: "plus.circle",
+            actionTitle: "Stage all",
+            isActionAvailable: store.canStageAll
+          ) {
+            Task { await store.stageAll() }
           }
         }
       }
@@ -39,6 +57,33 @@ struct WorkingTreeView: View {
       Divider()
 
       CommitComposerView(store: store)
+    }
+  }
+}
+
+private struct WorkingTreeSectionHeader: View {
+  var title: String
+  var actionSystemImage: String
+  var actionTitle: String
+  var isActionAvailable: Bool
+  var action: () -> Void
+
+  var body: some View {
+    HStack(spacing: 8) {
+      Text(title)
+        .lineLimit(1)
+
+      Spacer(minLength: 8)
+
+      if isActionAvailable {
+        Button(action: action) {
+          Image(systemName: actionSystemImage)
+            .imageScale(.medium)
+        }
+        .buttonStyle(.borderless)
+        .help(actionTitle)
+        .accessibilityLabel(actionTitle)
+      }
     }
   }
 }
