@@ -393,11 +393,14 @@ private struct ChangedFilesView: View {
                 Button("Copy Absolute Path") {
                   store.copyAbsoluteFilePath(path: entry.path)
                 }
-                Button("Open") {
-                  store.openFile(path: entry.path)
-                }
-                Button("Reveal in Finder") {
-                  store.revealInFinder(path: entry.path)
+                if store.workingTreePathExists(entry.path) {
+                  Divider()
+                  Button("Open") {
+                    store.openFile(path: entry.path)
+                  }
+                  Button("Reveal in Finder") {
+                    store.revealInFinder(path: entry.path)
+                  }
                 }
               }
             }

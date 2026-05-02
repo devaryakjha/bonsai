@@ -444,6 +444,20 @@ final class GitParsersTests: XCTestCase {
     )
   }
 
+  func testRepositoryFileLocatorChecksWorkingTreePathExistence() throws {
+    let root = FileManager.default.temporaryDirectory.appending(path: "bonsai-locator-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: root) }
+
+    let nested = root.appending(path: "Sources/App.swift")
+    try FileManager.default.createDirectory(at: nested.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try "print(\"bonsai\")\n".write(to: nested, atomically: true, encoding: .utf8)
+
+    let repository = GitRepository(path: root.path(percentEncoded: false))
+    XCTAssertTrue(RepositoryFileLocator.pathExists(repository: repository, path: "Sources/App.swift"))
+    XCTAssertFalse(RepositoryFileLocator.pathExists(repository: repository, path: "Sources/Missing.swift"))
+  }
+
   func testGitIgnorePatternIsRepositoryRootRelative() {
     XCTAssertEqual(GitIgnorePattern.repositoryRootPattern(for: "DerivedData/app.log"), "/DerivedData/app.log")
     XCTAssertEqual(GitIgnorePattern.repositoryRootPattern(for: "/DerivedData/app.log"), "/DerivedData/app.log")

@@ -12,4 +12,12 @@ enum RepositoryFileLocator {
   static func filePath(repository: GitRepository, path: String) -> String {
     fileURL(repository: repository, path: path).path(percentEncoded: false)
   }
+
+  static func pathExists(
+    repository: GitRepository,
+    path: String,
+    fileManager: FileManager = .default
+  ) -> Bool {
+    fileManager.fileExists(atPath: filePath(repository: repository, path: path))
+  }
 }

@@ -189,6 +189,11 @@ final class RepositoryStore {
     PasteboardWriter.copy(RepositoryFileLocator.filePath(repository: selectedRepository, path: path))
   }
 
+  func workingTreePathExists(_ path: String) -> Bool {
+    guard let selectedRepository else { return false }
+    return RepositoryFileLocator.pathExists(repository: selectedRepository, path: path)
+  }
+
   func openSelectedFile() {
     guard let path = selectedPreviewPath else { return }
     openFile(path: path)
