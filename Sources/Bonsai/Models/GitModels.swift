@@ -221,6 +221,10 @@ struct GitRemote: Identifiable, Hashable {
   func githubBranchWebURL(branchName: String) -> URL? {
     githubRepositoryTarget?.branchWebURL(branchName)
   }
+
+  func githubTagWebURL(tagName: String) -> URL? {
+    githubRepositoryTarget?.tagWebURL(tagName)
+  }
 }
 
 struct GitStash: Identifiable, Hashable {
@@ -612,10 +616,18 @@ struct GitHubRepositoryTarget: Hashable {
   var webURL: URL? { URL(string: "https://github.com/\(fullName)") }
 
   func branchWebURL(_ branchName: String) -> URL? {
-    guard let encodedBranch = branchName.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
+    treeWebURL(refName: branchName)
+  }
+
+  func tagWebURL(_ tagName: String) -> URL? {
+    treeWebURL(refName: tagName)
+  }
+
+  private func treeWebURL(refName: String) -> URL? {
+    guard let encodedRef = refName.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
       return nil
     }
-    return URL(string: "https://github.com/\(fullName)/tree/\(encodedBranch)")
+    return URL(string: "https://github.com/\(fullName)/tree/\(encodedRef)")
   }
 
   init(owner: String, name: String) {

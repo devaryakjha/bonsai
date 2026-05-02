@@ -315,6 +315,15 @@ final class GitHubNotificationTests: XCTestCase {
     )
   }
 
+  func testGitHubRepositoryTargetExposesTagWebURL() {
+    let target = GitHubRepositoryTarget(owner: "example", name: "bonsai")
+
+    XCTAssertEqual(
+      target.tagWebURL("release/v1.0 candidate")?.absoluteString,
+      "https://github.com/example/bonsai/tree/release/v1.0%20candidate"
+    )
+  }
+
   func testRemoteExposesFirstGitHubRepositoryTarget() {
     let remote = GitRemote(
       name: "origin",
@@ -346,6 +355,30 @@ final class GitHubNotificationTests: XCTestCase {
       remote.githubBranchWebURL(branchName: "feature/dashboard polish")?.absoluteString,
       "https://github.com/example/bonsai/tree/feature/dashboard%20polish"
     )
+  }
+
+  @MainActor
+  func testStoreTagWebURLPrefersOriginGitHubRemote() {
+    let store = RepositoryStore()
+    let tag = GitRef(name: "refs/tags/v1.0.0", shortName: "v1.0.0", objectName: "abc123", isHead: false, kind: .tag)
+    store.snapshot.remotes = [
+      GitRemote(name: "backup", fetchURL: "https://github.com/backup/bonsai.git", pushURL: nil),
+      GitRemote(name: "origin", fetchURL: "https://github.com/example/bonsai.git", pushURL: nil)
+    ]
+
+    XCTAssertEqual(store.githubWebURL(forTag: tag)?.absoluteString, "https://github.com/example/bonsai/tree/v1.0.0")
+  }
+
+  @MainActor
+  func testStoreTagWebURLFallsBackToFirstGitHubRemote() {
+    let store = RepositoryStore()
+    let tag = GitRef(name: "refs/tags/release/v1.0", shortName: "release/v1.0", objectName: "abc123", isHead: false, kind: .tag)
+    store.snapshot.remotes = [
+      GitRemote(name: "origin", fetchURL: "git@gitlab.com:example/bonsai.git", pushURL: nil),
+      GitRemote(name: "backup", fetchURL: "git@github.com:backup/bonsai.git", pushURL: nil)
+    ]
+
+    XCTAssertEqual(store.githubWebURL(forTag: tag)?.absoluteString, "https://github.com/backup/bonsai/tree/release/v1.0")
   }
 
   @MainActor

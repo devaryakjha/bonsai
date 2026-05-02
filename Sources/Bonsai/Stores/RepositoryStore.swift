@@ -958,6 +958,18 @@ final class RepositoryStore {
     NSWorkspace.shared.open(url)
   }
 
+  func githubWebURL(forTag tag: GitRef) -> URL? {
+    guard tag.kind == .tag else { return nil }
+    let remote = snapshot.remotes.first(where: { $0.name == "origin" && $0.githubRepositoryTarget != nil })
+      ?? snapshot.remotes.first(where: { $0.githubRepositoryTarget != nil })
+    return remote?.githubTagWebURL(tagName: tag.shortName)
+  }
+
+  func openTagInBrowser(_ tag: GitRef) {
+    guard let url = githubWebURL(forTag: tag) else { return }
+    NSWorkspace.shared.open(url)
+  }
+
   func fetchRemoteBranch(_ branch: GitRef) async {
     await runMutation(title: "Fetch \(branch.shortName)") {
       try await gitClient.fetchRemoteBranch(branch, in: requiredRepository())

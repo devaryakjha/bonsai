@@ -481,6 +481,14 @@ struct SidebarView: View {
               }
             }
           }
+          if let webURL = store.githubWebURL(forTag: tag) {
+            Button("Open in Browser") {
+              store.openTagInBrowser(tag)
+            }
+            Button("Copy Web URL") {
+              PasteboardWriter.copy(webURL.absoluteString)
+            }
+          }
           Divider()
           ReferenceCopyMenu(ref: tag)
           Divider()
