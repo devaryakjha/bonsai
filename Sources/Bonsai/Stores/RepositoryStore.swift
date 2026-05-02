@@ -894,7 +894,15 @@ final class RepositoryStore {
       case .add:
         return try await gitClient.addRemote(name: trimmedName, url: trimmedURL, in: requiredRepository())
       case .edit:
-        return try await gitClient.setRemoteURL(name: request.originalName ?? trimmedName, url: trimmedURL, in: requiredRepository())
+        let originalName = request.originalName ?? trimmedName
+        var outputs: [String] = []
+        if originalName != trimmedName {
+          outputs.append(try await gitClient.renameRemote(from: originalName, to: trimmedName, in: requiredRepository()))
+        }
+        outputs.append(try await gitClient.setRemoteURL(name: trimmedName, url: trimmedURL, in: requiredRepository()))
+        return outputs
+          .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+          .joined(separator: "\n")
       }
     }
   }

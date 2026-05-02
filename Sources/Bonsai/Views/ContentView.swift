@@ -924,7 +924,6 @@ private struct RemoteEditorSheet: View {
 
       TextField("Name", text: $name)
         .textFieldStyle(.roundedBorder)
-        .disabled(request.mode == .edit)
 
       TextField("URL", text: $url)
         .textFieldStyle(.roundedBorder)

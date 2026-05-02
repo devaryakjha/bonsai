@@ -114,6 +114,10 @@ struct GitClient {
     try await runRaw(["remote", "set-url", name, url], in: repository)
   }
 
+  func renameRemote(from oldName: String, to newName: String, in repository: GitRepository) async throws -> String {
+    try await runRaw(["remote", "rename", oldName, newName], in: repository)
+  }
+
   func removeRemote(name: String, in repository: GitRepository) async throws -> String {
     try await runRaw(["remote", "remove", name], in: repository)
   }

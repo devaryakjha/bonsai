@@ -24,6 +24,31 @@ final class RemoteManagementTests: XCTestCase {
     XCTAssertFalse(remotes.contains { $0.name == "backup" })
   }
 
+  func testStoreRenamesRemoteAndUpdatesURL() async throws {
+    let repo = try await makeRepository()
+    let firstRemote = try await makeBareRepository()
+    let secondRemote = try await makeBareRepository()
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    _ = try await client.addRemote(name: "backup", url: firstRemote.path(percentEncoded: false), in: repository)
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    let remotes = await store.snapshot.remotes
+    let backup = try XCTUnwrap(remotes.first { $0.name == "backup" })
+    await MainActor.run {
+      store.presentEditRemote(backup)
+    }
+
+    await store.saveRemote(name: "upstream", url: secondRemote.path(percentEncoded: false))
+
+    let updatedRemotes = try await client.remotes(in: repository)
+    let commandResult = await store.commandResult
+    XCTAssertFalse(updatedRemotes.contains { $0.name == "backup" })
+    XCTAssertEqual(updatedRemotes.first { $0.name == "upstream" }?.fetchURL, secondRemote.path(percentEncoded: false))
+    XCTAssertEqual(commandResult?.title, "Edit remote")
+    XCTAssertEqual(commandResult?.isError, false)
+  }
+
   func testFetchSingleRemoteUpdatesTrackingRefs() async throws {
     let remote = try await makeBareRepository()
     let source = try await makeRepository()
