@@ -1,0 +1,43 @@
+name: Feature request
+description: Propose a Bonsai workflow or Fork parity improvement.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Workflow
+      description: Describe the user workflow this should improve.
+      placeholder: When reviewing a conflicted file, I need to...
+    validations:
+      required: true
+  - type: dropdown
+    id: parity
+    attributes:
+      label: Fork parity impact
+      options:
+        - Matches an existing Fork behavior
+        - Improves on an existing Fork behavior
+        - Bonsai-specific workflow
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-behavior
+    attributes:
+      label: Proposed behavior
+      description: State what Bonsai should do.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence or references
+      description: Link release notes, screenshots, specs, or examples if available.
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation expectation
+      description: What should prove this works?
+      placeholder: Unit test, integration test, visual QA screenshot, packaging verifier, etc.

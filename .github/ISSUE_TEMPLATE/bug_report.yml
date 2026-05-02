@@ -1,0 +1,66 @@
+name: Bug report
+description: Report a reproducible Bonsai problem.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for reproducible app behavior. For suspected vulnerabilities, use the security policy instead of a public issue.
+  - type: input
+    id: bonsai-version
+    attributes:
+      label: Bonsai version or commit
+      description: Paste the release version, commit hash, or branch name.
+      placeholder: 5ad3775
+    validations:
+      required: true
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      placeholder: macOS 14.6.1
+    validations:
+      required: true
+  - type: textarea
+    id: repository-scenario
+    attributes:
+      label: Repository scenario
+      description: Describe the repository shape without sharing private code.
+      placeholder: Monorepo with submodules, Git LFS enabled, active rebase, conflicted worktree, etc.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the smallest sequence that reproduces the problem.
+      placeholder: |
+        1. Open repository...
+        2. Select...
+        3. Run...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include relevant logs, screenshots, or recordings when useful.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation tried
+      description: Mention commands or checks already run.
+      placeholder: |
+        git status
+        swift test
+        ./script/build_and_run.sh --verify

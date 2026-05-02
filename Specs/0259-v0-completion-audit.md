@@ -30,6 +30,7 @@ development, regular checkpoint commits, and OSS-ready project structure.
 | Local build/test validation | `swift test`, `git diff --check`, app verifier, and release package verifier were run after the latest implementation checkpoints | Covered |
 | Public binary distribution | `script/package_release.sh --notarize` exists, but credentialed Developer ID signing and Apple notarization have not been run in this environment | Blocked |
 | Hosted OSS validation | `.github/workflows/ci.yml` runs non-credentialed macOS validation for pushes and pull requests | Covered |
+| OSS contribution intake | GitHub issue forms and pull request template keep bug, feature, security, and validation details structured | Covered |
 
 ## Current Blocking Evidence
 

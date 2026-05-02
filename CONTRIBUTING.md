@@ -41,6 +41,10 @@ Keep pull requests focused on one spec or one closely related fix. Include:
 - The validation commands run and their result.
 - Screenshots or short recordings for meaningful UI changes.
 
+Issue forms and the pull request template are intentionally structured. Security
+reports belong in the private reporting path described in `SECURITY.md`, not in
+public issues.
+
 ## Project Structure
 
 - `Sources/Bonsai/App`: app entry and command menu wiring.
