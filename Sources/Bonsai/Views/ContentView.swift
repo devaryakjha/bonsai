@@ -311,6 +311,9 @@ struct ContentView: View {
         document: document,
         onCancel: {
           store.blameDocument = nil
+        },
+        onSelectCommit: { line in
+          Task { await store.focusCommit(hash: line.commitHash) }
         }
       )
     }
@@ -319,6 +322,9 @@ struct ContentView: View {
         document: document,
         onCancel: {
           store.fileHistoryDocument = nil
+        },
+        onSelectCommit: { entry in
+          Task { await store.focusCommit(hash: entry.hash) }
         }
       )
     }
@@ -374,6 +380,7 @@ struct ContentView: View {
 private struct FileHistorySheet: View {
   var document: GitFileHistoryDocument
   var onCancel: () -> Void
+  var onSelectCommit: (GitFileHistoryEntry) -> Void
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
@@ -392,7 +399,7 @@ private struct FileHistorySheet: View {
       }
 
       List(document.entries) { entry in
-        FileHistoryRow(entry: entry)
+        FileHistoryRow(entry: entry, onSelectCommit: onSelectCommit)
       }
       .listStyle(.inset)
       .frame(minHeight: 420)
@@ -404,9 +411,18 @@ private struct FileHistorySheet: View {
 
 private struct FileHistoryRow: View {
   var entry: GitFileHistoryEntry
+  var onSelectCommit: (GitFileHistoryEntry) -> Void
 
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
+      Button {
+        onSelectCommit(entry)
+      } label: {
+        Image(systemName: "arrow.right.circle")
+      }
+      .buttonStyle(.borderless)
+      .help("Show commit")
+
       Text(entry.shortHash)
         .font(.caption.monospaced())
         .foregroundStyle(.secondary)
@@ -466,6 +482,7 @@ private struct FileChangePill: View {
 private struct BlameSheet: View {
   var document: GitBlameDocument
   var onCancel: () -> Void
+  var onSelectCommit: (GitBlameLine) -> Void
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
@@ -487,7 +504,7 @@ private struct BlameSheet: View {
         LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
           Section {
             ForEach(document.lines) { line in
-              BlameRow(line: line)
+              BlameRow(line: line, onSelectCommit: onSelectCommit)
               Divider()
             }
           } header: {
@@ -510,6 +527,8 @@ private struct BlameSheet: View {
 private struct BlameHeaderRow: View {
   var body: some View {
     HStack(spacing: 12) {
+      Text("")
+        .frame(width: 22)
       Text("Line")
         .frame(width: 52, alignment: .trailing)
       Text("Commit")
@@ -530,9 +549,19 @@ private struct BlameHeaderRow: View {
 
 private struct BlameRow: View {
   var line: GitBlameLine
+  var onSelectCommit: (GitBlameLine) -> Void
 
   var body: some View {
     HStack(alignment: .firstTextBaseline, spacing: 12) {
+      Button {
+        onSelectCommit(line)
+      } label: {
+        Image(systemName: "arrow.right.circle")
+      }
+      .buttonStyle(.borderless)
+      .help("Show commit")
+      .frame(width: 22)
+
       Text("\(line.finalLine)")
         .foregroundStyle(.secondary)
         .frame(width: 52, alignment: .trailing)

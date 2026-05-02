@@ -301,6 +301,37 @@ final class RepositoryStore {
     }
   }
 
+  func focusCommit(hash: String) async {
+    guard let repository = selectedRepository else { return }
+
+    do {
+      let commit: GitCommit
+      if let existing = snapshot.commits.first(where: { $0.hash == hash || $0.shortHash == hash }) {
+        commit = existing
+      } else {
+        commit = try await gitClient.commit(revision: hash, in: repository)
+        snapshot.commits.insert(commit, at: 0)
+      }
+
+      selectedCommit = commit
+      selectedStash = nil
+      selectedChangedFile = nil
+      selectedStatusEntry = nil
+      selectedTreeEntry = nil
+      stashChangedFiles = []
+      commitTreePath = ""
+      treeBlobText = ""
+      blameDocument = nil
+      fileHistoryDocument = nil
+      mainMode = .history
+      await refreshCommitFilesAndDiff()
+      errorMessage = nil
+    } catch {
+      commandResult = CommandResult(title: "Show Commit", output: error.localizedDescription, isError: true)
+      errorMessage = error.localizedDescription
+    }
+  }
+
   func selectChangedFile(_ file: GitChangedFile?) {
     selectedChangedFile = file
     selectedStatusEntry = nil

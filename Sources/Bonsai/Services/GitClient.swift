@@ -66,6 +66,23 @@ struct GitClient {
     return GitParsers.parseCommits(output.stdout)
   }
 
+  func commit(revision: String, in repository: GitRepository) async throws -> GitCommit {
+    let format = "%H%x1f%h%x1f%an%x1f%ae%x1f%aI%x1f%s%x1f%D"
+    let output = try await git([
+      "log",
+      "--date=iso-strict",
+      "--decorate=short",
+      "--pretty=format:\(format)",
+      "-n",
+      "1",
+      revision
+    ], in: repository.url)
+    guard let commit = GitParsers.parseCommits(output.stdout).first else {
+      throw GitClientError.commitNotFound(revision)
+    }
+    return commit
+  }
+
   func refs(in repository: GitRepository) async throws -> [GitRef] {
     let format = "%(refname)%1f%(objectname:short)%1f%(upstream:short)%1f%(HEAD)%1f%(upstream:track)"
     let output = try await git([
@@ -539,11 +556,14 @@ struct GitClient {
 
 enum GitClientError: LocalizedError {
   case notEnoughCommitsForInteractiveRebase
+  case commitNotFound(String)
 
   var errorDescription: String? {
     switch self {
     case .notEnoughCommitsForInteractiveRebase:
       return "At least two commits are required to start an interactive rebase."
+    case .commitNotFound(let revision):
+      return "Could not find commit \(revision)."
     }
   }
 }
