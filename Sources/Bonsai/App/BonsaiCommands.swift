@@ -128,6 +128,11 @@ struct BonsaiCommands: Commands {
       .keyboardShortcut(".", modifiers: [.command, .shift])
       .disabled(store.selectedRepository == nil)
 
+      Button("Clean Ignored Files…", role: .destructive) {
+        store.presentCleanIgnoredFiles()
+      }
+      .disabled(store.selectedRepository == nil || !store.canCleanIgnoredFiles)
+
       Button("Stage All") {
         Task { await store.stageAll() }
       }

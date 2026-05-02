@@ -720,6 +720,7 @@ final class GitClientCommandArgumentsTests: XCTestCase {
     let secondUntracked = statusEntry(path: "notes/todo.txt", indexStatus: "?", workTreeStatus: "?")
     let modified = statusEntry(path: "Sources/App View.swift", indexStatus: " ", workTreeStatus: "M")
     let deleted = statusEntry(path: "Docs/Old Guide.md", indexStatus: " ", workTreeStatus: "D")
+    let ignored = statusEntry(path: "build/cache.log", indexStatus: "!", workTreeStatus: "!", kind: .ignored)
 
     XCTAssertEqual(
       GitClient.discardUntrackedArguments(untracked),
@@ -736,6 +737,10 @@ final class GitClientCommandArgumentsTests: XCTestCase {
     XCTAssertEqual(
       GitClient.discardWorktreeArguments([modified, deleted]),
       ["restore", "--worktree", "--", "Sources/App View.swift", "Docs/Old Guide.md"]
+    )
+    XCTAssertEqual(
+      GitClient.cleanIgnoredArguments([ignored]),
+      ["clean", "-f", "-X", "-d", "--", "build/cache.log"]
     )
   }
 

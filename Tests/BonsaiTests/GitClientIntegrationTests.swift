@@ -548,6 +548,56 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(hiddenIgnoredChanges.isEmpty)
   }
 
+  func testStoreCleansIgnoredFilesAfterConfirmation() async throws {
+    let previousIgnoredPreference = UserDefaults.standard.object(forKey: "bonsai.showIgnoredFiles")
+    UserDefaults.standard.removeObject(forKey: "bonsai.showIgnoredFiles")
+    defer {
+      if let previousIgnoredPreference {
+        UserDefaults.standard.set(previousIgnoredPreference, forKey: "bonsai.showIgnoredFiles")
+      } else {
+        UserDefaults.standard.removeObject(forKey: "bonsai.showIgnoredFiles")
+      }
+    }
+
+    let repo = try await makeRepository()
+    let ignored = repo.appending(path: "build/cache.log")
+    let scratch = repo.appending(path: "scratch.txt")
+    try write("*.log\n", to: repo.appending(path: ".gitignore"))
+    try await commitAll(in: repo, message: "Ignore logs")
+    try write("cache\n", to: ignored)
+    try write("scratch\n", to: scratch)
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    let initialCanClean = await store.canCleanIgnoredFiles
+    XCTAssertFalse(initialCanClean)
+
+    await MainActor.run {
+      store.toggleIgnoredFiles()
+    }
+    await store.refreshAll()
+    let canClean = await store.canCleanIgnoredFiles
+    XCTAssertTrue(canClean)
+
+    await MainActor.run {
+      store.presentCleanIgnoredFiles()
+    }
+    let requestValue = await store.cleanIgnoredFilesRequest
+    let request = try XCTUnwrap(requestValue)
+    XCTAssertEqual(request.fileCount, 1)
+    XCTAssertEqual(request.entries.first?.path, "build/cache.log")
+
+    await store.cleanIgnoredFiles()
+
+    XCTAssertFalse(FileManager.default.fileExists(atPath: ignored.path(percentEncoded: false)))
+    XCTAssertTrue(FileManager.default.fileExists(atPath: scratch.path(percentEncoded: false)))
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let status = try await client.status(in: repository, includeIgnoredFiles: true)
+    XCTAssertFalse(status.contains { $0.path == "build/cache.log" })
+    XCTAssertTrue(status.contains { $0.path == "scratch.txt" && $0.isUntracked })
+  }
+
   func testStoreCommitRequiresStagedChangesUnlessAmending() async throws {
     let repo = try await makeRepository()
     try write("initial\n", to: repo.appending(path: "file.txt"))

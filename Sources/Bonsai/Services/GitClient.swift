@@ -534,6 +534,15 @@ struct GitClient {
     ["restore", "--worktree", "--"] + entries.map(\.path)
   }
 
+  func cleanIgnored(_ entries: [GitStatusEntry], in repository: GitRepository) async throws -> String {
+    guard !entries.isEmpty else { return "" }
+    return try await runRaw(Self.cleanIgnoredArguments(entries), in: repository)
+  }
+
+  static func cleanIgnoredArguments(_ entries: [GitStatusEntry]) -> [String] {
+    ["clean", "-f", "-X", "-d", "--"] + entries.map(\.path)
+  }
+
   func ignorePath(_ path: String, in repository: GitRepository) throws -> String {
     let pattern = GitIgnorePattern.repositoryRootPattern(for: path)
     return try ignorePattern(pattern, label: path, in: repository)

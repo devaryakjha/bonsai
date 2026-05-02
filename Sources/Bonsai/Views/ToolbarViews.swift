@@ -153,6 +153,10 @@ struct RepositoryToolbarActionsMenu: View {
         Button("Add .gitignore Template…") {
           store.presentGitIgnoreTemplatePicker()
         }
+        Button("Clean Ignored Files…", role: .destructive) {
+          store.presentCleanIgnoredFiles()
+        }
+        .disabled(!store.canCleanIgnoredFiles)
         Button("Create Worktree…") {
           store.presentCreateWorktree()
         }

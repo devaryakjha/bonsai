@@ -151,6 +151,17 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.cleanIgnoredFilesRequest) { request in
+      CleanIgnoredFilesSheet(
+        request: request,
+        onCancel: {
+          store.cleanIgnoredFilesRequest = nil
+        },
+        onClean: {
+          Task { await store.cleanIgnoredFiles() }
+        }
+      )
+    }
     .sheet(item: $store.gitIgnoreTemplateRequest) { request in
       GitIgnoreTemplateSheet(
         request: request,
@@ -801,6 +812,40 @@ private struct DiscardUnstagedChangesSheet: View {
       action = "This will remove untracked files."
     }
     return "\(action) Includes: \(summary)."
+  }
+}
+
+private struct CleanIgnoredFilesSheet: View {
+  var request: CleanIgnoredFilesRequest
+  var onCancel: () -> Void
+  var onClean: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text("Clean ignored files")
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      Text(fileCountTitle)
+        .font(.body.monospaced())
+        .lineLimit(1)
+
+      Text("This will remove ignored files and directories. Untracked files are not included.")
+        .foregroundStyle(.secondary)
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button("Clean", role: .destructive, action: onClean)
+          .buttonStyle(.borderedProminent)
+      }
+    }
+    .padding(20)
+    .frame(width: 460)
+  }
+
+  private var fileCountTitle: String {
+    request.fileCount == 1 ? "1 ignored file" : "\(request.fileCount.formatted()) ignored files"
   }
 }
 

@@ -71,6 +71,7 @@ final class RepositoryStore {
   var conflictResolutionRequest: ConflictResolutionRequest?
   var discardChangeRequest: DiscardChangeRequest?
   var discardUnstagedChangesRequest: DiscardUnstagedChangesRequest?
+  var cleanIgnoredFilesRequest: CleanIgnoredFilesRequest?
   var gitIgnoreTemplateRequest: GitIgnoreTemplateRequest?
   var selectedGitIgnoreTemplateID = GitIgnoreTemplateCatalog.defaultTemplateID
   var discardPatchRequest: DiscardPatchRequest?
@@ -336,6 +337,10 @@ final class RepositoryStore {
 
   var canDiscardUnstagedChanges: Bool {
     !unstagedChanges.isEmpty
+  }
+
+  var canCleanIgnoredFiles: Bool {
+    showIgnoredFiles && !ignoredChanges.isEmpty
   }
 
   var stagedChanges: [GitStatusEntry] {
@@ -822,6 +827,20 @@ final class RepositoryStore {
     discardUnstagedChangesRequest = nil
     await runMutation(title: "Discard unstaged changes") {
       try await gitClient.discardUnstaged(request.entries, in: requiredRepository())
+    }
+  }
+
+  func presentCleanIgnoredFiles() {
+    let entries = ignoredChanges
+    guard !entries.isEmpty else { return }
+    cleanIgnoredFilesRequest = CleanIgnoredFilesRequest(entries: entries)
+  }
+
+  func cleanIgnoredFiles() async {
+    guard let request = cleanIgnoredFilesRequest else { return }
+    cleanIgnoredFilesRequest = nil
+    await runMutation(title: "Clean ignored files") {
+      try await gitClient.cleanIgnored(request.entries, in: requiredRepository())
     }
   }
 

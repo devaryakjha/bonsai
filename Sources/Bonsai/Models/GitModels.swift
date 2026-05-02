@@ -1376,6 +1376,18 @@ struct DiscardUnstagedChangesRequest: Identifiable, Hashable {
   }
 }
 
+struct CleanIgnoredFilesRequest: Identifiable, Hashable {
+  var entries: [GitStatusEntry]
+
+  var id: String {
+    entries.map(\.id).joined(separator: "|")
+  }
+
+  var fileCount: Int {
+    entries.count
+  }
+}
+
 struct GitIgnoreTemplateRequest: Identifiable, Hashable {
   var repositoryName: String
   var templates: [GitIgnoreTemplate]
