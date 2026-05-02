@@ -244,11 +244,17 @@ struct SidebarView: View {
               .help("Remote branches and tags")
           }
         }
+      }
 
+      Section("Worktrees") {
         DisclosureGroup(isExpanded: $worktreesExpanded) {
           worktreeRows
         } label: {
-          SidebarDisclosureLabel(title: "Worktrees", count: store.snapshot.worktrees.count, systemImage: "square.stack.3d.up")
+          SidebarDisclosureLabel(
+            title: store.snapshot.worktrees.isEmpty ? "No worktrees" : "Show worktrees",
+            count: store.snapshot.worktrees.count,
+            systemImage: "square.stack.3d.up"
+          )
         }
         .contextMenu {
           Button("Prune Worktrees") {
@@ -256,18 +262,30 @@ struct SidebarView: View {
           }
           .disabled(store.selectedRepository == nil)
         }
+      }
 
+      Section("Remotes") {
         DisclosureGroup(isExpanded: $remotesExpanded) {
           remoteRows
         } label: {
-          SidebarDisclosureLabel(title: "Remotes", count: store.snapshot.remotes.count, systemImage: "network")
+          SidebarDisclosureLabel(
+            title: store.snapshot.remotes.isEmpty ? "No remotes" : "Show remotes",
+            count: store.snapshot.remotes.count,
+            systemImage: "network"
+          )
         }
+      }
 
-        if !store.snapshot.submodules.isEmpty {
+      if !store.snapshot.submodules.isEmpty {
+        Section("Submodules") {
           DisclosureGroup(isExpanded: $submodulesExpanded) {
             submoduleRows
           } label: {
-            SidebarDisclosureLabel(title: "Submodules", count: store.snapshot.submodules.count, systemImage: "shippingbox")
+            SidebarDisclosureLabel(
+              title: "Show submodules",
+              count: store.snapshot.submodules.count,
+              systemImage: "shippingbox"
+            )
           }
         }
       }
