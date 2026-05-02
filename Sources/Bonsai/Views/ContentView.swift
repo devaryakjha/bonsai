@@ -314,6 +314,14 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.fileHistoryDocument) { document in
+      FileHistorySheet(
+        document: document,
+        onCancel: {
+          store.fileHistoryDocument = nil
+        }
+      )
+    }
     .sheet(item: $store.reflogResetRequest) { request in
       ReflogResetSheet(
         request: request,
@@ -360,6 +368,98 @@ struct ContentView: View {
     } message: {
       Text(store.errorMessage ?? "")
     }
+  }
+}
+
+private struct FileHistorySheet: View {
+  var document: GitFileHistoryDocument
+  var onCancel: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      HStack {
+        VStack(alignment: .leading, spacing: 3) {
+          Text("File History")
+            .font(.title3)
+            .fontWeight(.semibold)
+          Text(document.path)
+            .font(.caption.monospaced())
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+        }
+        Spacer()
+        Button("Close", action: onCancel)
+      }
+
+      List(document.entries) { entry in
+        FileHistoryRow(entry: entry)
+      }
+      .listStyle(.inset)
+      .frame(minHeight: 420)
+    }
+    .padding(20)
+    .frame(minWidth: 840, minHeight: 540)
+  }
+}
+
+private struct FileHistoryRow: View {
+  var entry: GitFileHistoryEntry
+
+  var body: some View {
+    HStack(alignment: .top, spacing: 12) {
+      Text(entry.shortHash)
+        .font(.caption.monospaced())
+        .foregroundStyle(.secondary)
+        .frame(width: 72, alignment: .leading)
+        .textSelection(.enabled)
+
+      VStack(alignment: .leading, spacing: 6) {
+        Text(entry.subject)
+          .lineLimit(1)
+          .textSelection(.enabled)
+
+        HStack(spacing: 8) {
+          Text(entry.authorName)
+            .lineLimit(1)
+            .help(entry.authorEmail)
+          if let date = entry.date {
+            Text(date, style: .date)
+          }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+
+        if !entry.changes.isEmpty {
+          ScrollView(.horizontal) {
+            HStack(spacing: 6) {
+              ForEach(entry.changes) { change in
+                FileChangePill(change: change)
+              }
+            }
+          }
+          .scrollIndicators(.hidden)
+        }
+      }
+    }
+    .padding(.vertical, 5)
+  }
+}
+
+private struct FileChangePill: View {
+  var change: GitChangedFile
+
+  var body: some View {
+    HStack(spacing: 5) {
+      Text(change.status)
+        .font(.caption2.monospaced().weight(.semibold))
+        .foregroundStyle(.secondary)
+      Text(change.oldPath.map { "\($0) -> \(change.path)" } ?? change.path)
+        .font(.caption.monospaced())
+        .lineLimit(1)
+    }
+    .padding(.horizontal, 7)
+    .padding(.vertical, 3)
+    .background(.quaternary, in: RoundedRectangle(cornerRadius: 5))
   }
 }
 

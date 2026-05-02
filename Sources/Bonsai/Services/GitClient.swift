@@ -486,6 +486,20 @@ struct GitClient {
     return output.stdout
   }
 
+  func fileHistoryEntries(path: String, in repository: GitRepository) async throws -> [GitFileHistoryEntry] {
+    let format = "%x1e%H%x1f%h%x1f%an%x1f%ae%x1f%aI%x1f%s"
+    let output = try await git([
+      "log",
+      "--follow",
+      "--date=iso-strict",
+      "--pretty=format:\(format)",
+      "--name-status",
+      "--",
+      path
+    ], in: repository.url)
+    return GitParsers.parseFileHistoryEntries(output.stdout)
+  }
+
   func git(_ arguments: [String], in directory: URL?, standardInput: String? = nil, environment: [String: String]? = nil) async throws -> ProcessOutput {
     try await runner.run(gitExecutable, arguments: ["git"] + arguments, currentDirectory: directory, standardInput: standardInput, environment: environment)
   }

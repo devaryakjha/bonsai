@@ -205,6 +205,31 @@ enum GitParsers {
     return lines
   }
 
+  static func parseFileHistoryEntries(_ output: String) -> [GitFileHistoryEntry] {
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime]
+
+    return output
+      .split(separator: "\u{1e}", omittingEmptySubsequences: true)
+      .compactMap { record -> GitFileHistoryEntry? in
+        let lines = record.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        guard let header = lines.first else { return nil }
+        let parts = header.split(separator: "\u{1f}", omittingEmptySubsequences: false).map(String.init)
+        guard parts.count >= 6 else { return nil }
+
+        let changeText = lines.dropFirst().joined(separator: "\n")
+        return GitFileHistoryEntry(
+          hash: parts[0],
+          shortHash: parts[1],
+          authorName: parts[2],
+          authorEmail: parts[3],
+          date: formatter.date(from: parts[4]),
+          subject: parts[5],
+          changes: parseChangedFiles(changeText)
+        )
+      }
+  }
+
   static func parseSubmodules(_ output: String) -> [GitSubmodule] {
     output
       .split(separator: "\n", omittingEmptySubsequences: true)

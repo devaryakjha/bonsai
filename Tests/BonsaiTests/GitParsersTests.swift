@@ -176,6 +176,26 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(lines[1].content, "let subtitle = \"Git\"")
   }
 
+  func testParseFileHistoryEntriesReadsCommitsAndRenames() {
+    let entries = GitParsers.parseFileHistoryEntries("""
+    \u{1e}abcdef1234567890\u{1f}abcdef1\u{1f}Asha\u{1f}asha@example.test\u{1f}2026-05-02T10:00:00+05:30\u{1f}Update file
+    M\tSources/App.swift
+    \u{1e}fedcba9876543210\u{1f}fedcba9\u{1f}Nikhil\u{1f}nikhil@example.test\u{1f}2026-05-02T09:00:00+05:30\u{1f}Rename file
+    R100\tSources/OldApp.swift\tSources/App.swift
+    """)
+
+    XCTAssertEqual(entries.count, 2)
+    XCTAssertEqual(entries[0].shortHash, "abcdef1")
+    XCTAssertEqual(entries[0].authorName, "Asha")
+    XCTAssertEqual(entries[0].subject, "Update file")
+    XCTAssertNotNil(entries[0].date)
+    XCTAssertEqual(entries[0].changes.first?.status, "M")
+    XCTAssertEqual(entries[0].changes.first?.path, "Sources/App.swift")
+    XCTAssertEqual(entries[1].changes.first?.status, "R100")
+    XCTAssertEqual(entries[1].changes.first?.oldPath, "Sources/OldApp.swift")
+    XCTAssertEqual(entries[1].changes.first?.path, "Sources/App.swift")
+  }
+
   func testParseDiffHunksReconstructsPatchPerHunk() {
     let hunks = GitParsers.parseDiffHunks("""
     diff --git a/file.txt b/file.txt

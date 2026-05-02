@@ -95,13 +95,14 @@ final class GitClientIntegrationTests: XCTestCase {
     let commitDiff = try await client.diffForCommitFile(changedFile, commit: commit, algorithm: .histogram, in: repository)
     let reflog = try await client.reflogEntries(in: repository)
     let blame = try await client.blameLines(path: "file.txt", in: repository)
-    let fileHistory = try await client.fileHistory(path: "file.txt", in: repository)
+    let fileHistory = try await client.fileHistoryEntries(path: "file.txt", in: repository)
     let changedBlameLine = try XCTUnwrap(blame.first { $0.content == "line twenty changed" })
     XCTAssertTrue(commitDiff.contains("line twenty changed"))
     XCTAssertTrue(reflog.contains { $0.subject.contains("Update file") })
     XCTAssertFalse(changedBlameLine.shortHash.isEmpty)
     XCTAssertEqual(changedBlameLine.author, "Bonsai Tests")
-    XCTAssertTrue(fileHistory.contains("Update file"))
+    XCTAssertTrue(fileHistory.contains { $0.subject == "Update file" })
+    XCTAssertTrue(fileHistory.first?.changes.contains { $0.path == "file.txt" } ?? false)
   }
 
   func testLineChangeStagingLeavesOtherChangesUnstaged() async throws {

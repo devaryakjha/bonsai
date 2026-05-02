@@ -157,6 +157,25 @@ struct GitBlameDocument: Identifiable, Hashable {
   var id: String { path }
 }
 
+struct GitFileHistoryEntry: Identifiable, Hashable {
+  var hash: String
+  var shortHash: String
+  var authorName: String
+  var authorEmail: String
+  var date: Date?
+  var subject: String
+  var changes: [GitChangedFile]
+
+  var id: String { hash }
+}
+
+struct GitFileHistoryDocument: Identifiable, Hashable {
+  var path: String
+  var entries: [GitFileHistoryEntry]
+
+  var id: String { path }
+}
+
 struct GitSubmodule: Identifiable, Hashable {
   var path: String
   var commit: String

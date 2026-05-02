@@ -36,6 +36,7 @@ final class RepositoryStore {
   var treeBlobText = ""
   var commandResult: CommandResult?
   var blameDocument: GitBlameDocument?
+  var fileHistoryDocument: GitFileHistoryDocument?
   var gitHubNotifications: [GitHubNotification] = []
   var operationRequest: GitOperationRequest?
   var operationInput = ""
@@ -803,8 +804,12 @@ final class RepositoryStore {
 
   func showFileHistoryForSelection() async {
     guard let path = selectedChangedFile?.path ?? selectedStatusEntry?.path else { return }
-    await runReadOnlyCommand(title: "File History \(path)") {
-      try await gitClient.fileHistory(path: path, in: requiredRepository())
+    do {
+      let entries = try await gitClient.fileHistoryEntries(path: path, in: requiredRepository())
+      fileHistoryDocument = GitFileHistoryDocument(path: path, entries: entries)
+    } catch {
+      commandResult = CommandResult(title: "File History \(path)", output: error.localizedDescription, isError: true)
+      errorMessage = error.localizedDescription
     }
   }
 
@@ -1108,6 +1113,7 @@ final class RepositoryStore {
     diffText = ""
     commandResult = nil
     blameDocument = nil
+    fileHistoryDocument = nil
   }
 
   private func saveRecents() {
