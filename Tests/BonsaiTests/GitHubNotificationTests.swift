@@ -415,6 +415,42 @@ final class GitHubNotificationTests: XCTestCase {
   }
 
   @MainActor
+  func testStoreGitHubCommandURLsUseCurrentBranchAndSelectedCommit() {
+    let store = RepositoryStore()
+    let branch = GitRef(
+      name: "refs/heads/dashboard",
+      shortName: "dashboard",
+      objectName: "abc123",
+      upstream: "origin/feature/dashboard",
+      isHead: true,
+      kind: .localBranch
+    )
+    let commit = GitCommit(
+      hash: "abc123def456",
+      shortHash: "abc123d",
+      authorName: "Asha",
+      authorEmail: "asha@example.test",
+      date: nil,
+      subject: "Commit",
+      decorations: []
+    )
+    store.snapshot.refs = [branch]
+    store.snapshot.remotes = [
+      GitRemote(name: "origin", fetchURL: "https://github.com/example/bonsai.git", pushURL: nil)
+    ]
+    store.selectedCommit = commit
+
+    XCTAssertEqual(
+      store.currentBranchGitHubWebURL?.absoluteString,
+      "https://github.com/example/bonsai/tree/feature/dashboard"
+    )
+    XCTAssertEqual(
+      store.selectedCommitGitHubWebURL?.absoluteString,
+      "https://github.com/example/bonsai/commit/abc123def456"
+    )
+  }
+
+  @MainActor
   func testStoreTagWebURLPrefersOriginGitHubRemote() {
     let store = RepositoryStore()
     let tag = GitRef(name: "refs/tags/v1.0.0", shortName: "v1.0.0", objectName: "abc123", isHead: false, kind: .tag)

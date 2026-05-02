@@ -350,6 +350,14 @@ final class RepositoryStore {
     shouldPublishCurrentBranch ? "Publish" : (currentBranch?.pushTitle ?? "Push")
   }
 
+  var currentBranchGitHubWebURL: URL? {
+    currentBranch.flatMap { githubWebURL(forLocalBranch: $0) }
+  }
+
+  var selectedCommitGitHubWebURL: URL? {
+    selectedCommit.flatMap { githubWebURL(forCommit: $0) }
+  }
+
   var remoteBranches: [GitRef] {
     snapshot.refs.filter { $0.kind == .remoteBranch }
   }
@@ -972,6 +980,11 @@ final class RepositoryStore {
     NSWorkspace.shared.open(url)
   }
 
+  func openCurrentBranchInBrowser() {
+    guard let url = currentBranchGitHubWebURL else { return }
+    NSWorkspace.shared.open(url)
+  }
+
   func githubWebURL(forTag tag: GitRef) -> URL? {
     guard tag.kind == .tag else { return nil }
     return preferredGitHubRemote?.githubTagWebURL(tagName: tag.shortName)
@@ -988,6 +1001,11 @@ final class RepositoryStore {
 
   func openCommitInBrowser(_ commit: GitCommit) {
     guard let url = githubWebURL(forCommit: commit) else { return }
+    NSWorkspace.shared.open(url)
+  }
+
+  func openSelectedCommitInBrowser() {
+    guard let url = selectedCommitGitHubWebURL else { return }
     NSWorkspace.shared.open(url)
   }
 

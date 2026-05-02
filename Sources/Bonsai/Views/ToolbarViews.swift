@@ -189,6 +189,27 @@ struct RepositoryToolbarActionsMenu: View {
         }
         Divider()
         Menu("GitHub") {
+          Button("Open Current Branch in Browser") {
+            store.openCurrentBranchInBrowser()
+          }
+          .disabled(store.currentBranchGitHubWebURL == nil)
+          Button("Copy Current Branch Web URL") {
+            if let url = store.currentBranchGitHubWebURL {
+              PasteboardWriter.copy(url.absoluteString)
+            }
+          }
+          .disabled(store.currentBranchGitHubWebURL == nil)
+          Button("Open Selected Commit in Browser") {
+            store.openSelectedCommitInBrowser()
+          }
+          .disabled(store.selectedCommitGitHubWebURL == nil)
+          Button("Copy Selected Commit Web URL") {
+            if let url = store.selectedCommitGitHubWebURL {
+              PasteboardWriter.copy(url.absoluteString)
+            }
+          }
+          .disabled(store.selectedCommitGitHubWebURL == nil)
+          Divider()
           Button("Fetch Notifications") {
             Task { await store.fetchGitHubNotifications() }
           }
