@@ -223,6 +223,13 @@ private struct DiffHeaderControls: View {
   var onNavigateSearch: (DiffSearch.NavigationDirection) -> Void
 
   var body: some View {
+    ViewThatFits(in: .horizontal) {
+      controls(searchFieldWidth: 180, showsMatchLabel: true)
+      controls(searchFieldWidth: 128, showsMatchLabel: false)
+    }
+  }
+
+  private func controls(searchFieldWidth: CGFloat, showsMatchLabel: Bool) -> some View {
     HStack(spacing: 8) {
       Button {
         if isSearchVisible {
@@ -242,13 +249,13 @@ private struct DiffHeaderControls: View {
         TextField("Find", text: $searchText)
           .textFieldStyle(.roundedBorder)
           .controlSize(.small)
-          .frame(width: 180)
+          .frame(width: searchFieldWidth)
           .accessibilityLabel("Find in diff")
           .onSubmit {
             onNavigateSearch(.next)
           }
 
-        if let matchLabel {
+        if showsMatchLabel, let matchLabel {
           Text(matchLabel)
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -348,9 +355,11 @@ private struct DiffHeaderControls: View {
         }
       } label: {
         Label("Diff options", systemImage: "slider.horizontal.3")
+          .labelStyle(.iconOnly)
       }
       .controlSize(.small)
       .help("Diff options")
+      .accessibilityLabel("Diff options")
 
       Button {
         store.copyCurrentPatch()
@@ -363,7 +372,8 @@ private struct DiffHeaderControls: View {
       .accessibilityLabel("Copy patch")
       .disabled(!store.canCopyCurrentPatch)
     }
-    .fixedSize()
+    .lineLimit(1)
+    .fixedSize(horizontal: true, vertical: false)
   }
 
   private var summary: DiffSummary? {

@@ -855,12 +855,17 @@ private struct SidebarMetricRow: View {
   var systemImage: String
 
   var body: some View {
-    HStack {
+    HStack(spacing: 8) {
       Label(title, systemImage: systemImage)
+        .lineLimit(1)
+        .truncationMode(.tail)
+        .layoutPriority(1)
       Spacer()
       Text(value.formatted())
         .foregroundStyle(.secondary)
         .monospacedDigit()
+        .lineLimit(1)
+        .frame(minWidth: 28, alignment: .trailing)
     }
   }
 }
@@ -871,12 +876,17 @@ private struct SidebarDisclosureLabel: View {
   var systemImage: String
 
   var body: some View {
-    HStack {
+    HStack(spacing: 8) {
       Label(title, systemImage: systemImage)
+        .lineLimit(1)
+        .truncationMode(.tail)
+        .layoutPriority(1)
       Spacer()
       Text(count.formatted())
         .foregroundStyle(.secondary)
         .monospacedDigit()
+        .lineLimit(1)
+        .frame(minWidth: 28, alignment: .trailing)
     }
   }
 }
@@ -1014,18 +1024,26 @@ private struct AdvancedSidebarRow: View {
       VStack(alignment: .leading, spacing: 2) {
         Text(title)
           .lineLimit(1)
+          .truncationMode(.middle)
+          .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         Text(detail)
           .font(.caption)
           .foregroundStyle(.secondary)
           .lineLimit(1)
+          .truncationMode(.middle)
+          .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         if let tertiary {
           Text(tertiary)
             .font(.caption2)
             .foregroundStyle(.tertiary)
             .lineLimit(1)
+            .truncationMode(.middle)
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         }
       }
+      .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
     }
+    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
   }
 }
 
@@ -1040,7 +1058,11 @@ private struct SidebarInlineAction: View {
         .foregroundStyle(iconStyle)
         .frame(width: 16)
       Text(title)
+        .lineLimit(1)
+        .truncationMode(.tail)
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
     }
+    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
   }
 }
 
@@ -1057,11 +1079,18 @@ private struct IntegrationRow: View {
         .frame(width: 16)
       VStack(alignment: .leading, spacing: 2) {
         Text(title)
+          .lineLimit(1)
+          .truncationMode(.tail)
+          .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         Text(detail)
           .font(.caption)
           .foregroundStyle(.secondary)
           .lineLimit(1)
+          .truncationMode(.middle)
+          .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
       }
+      .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
     }
+    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
   }
 }
