@@ -313,8 +313,7 @@ final class RepositoryStore {
 
     guard panel.runModal() == .OK, let url = panel.url else { return }
     if repositorySetupMode == .clone, !repositorySetupRemoteURL.isEmpty {
-      repositorySetupDestinationPath = url
-        .appending(path: Self.repositoryName(fromRemoteURL: repositorySetupRemoteURL), directoryHint: .isDirectory)
+      repositorySetupDestinationPath = Self.cloneDestination(parentDirectory: url, remoteURL: repositorySetupRemoteURL)
         .path(percentEncoded: false)
     } else {
       repositorySetupDestinationPath = url.path(percentEncoded: false)
@@ -326,8 +325,7 @@ final class RepositoryStore {
     let parent = URL(filePath: repositorySetupDestinationPath, directoryHint: .isDirectory).deletingLastPathComponent()
     let repositoryName = Self.repositoryName(fromRemoteURL: repositorySetupRemoteURL)
     guard !repositoryName.isEmpty else { return }
-    repositorySetupDestinationPath = parent
-      .appending(path: repositoryName, directoryHint: .isDirectory)
+    repositorySetupDestinationPath = Self.cloneDestination(parentDirectory: parent, remoteURL: repositorySetupRemoteURL)
       .path(percentEncoded: false)
   }
 
@@ -1675,6 +1673,12 @@ final class RepositoryStore {
     }
     let withoutGit = lastComponent.hasSuffix(".git") ? String(lastComponent.dropLast(4)) : lastComponent
     return withoutGit.isEmpty ? "Repository" : withoutGit
+  }
+
+  static func cloneDestination(parentDirectory: URL, remoteURL: String) -> URL {
+    parentDirectory.appending(
+      path: repositoryName(fromRemoteURL: remoteURL)
+    )
   }
 }
 

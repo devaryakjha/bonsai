@@ -10,6 +10,24 @@ final class ProjectRepositoryScannerTests: XCTestCase {
     XCTAssertEqual(RepositoryStore.repositoryName(fromRemoteURL: "ssh://git@example.com/example/bonsai"), "bonsai")
   }
 
+  @MainActor
+  func testCloneDestinationIsDerivedFromParentAndRemoteURL() {
+    let parent = URL(filePath: "/Users/example/projects", directoryHint: .isDirectory)
+
+    XCTAssertEqual(
+      RepositoryStore.cloneDestination(parentDirectory: parent, remoteURL: "https://github.com/example/bonsai.git").path(percentEncoded: false),
+      "/Users/example/projects/bonsai"
+    )
+    XCTAssertEqual(
+      RepositoryStore.cloneDestination(parentDirectory: parent, remoteURL: "git@github.com:example/bonsai.git").path(percentEncoded: false),
+      "/Users/example/projects/bonsai"
+    )
+    XCTAssertEqual(
+      RepositoryStore.cloneDestination(parentDirectory: parent, remoteURL: " ").path(percentEncoded: false),
+      "/Users/example/projects/Repository"
+    )
+  }
+
   func testScannerFindsGitRepositoriesWithoutDescendingIntoRepositoryChildren() throws {
     let root = FileManager.default.temporaryDirectory
       .appending(path: "bonsai-scanner-\(UUID().uuidString)", directoryHint: .isDirectory)
