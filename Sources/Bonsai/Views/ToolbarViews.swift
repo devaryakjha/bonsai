@@ -121,150 +121,157 @@ struct RepositoryToolbarActionsMenu: View {
       }
 
       Menu("Tools") {
-        Button("Show Reflog") {
-          Task { await store.showReflog() }
-        }
-        Button("Show Blame") {
-          Task { await store.showBlameForSelection() }
-        }
-        .disabled(store.selectedChangedFile == nil && store.selectedStatusEntry == nil)
-        Button("Show File History") {
-          Task { await store.showFileHistoryForSelection() }
-        }
-        .disabled(store.selectedChangedFile == nil && store.selectedStatusEntry == nil)
-        Divider()
-        Button("Copy Current Patch") {
-          store.copyCurrentPatch()
-        }
-        .disabled(!store.canCopyCurrentPatch)
-        Button("Apply Patch from Clipboard") {
-          store.presentApplyPatchFromClipboard()
-        }
-        Button("Open Selected File") {
-          store.openSelectedFile()
-        }
-        .disabled(!store.canOpenSelectedFile)
-        Button("Copy Selected File Absolute Path") {
-          store.copySelectedFileAbsolutePath()
-        }
-        .disabled(!store.canCopySelectedFileAbsolutePath)
-        Button("Discard Unstaged Changes…", role: .destructive) {
-          store.presentDiscardUnstagedChanges()
-        }
-        .disabled(!store.canDiscardUnstagedChanges)
-        Divider()
-        Button("Update Submodules") {
-          Task { await store.updateSubmodules() }
-        }
-        Button("Add .gitignore Template…") {
-          store.presentGitIgnoreTemplatePicker()
-        }
-        Button("Clean Ignored Files…", role: .destructive) {
-          store.presentCleanIgnoredFiles()
-        }
-        .disabled(!store.canCleanIgnoredFiles)
-        Button("Create Worktree…") {
-          store.presentCreateWorktree()
-        }
-        Button("Prune Worktrees") {
-          Task { await store.pruneWorktrees() }
-        }
-        .disabled(store.selectedRepository == nil)
-        Divider()
-        Button("Add Remote…") {
-          store.presentAddRemote()
-        }
-        Divider()
-        Menu("Git LFS") {
-          Button("Pull") {
-            Task { await store.lfsPull() }
+        Menu(ToolbarToolsMenuCopy.inspectMenuTitle) {
+          Button("Show Reflog") {
+            Task { await store.showReflog() }
           }
-          .disabled(!store.snapshot.integrations.lfsAvailable)
-          Button("Fetch") {
-            Task { await store.lfsFetch() }
+          Button("Show Blame") {
+            Task { await store.showBlameForSelection() }
           }
-          .disabled(!store.snapshot.integrations.lfsAvailable)
-          Button("Checkout Files") {
-            Task { await store.lfsCheckout() }
+          .disabled(store.selectedChangedFile == nil && store.selectedStatusEntry == nil)
+          Button("Show File History") {
+            Task { await store.showFileHistoryForSelection() }
           }
-          .disabled(!store.snapshot.integrations.lfsAvailable)
-          Button("Prune") {
-            Task { await store.lfsPrune() }
+          .disabled(store.selectedChangedFile == nil && store.selectedStatusEntry == nil)
+        }
+        Menu(ToolbarToolsMenuCopy.patchMenuTitle) {
+          Button("Copy Current Patch") {
+            store.copyCurrentPatch()
           }
-          .disabled(!store.snapshot.integrations.lfsAvailable)
+          .disabled(!store.canCopyCurrentPatch)
+          Button("Apply Patch from Clipboard") {
+            store.presentApplyPatchFromClipboard()
+          }
+        }
+        Menu(ToolbarToolsMenuCopy.fileMenuTitle) {
+          Button("Open Selected File") {
+            store.openSelectedFile()
+          }
+          .disabled(!store.canOpenSelectedFile)
+          Button("Copy Selected File Absolute Path") {
+            store.copySelectedFileAbsolutePath()
+          }
+          .disabled(!store.canCopySelectedFileAbsolutePath)
           Divider()
-          Button("Lock Selected File") {
-            Task { await store.lfsLockSelectedFile() }
+          Button("Discard Unstaged Changes…", role: .destructive) {
+            store.presentDiscardUnstagedChanges()
           }
-          .disabled(!store.canRunSelectedFileLFSAction)
-          Button("Unlock Selected File") {
-            Task { await store.lfsUnlockSelectedFile() }
-          }
-          .disabled(!store.canRunSelectedFileLFSAction)
-          Button("Force Unlock Selected File") {
-            Task { await store.lfsUnlockSelectedFile(force: true) }
-          }
-          .disabled(!store.canRunSelectedFileLFSAction)
+          .disabled(!store.canDiscardUnstagedChanges)
         }
-        Button(store.snapshot.integrations.gpgSigningEnabled ? "Disable GPG Signing" : "Enable GPG Signing") {
-          Task { await store.setCommitSigning(!store.snapshot.integrations.gpgSigningEnabled) }
-        }
-        Divider()
-        Menu("Git-flow") {
-          Button("Initialize") {
-            Task { await store.initializeGitFlow() }
+        Menu(ToolbarToolsMenuCopy.repositoryMenuTitle) {
+          Button("Update Submodules") {
+            Task { await store.updateSubmodules() }
           }
-          .disabled(!store.snapshot.integrations.gitFlowAvailable)
+          Button("Add .gitignore Template…") {
+            store.presentGitIgnoreTemplatePicker()
+          }
+          Button("Clean Ignored Files…", role: .destructive) {
+            store.presentCleanIgnoredFiles()
+          }
+          .disabled(!store.canCleanIgnoredFiles)
           Divider()
-          ForEach(GitFlowStartKind.allCases) { kind in
-            Button("Start \(kind.title)…") {
-              store.presentGitFlowStart(kind)
-            }
-            .disabled(!store.snapshot.integrations.gitFlowInitialized)
+          Button("Create Worktree…") {
+            store.presentCreateWorktree()
           }
-          ForEach(GitFlowStartKind.allCases) { kind in
-            Button("Finish \(kind.title)…") {
-              store.presentGitFlowFinish(kind)
-            }
-            .disabled(!store.snapshot.integrations.gitFlowInitialized)
+          Button("Prune Worktrees") {
+            Task { await store.pruneWorktrees() }
+          }
+          .disabled(store.selectedRepository == nil)
+          Divider()
+          Button("Add Remote…") {
+            store.presentAddRemote()
           }
         }
-        Divider()
-        Menu("Hosting") {
-          Button("Open Current Branch in Browser") {
-            store.openCurrentBranchInBrowser()
+        Menu(ToolbarToolsMenuCopy.integrationsMenuTitle) {
+          Menu("Git LFS") {
+            Button("Pull") {
+              Task { await store.lfsPull() }
+            }
+            .disabled(!store.snapshot.integrations.lfsAvailable)
+            Button("Fetch") {
+              Task { await store.lfsFetch() }
+            }
+            .disabled(!store.snapshot.integrations.lfsAvailable)
+            Button("Checkout Files") {
+              Task { await store.lfsCheckout() }
+            }
+            .disabled(!store.snapshot.integrations.lfsAvailable)
+            Button("Prune") {
+              Task { await store.lfsPrune() }
+            }
+            .disabled(!store.snapshot.integrations.lfsAvailable)
+            Divider()
+            Button("Lock Selected File") {
+              Task { await store.lfsLockSelectedFile() }
+            }
+            .disabled(!store.canRunSelectedFileLFSAction)
+            Button("Unlock Selected File") {
+              Task { await store.lfsUnlockSelectedFile() }
+            }
+            .disabled(!store.canRunSelectedFileLFSAction)
+            Button("Force Unlock Selected File") {
+              Task { await store.lfsUnlockSelectedFile(force: true) }
+            }
+            .disabled(!store.canRunSelectedFileLFSAction)
           }
-          .disabled(store.currentBranchWebURL == nil)
-          Button("Copy Current Branch Web URL") {
-            if let url = store.currentBranchWebURL {
-              PasteboardWriter.copy(url.absoluteString)
+          Button(store.snapshot.integrations.gpgSigningEnabled ? "Disable GPG Signing" : "Enable GPG Signing") {
+            Task { await store.setCommitSigning(!store.snapshot.integrations.gpgSigningEnabled) }
+          }
+          Menu("Git-flow") {
+            Button("Initialize") {
+              Task { await store.initializeGitFlow() }
+            }
+            .disabled(!store.snapshot.integrations.gitFlowAvailable)
+            Divider()
+            ForEach(GitFlowStartKind.allCases) { kind in
+              Button("Start \(kind.title)…") {
+                store.presentGitFlowStart(kind)
+              }
+              .disabled(!store.snapshot.integrations.gitFlowInitialized)
+            }
+            ForEach(GitFlowStartKind.allCases) { kind in
+              Button("Finish \(kind.title)…") {
+                store.presentGitFlowFinish(kind)
+              }
+              .disabled(!store.snapshot.integrations.gitFlowInitialized)
             }
           }
-          .disabled(store.currentBranchWebURL == nil)
-          Button("Open Selected Commit in Browser") {
-            store.openSelectedCommitInBrowser()
-          }
-          .disabled(store.selectedCommitWebURL == nil)
-          Button("Copy Selected Commit Web URL") {
-            if let url = store.selectedCommitWebURL {
-              PasteboardWriter.copy(url.absoluteString)
+          Menu("Hosting") {
+            Button("Open Current Branch in Browser") {
+              store.openCurrentBranchInBrowser()
             }
-          }
-          .disabled(store.selectedCommitWebURL == nil)
-          Divider()
-          Button("Fetch GitHub Notifications") {
-            Task { await store.fetchGitHubNotifications() }
-          }
-          Button("Mark GitHub Notifications Read") {
-            Task { await store.markGitHubNotificationsRead() }
-          }
-          .disabled(store.gitHubNotifications.isEmpty)
-          Divider()
-          Button("Create GitHub Repository…") {
-            store.presentCreateGitHubRepository()
-          }
-          Button("Delete GitHub Repository…") {
-            store.presentDeleteGitHubRepository()
+            .disabled(store.currentBranchWebURL == nil)
+            Button("Copy Current Branch Web URL") {
+              if let url = store.currentBranchWebURL {
+                PasteboardWriter.copy(url.absoluteString)
+              }
+            }
+            .disabled(store.currentBranchWebURL == nil)
+            Button("Open Selected Commit in Browser") {
+              store.openSelectedCommitInBrowser()
+            }
+            .disabled(store.selectedCommitWebURL == nil)
+            Button("Copy Selected Commit Web URL") {
+              if let url = store.selectedCommitWebURL {
+                PasteboardWriter.copy(url.absoluteString)
+              }
+            }
+            .disabled(store.selectedCommitWebURL == nil)
+            Divider()
+            Button("Fetch GitHub Notifications") {
+              Task { await store.fetchGitHubNotifications() }
+            }
+            Button("Mark GitHub Notifications Read") {
+              Task { await store.markGitHubNotificationsRead() }
+            }
+            .disabled(store.gitHubNotifications.isEmpty)
+            Divider()
+            Button("Create GitHub Repository…") {
+              store.presentCreateGitHubRepository()
+            }
+            Button("Delete GitHub Repository…") {
+              store.presentDeleteGitHubRepository()
+            }
           }
         }
       }
