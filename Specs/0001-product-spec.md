@@ -42,7 +42,7 @@ Current public Fork sources list these v0 parity surfaces:
 | Git-flow | Feature/release/hotfix start/finish actions | Git-flow commands are exposed when initialized |
 | Git LFS | Detect LFS, show LFS files, pull, lock/unlock selected files | LFS status appears and basic commands are available |
 | GPG | Respect commit signing config | Commit flow exposes sign toggle/status |
-| Provider notifications | GitHub notifications without noise | GitHub account integration is spec'd before implementation |
+| Provider notifications | GitHub notifications and repository actions without noise | GitHub provider actions stay token-based and opt-in |
 
 ## v0 App Surfaces
 

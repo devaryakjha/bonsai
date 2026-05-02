@@ -77,6 +77,66 @@ final class GitHubNotificationTests: XCTestCase {
     XCTAssertEqual(remote.githubRepositoryTarget, GitHubRepositoryTarget(owner: "example", name: "bonsai"))
   }
 
+  @MainActor
+  func testDeleteRepositoryRequestPrefersOriginGitHubRemote() {
+    let store = RepositoryStore()
+    store.selectedRepository = GitRepository(path: "/tmp/local-name")
+    store.snapshot.remotes = [
+      GitRemote(
+        name: "backup",
+        fetchURL: "git@github.com:backup/remote.git",
+        pushURL: nil
+      ),
+      GitRemote(
+        name: "origin",
+        fetchURL: "https://github.com/example/bonsai.git",
+        pushURL: nil
+      )
+    ]
+
+    store.presentDeleteGitHubRepository()
+
+    XCTAssertEqual(store.gitHubRepositoryRequest?.operation, .delete)
+    XCTAssertEqual(store.gitHubRepositoryRequest?.owner, "example")
+    XCTAssertEqual(store.gitHubRepositoryRequest?.name, "bonsai")
+  }
+
+  @MainActor
+  func testDeleteRepositoryRequestFallsBackWhenOriginIsNotGitHub() {
+    let store = RepositoryStore()
+    store.selectedRepository = GitRepository(path: "/tmp/local-name")
+    store.snapshot.remotes = [
+      GitRemote(
+        name: "origin",
+        fetchURL: "git@gitlab.com:example/local-name.git",
+        pushURL: nil
+      ),
+      GitRemote(
+        name: "upstream",
+        fetchURL: "git@github.com:example/upstream.git",
+        pushURL: nil
+      )
+    ]
+
+    store.presentDeleteGitHubRepository()
+
+    XCTAssertEqual(store.gitHubRepositoryRequest?.owner, "example")
+    XCTAssertEqual(store.gitHubRepositoryRequest?.name, "upstream")
+
+    store.snapshot.remotes = [
+      GitRemote(
+        name: "origin",
+        fetchURL: "git@gitlab.com:example/local-name.git",
+        pushURL: nil
+      )
+    ]
+
+    store.presentDeleteGitHubRepository()
+
+    XCTAssertEqual(store.gitHubRepositoryRequest?.owner, "")
+    XCTAssertEqual(store.gitHubRepositoryRequest?.name, "local-name")
+  }
+
   func testGitHubClientErrorCopyIsProviderLevel() {
     XCTAssertEqual(GitHubClientError.invalidURL.localizedDescription, "GitHub request URL is invalid.")
     XCTAssertEqual(GitHubClientError.invalidResponse.localizedDescription, "GitHub returned an invalid response.")
