@@ -31,12 +31,26 @@ struct DetailView: View {
       }
     }
     .focusedSceneValue(\.diffFindVisible, $isDiffSearchVisible)
+    .focusedSceneValue(\.diffFindNavigation, DiffFindNavigationActions(
+      canNavigate: canNavigateDiffSearch,
+      navigate: navigateDiffSearch
+    ))
   }
 
   private func navigateDiffSearch(_ direction: DiffSearch.NavigationDirection) {
-    guard !DiffSearch.normalizedQuery(diffSearchText).isEmpty else { return }
+    guard canNavigateDiffSearch else { return }
     diffSearchNavigationID += 1
     diffSearchNavigationRequest = DiffSearch.NavigationRequest(id: diffSearchNavigationID, direction: direction)
+  }
+
+  private var canNavigateDiffSearch: Bool {
+    guard isDiffSearchVisible, !DiffSearch.normalizedQuery(diffSearchText).isEmpty else { return false }
+    switch store.diffDisplayMode {
+    case .unified:
+      return DiffSearch.visibleUnifiedMatchSummary(from: store.diffText, query: diffSearchText, limit: 1).count > 0
+    case .split:
+      return DiffSearch.visibleSplitMatchSummary(from: store.splitDiff, query: diffSearchText, limit: 1).count > 0
+    }
   }
 }
 
