@@ -105,6 +105,16 @@ This mode requires `BONSAI_CODESIGN_IDENTITY` to name a `Developer ID
 Application` certificate present in the login keychain, and validates
 `BONSAI_NOTARY_PROFILE` with `xcrun notarytool history`.
 
+For a read-only report that lists all missing credential inputs in one pass, run:
+
+```sh
+script/package_release.sh --doctor
+```
+
+Doctor mode does not build, sign, submit, staple, or rewrite artifacts. It
+returns a non-zero status until Developer ID and notarytool credentials are
+ready.
+
 ## Outputs
 
 - `dist/release/Bonsai.app`

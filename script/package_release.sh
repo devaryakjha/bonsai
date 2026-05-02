@@ -21,13 +21,14 @@ APP_MARK_SOURCE="$ROOT_DIR/Assets/AppIcon/bonsai-worktree-topology.svg"
 
 usage() {
   cat >&2 <<USAGE
-usage: script/package_release.sh [--verify|--verify-archive|--archive|--notarize|--check-credentials]
+usage: script/package_release.sh [--verify|--verify-archive|--archive|--notarize|--check-credentials|--doctor]
 
   --verify             Build, stage, ad-hoc sign, and validate the release app bundle.
   --verify-archive     Build, ad-hoc sign, validate, and write a local test archive.
   --archive            Build, Developer ID sign, validate, and write dist/release/Bonsai.zip.
   --notarize           Build, Developer ID sign, archive, submit to notarytool, and staple.
   --check-credentials  Validate Developer ID and notarytool credentials without packaging.
+  --doctor             Report local release credential readiness without changing artifacts.
 
 Environment:
   BONSAI_CODESIGN_IDENTITY  Required for --archive and --notarize.
@@ -279,6 +280,63 @@ check_archive_credentials() {
   check_developer_id_identity "$identity"
 }
 
+release_doctor() {
+  local failures=0 identity profile developer_id_count
+
+  echo "Bonsai release doctor"
+  echo "Version: $(app_version)"
+  echo "Build: $(build_number)"
+
+  developer_id_count="$(
+    security find-identity -p codesigning -v \
+      | grep -c 'Developer ID Application' \
+      || true
+  )"
+  if [[ "$developer_id_count" == "0" ]]; then
+    echo "Developer ID identities: none found"
+    failures=1
+  else
+    echo "Developer ID identities: $developer_id_count found"
+  fi
+
+  if [[ -z "${BONSAI_CODESIGN_IDENTITY:-}" ]]; then
+    echo "BONSAI_CODESIGN_IDENTITY: missing"
+    failures=1
+  else
+    identity="$BONSAI_CODESIGN_IDENTITY"
+    if [[ "$identity" != Developer\ ID\ Application:* ]]; then
+      echo "BONSAI_CODESIGN_IDENTITY: invalid prefix"
+      failures=1
+    elif security find-identity -p codesigning -v | grep -F -- "$identity" >/dev/null; then
+      echo "BONSAI_CODESIGN_IDENTITY: available"
+    else
+      echo "BONSAI_CODESIGN_IDENTITY: not found in login keychain"
+      failures=1
+    fi
+  fi
+
+  if [[ -z "${BONSAI_NOTARY_PROFILE:-}" ]]; then
+    echo "BONSAI_NOTARY_PROFILE: missing"
+    failures=1
+  else
+    profile="$BONSAI_NOTARY_PROFILE"
+    if xcrun notarytool history --keychain-profile "$profile" >/dev/null 2>&1; then
+      echo "BONSAI_NOTARY_PROFILE: valid"
+    else
+      echo "BONSAI_NOTARY_PROFILE: could not be validated"
+      failures=1
+    fi
+  fi
+
+  if [[ "$failures" == "0" ]]; then
+    echo "Distribution credentials: ready"
+    return 0
+  fi
+
+  echo "Distribution credentials: not ready"
+  return 1
+}
+
 package_with_identity() {
   local identity="$1"
   build_release_binary
@@ -316,6 +374,9 @@ case "$MODE" in
     check_distribution_credentials
     echo "Developer ID and notarytool credentials are available"
     ;;
+  --doctor|doctor)
+    release_doctor
+    ;;
   --help|-h|help)
     usage
     ;;
@@ -325,4 +386,8 @@ case "$MODE" in
     ;;
 esac
 
-echo "Packaged $APP_BUNDLE"
+case "$MODE" in
+  --verify|verify|--verify-archive|verify-archive|--archive|archive|--notarize|notarize)
+    echo "Packaged $APP_BUNDLE"
+    ;;
+esac

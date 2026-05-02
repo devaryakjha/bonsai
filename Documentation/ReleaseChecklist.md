@@ -35,13 +35,24 @@ For diff performance-sensitive changes, also run:
 If this machine has not shipped Bonsai before, complete the credential setup in
 `Documentation/ReleasePackaging.md` first.
 
-Validate that the machine has the correct public-distribution credentials:
+Set the release credential environment:
 
 ```sh
 export BONSAI_CODESIGN_IDENTITY="Developer ID Application: Example, Inc. (TEAMID)"
 export BONSAI_NOTARY_PROFILE="bonsai-notary"
 export BONSAI_VERSION="$(tr -d '[:space:]' < VERSION)"
 export BONSAI_BUILD_NUMBER="$(git rev-list --count HEAD)"
+```
+
+Check the full local credential state:
+
+```sh
+./script/package_release.sh --doctor
+```
+
+Validate that the machine has the correct public-distribution credentials:
+
+```sh
 ./script/package_release.sh --check-credentials
 ```
 
