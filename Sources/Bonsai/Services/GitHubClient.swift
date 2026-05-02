@@ -113,11 +113,11 @@ enum GitHubClientError: LocalizedError {
   var errorDescription: String? {
     switch self {
     case .invalidURL:
-      return "GitHub notifications URL is invalid."
+      return "GitHub request URL is invalid."
     case .invalidResponse:
       return "GitHub returned an invalid response."
     case let .httpStatus(status):
-      return "GitHub notifications request failed with HTTP \(status)."
+      return "GitHub request failed with HTTP \(status)."
     }
   }
 }

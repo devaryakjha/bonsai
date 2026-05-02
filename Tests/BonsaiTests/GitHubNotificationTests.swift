@@ -76,4 +76,10 @@ final class GitHubNotificationTests: XCTestCase {
 
     XCTAssertEqual(remote.githubRepositoryTarget, GitHubRepositoryTarget(owner: "example", name: "bonsai"))
   }
+
+  func testGitHubClientErrorCopyIsProviderLevel() {
+    XCTAssertEqual(GitHubClientError.invalidURL.localizedDescription, "GitHub request URL is invalid.")
+    XCTAssertEqual(GitHubClientError.invalidResponse.localizedDescription, "GitHub returned an invalid response.")
+    XCTAssertEqual(GitHubClientError.httpStatus(404).localizedDescription, "GitHub request failed with HTTP 404.")
+  }
 }
