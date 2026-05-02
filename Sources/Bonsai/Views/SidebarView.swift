@@ -176,6 +176,10 @@ struct SidebarView: View {
               Button("Rename...") {
                 store.presentRenameBranch(branch)
               }
+              Button("Merge into Current Branch") {
+                Task { await store.mergeBranch(branch) }
+              }
+              .disabled(branch.isHead)
               if branch.upstream != nil {
                 Button(branch.pullTitle) {
                   Task { await store.pullBranch(branch) }

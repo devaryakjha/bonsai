@@ -1243,6 +1243,13 @@ final class RepositoryStore {
     }
   }
 
+  func mergeBranch(_ branch: GitRef) async {
+    guard branch.kind == .localBranch, !branch.isHead else { return }
+    await runMutation(title: "Merge \(branch.shortName)") {
+      try await gitClient.mergeBranch(branch, in: requiredRepository())
+    }
+  }
+
   func unsetUpstream(_ branch: GitRef) async {
     await runMutation(title: "Unset upstream \(branch.shortName)") {
       try await gitClient.unsetUpstream(for: branch.shortName, in: requiredRepository())

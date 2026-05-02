@@ -792,6 +792,36 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(commandResult?.isError, false)
   }
 
+  func testStoreMergesLocalBranchIntoCurrentBranch() async throws {
+    let repo = try await makeRepository()
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    try write("base\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Base")
+    _ = try await client.createBranch(named: "feature/merge-source", startPoint: nil, in: repository)
+    _ = try await client.checkout("feature/merge-source", in: repository)
+    try write("feature\n", to: repo.appending(path: "feature.txt"))
+    try await commitAll(in: repo, message: "Feature work")
+    _ = try await client.checkout("main", in: repository)
+    try write("main\n", to: repo.appending(path: "main.txt"))
+    try await commitAll(in: repo, message: "Main work")
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    let branches = await store.localBranches
+    let sourceBranch = try XCTUnwrap(branches.first { $0.shortName == "feature/merge-source" })
+
+    await store.mergeBranch(sourceBranch)
+
+    let currentBranch = try await client.git(["branch", "--show-current"], in: repo).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let featureFile = try String(contentsOf: repo.appending(path: "feature.txt"), encoding: .utf8)
+    let commandResult = await store.commandResult
+    XCTAssertEqual(currentBranch, "main")
+    XCTAssertEqual(featureFile, "feature\n")
+    XCTAssertEqual(commandResult?.title, "Merge feature/merge-source")
+    XCTAssertEqual(commandResult?.isError, false)
+  }
+
   func testStoreFetchesSelectedRemoteBranch() async throws {
     let remote = try await makeBareRepository()
     let source = try await makeRepository()
