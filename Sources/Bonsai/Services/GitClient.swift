@@ -625,11 +625,19 @@ struct GitClient {
   }
 
   func updateSubmodules(in repository: GitRepository) async throws -> String {
-    try await runRaw(["submodule", "update", "--init", "--recursive"], in: repository)
+    try await runRaw(Self.updateSubmodulesArguments(), in: repository)
+  }
+
+  static func updateSubmodulesArguments() -> [String] {
+    ["submodule", "update", "--init", "--recursive"]
   }
 
   func updateSubmodule(_ submodule: GitSubmodule, in repository: GitRepository) async throws -> String {
-    try await runRaw(["submodule", "update", "--init", "--recursive", "--", submodule.path], in: repository)
+    try await runRaw(Self.updateSubmoduleArguments(submodule), in: repository)
+  }
+
+  static func updateSubmoduleArguments(_ submodule: GitSubmodule) -> [String] {
+    updateSubmodulesArguments() + ["--", submodule.path]
   }
 
   func lfsPull(in repository: GitRepository) async throws -> String {

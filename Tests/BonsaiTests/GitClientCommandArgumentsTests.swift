@@ -29,6 +29,26 @@ final class GitClientCommandArgumentsTests: XCTestCase {
     XCTAssertThrowsError(try GitClient.deleteRemoteBranchArguments(branch))
   }
 
+  func testUpdateSubmodulesArgumentsUseRecursiveInitUpdate() {
+    XCTAssertEqual(
+      GitClient.updateSubmodulesArguments(),
+      ["submodule", "update", "--init", "--recursive"]
+    )
+  }
+
+  func testUpdateSubmoduleArgumentsPreservePathSeparator() {
+    let submodule = GitSubmodule(
+      path: "Vendor/Shared Module",
+      commit: "abc1234",
+      status: " "
+    )
+
+    XCTAssertEqual(
+      GitClient.updateSubmoduleArguments(submodule),
+      ["submodule", "update", "--init", "--recursive", "--", "Vendor/Shared Module"]
+    )
+  }
+
   func testLFSFetchArgumentsUseGitLFSFetch() {
     XCTAssertEqual(
       GitClient.lfsFetchArguments(),
