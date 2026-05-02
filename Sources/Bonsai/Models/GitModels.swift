@@ -522,6 +522,19 @@ struct GitHubRepositoryRequest: Identifiable, Hashable {
   var isPrivate: Bool
 
   var id: String { operation.rawValue }
+
+  var normalizedOwner: String {
+    owner.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+
+  var normalizedName: String {
+    name.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+
+  var normalizedDescription: String? {
+    let value = repositoryDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+    return value.isEmpty ? nil : value
+  }
 }
 
 struct RepositorySnapshot {

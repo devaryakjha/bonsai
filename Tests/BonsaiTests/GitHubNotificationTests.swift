@@ -152,6 +152,28 @@ final class GitHubNotificationTests: XCTestCase {
     XCTAssertTrue(repository.isPrivate)
   }
 
+  func testGitHubRepositoryRequestNormalizesUserInput() {
+    let request = GitHubRepositoryRequest(
+      operation: .create,
+      owner: "  example  ",
+      name: "  bonsai  ",
+      repositoryDescription: "  Native Git client  ",
+      isPrivate: true
+    )
+    let emptyDescriptionRequest = GitHubRepositoryRequest(
+      operation: .create,
+      owner: "example",
+      name: "bonsai",
+      repositoryDescription: " \n ",
+      isPrivate: false
+    )
+
+    XCTAssertEqual(request.normalizedOwner, "example")
+    XCTAssertEqual(request.normalizedName, "bonsai")
+    XCTAssertEqual(request.normalizedDescription, "Native Git client")
+    XCTAssertNil(emptyDescriptionRequest.normalizedDescription)
+  }
+
   func testGitHubRepositoryTargetParsesCommonRemoteURLs() {
     XCTAssertEqual(
       GitHubRepositoryTarget(remoteURL: "https://github.com/example/bonsai.git"),

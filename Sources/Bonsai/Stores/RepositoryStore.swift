@@ -1349,8 +1349,8 @@ final class RepositoryStore {
       case .create:
         let repository = try await gitHubClient.createRepository(
           token: token,
-          name: request.name.trimmingCharacters(in: .whitespacesAndNewlines),
-          description: request.repositoryDescription.trimmingCharacters(in: .whitespacesAndNewlines),
+          name: request.normalizedName,
+          description: request.normalizedDescription,
           isPrivate: request.isPrivate
         )
         commandResult = CommandResult(
@@ -1363,10 +1363,14 @@ final class RepositoryStore {
       case .delete:
         try await gitHubClient.deleteRepository(
           token: token,
-          owner: request.owner.trimmingCharacters(in: .whitespacesAndNewlines),
-          name: request.name.trimmingCharacters(in: .whitespacesAndNewlines)
+          owner: request.normalizedOwner,
+          name: request.normalizedName
         )
-        commandResult = CommandResult(title: request.operation.title, output: "Deleted \(request.owner)/\(request.name).", isError: false)
+        commandResult = CommandResult(
+          title: request.operation.title,
+          output: "Deleted \(request.normalizedOwner)/\(request.normalizedName).",
+          isError: false
+        )
       }
     } catch {
       commandResult = CommandResult(title: request.operation.title, output: error.localizedDescription, isError: true)
