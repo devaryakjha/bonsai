@@ -150,6 +150,9 @@ struct ContentView: View {
           Button("Update Submodules") {
             Task { await store.updateSubmodules() }
           }
+          Button("Create Worktree...") {
+            store.presentCreateWorktree()
+          }
           Divider()
           Button("Add Remote...") {
             store.presentAddRemote()

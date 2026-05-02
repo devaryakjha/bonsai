@@ -79,6 +79,7 @@ struct SidebarView: View {
         SidebarMetricRow(title: "Tags", value: store.tags.count, systemImage: "tag")
         SidebarMetricRow(title: "Stashes", value: store.snapshot.stashes.count, systemImage: "tray")
         SidebarMetricRow(title: "Submodules", value: store.snapshot.submodules.count, systemImage: "shippingbox")
+        SidebarMetricRow(title: "Worktrees", value: store.snapshot.worktrees.count, systemImage: "square.stack.3d.up")
       }
 
       Section("Integrations") {
@@ -157,6 +158,40 @@ struct SidebarView: View {
                 }
               }
           }
+        }
+      }
+
+      if !store.snapshot.worktrees.isEmpty {
+        Section("Worktrees") {
+          ForEach(store.snapshot.worktrees) { worktree in
+            VStack(alignment: .leading, spacing: 2) {
+              Label(worktree.name, systemImage: worktree.path == store.selectedRepository?.path ? "checkmark.square" : "square.stack.3d.up")
+              Text(worktree.displayState)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+              Text(worktree.path)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .lineLimit(1)
+            }
+            .contextMenu {
+              Button("Open Worktree") {
+                store.openRecent(GitRepository(path: worktree.path))
+              }
+              Button("Remove Worktree", role: .destructive) {
+                Task { await store.removeWorktree(worktree) }
+              }
+              .disabled(worktree.path == store.selectedRepository?.path)
+            }
+          }
+
+          Button {
+            store.presentCreateWorktree()
+          } label: {
+            Label("Create Worktree", systemImage: "plus.circle")
+          }
+          .buttonStyle(.plain)
         }
       }
 

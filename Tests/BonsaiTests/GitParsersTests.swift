@@ -69,6 +69,28 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(entries[1].path, "Root/Sources App")
   }
 
+  func testParseWorktreesReadsBranchAndDetachedEntries() {
+    let worktrees = GitParsers.parseWorktrees("""
+    worktree /repo/main
+    HEAD abc123
+    branch refs/heads/main
+
+    worktree /repo/trees/feature
+    HEAD def456
+    detached
+    prunable gitdir file points to non-existent location
+
+    """)
+
+    XCTAssertEqual(worktrees.count, 2)
+    XCTAssertEqual(worktrees[0].path, "/repo/main")
+    XCTAssertEqual(worktrees[0].displayState, "main")
+    XCTAssertFalse(worktrees[0].isDetached)
+    XCTAssertEqual(worktrees[1].head, "def456")
+    XCTAssertTrue(worktrees[1].isDetached)
+    XCTAssertTrue(worktrees[1].isPrunable)
+  }
+
   func testParseDiffHunksReconstructsPatchPerHunk() {
     let hunks = GitParsers.parseDiffHunks("""
     diff --git a/file.txt b/file.txt

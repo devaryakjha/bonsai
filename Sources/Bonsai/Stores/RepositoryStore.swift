@@ -486,6 +486,29 @@ final class RepositoryStore {
     )
   }
 
+  func presentCreateWorktree() {
+    let defaultPath: String
+    if let selectedRepository {
+      let url = URL(filePath: selectedRepository.path, directoryHint: .isDirectory)
+      defaultPath = url
+        .deletingLastPathComponent()
+        .appending(path: "\(url.lastPathComponent)-worktree", directoryHint: .isDirectory)
+        .path(percentEncoded: false)
+    } else {
+      defaultPath = ""
+    }
+
+    operationInput = defaultPath
+    operationRequest = GitOperationRequest(
+      kind: .createWorktree,
+      title: "Create Worktree",
+      message: selectedCommit.map { "Create a worktree at \($0.shortHash)." } ?? "Create a worktree from HEAD.",
+      placeholder: "~/projects/repository-worktree",
+      defaultValue: defaultPath,
+      primaryActionTitle: "Create"
+    )
+  }
+
   func presentStashPush() {
     operationInput = ""
     operationRequest = GitOperationRequest(
@@ -534,6 +557,11 @@ final class RepositoryStore {
       guard !value.isEmpty else { return }
       await runMutation(title: "Create Tag \(value)") {
         try await gitClient.createTag(named: value, target: selectedCommit?.hash, in: requiredRepository())
+      }
+    case .createWorktree:
+      guard !value.isEmpty else { return }
+      await runMutation(title: "Create Worktree") {
+        try await gitClient.createWorktree(at: value, startPoint: selectedCommit?.hash ?? "HEAD", in: requiredRepository())
       }
     case .stashPush:
       await runMutation(title: "Create Stash") {
@@ -590,6 +618,12 @@ final class RepositoryStore {
       case .tag:
         return try await gitClient.deleteTag(ref.shortName, in: requiredRepository())
       }
+    }
+  }
+
+  func removeWorktree(_ worktree: GitWorktree) async {
+    await runMutation(title: "Remove Worktree \(worktree.name)") {
+      try await gitClient.removeWorktree(worktree, in: requiredRepository())
     }
   }
 

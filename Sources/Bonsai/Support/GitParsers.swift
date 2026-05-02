@@ -147,6 +147,55 @@ enum GitParsers {
       }
   }
 
+  static func parseWorktrees(_ output: String) -> [GitWorktree] {
+    var worktrees: [GitWorktree] = []
+    var path: String?
+    var head: String?
+    var branch: String?
+    var isDetached = false
+    var isBare = false
+    var isPrunable = false
+
+    func flush() {
+      guard let path else { return }
+      worktrees.append(GitWorktree(
+        path: path,
+        head: head,
+        branch: branch,
+        isDetached: isDetached,
+        isBare: isBare,
+        isPrunable: isPrunable
+      ))
+    }
+
+    for line in output.split(separator: "\n", omittingEmptySubsequences: false).map(String.init) {
+      if line.isEmpty {
+        flush()
+        path = nil
+        head = nil
+        branch = nil
+        isDetached = false
+        isBare = false
+        isPrunable = false
+      } else if line.hasPrefix("worktree ") {
+        path = String(line.dropFirst("worktree ".count))
+      } else if line.hasPrefix("HEAD ") {
+        head = String(line.dropFirst("HEAD ".count))
+      } else if line.hasPrefix("branch ") {
+        branch = String(line.dropFirst("branch ".count))
+      } else if line == "detached" {
+        isDetached = true
+      } else if line == "bare" {
+        isBare = true
+      } else if line.hasPrefix("prunable") {
+        isPrunable = true
+      }
+    }
+    flush()
+
+    return worktrees
+  }
+
   static func parseLFSFiles(_ output: String) -> [GitLFSFile] {
     output
       .split(separator: "\n", omittingEmptySubsequences: true)

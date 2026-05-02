@@ -264,6 +264,25 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(text, "nested\n")
   }
 
+  func testCreateListAndRemoveWorktree() async throws {
+    let repo = try await makeRepository()
+    try write("root\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Initial")
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let worktreeURL = temporaryDirectory()
+    let worktreePath = canonicalPath(worktreeURL)
+    _ = try await client.createWorktree(at: worktreeURL.path(percentEncoded: false), startPoint: "HEAD", in: repository)
+
+    var worktrees = try await client.worktrees(in: repository)
+    let created = try XCTUnwrap(worktrees.first { canonicalPath($0.path) == worktreePath })
+    XCTAssertTrue(created.isDetached)
+
+    _ = try await client.removeWorktree(created, in: repository)
+    worktrees = try await client.worktrees(in: repository)
+    XCTAssertFalse(worktrees.contains { canonicalPath($0.path) == worktreePath })
+  }
+
   func testCloneInteractiveRebaseAndConflictResolution() async throws {
     let remote = try await makeBareRepository()
     let source = try await makeRepository()
@@ -343,5 +362,13 @@ final class GitClientIntegrationTests: XCTestCase {
   private func temporaryDirectory() -> URL {
     FileManager.default.temporaryDirectory
       .appending(path: "bonsai-tests-\(UUID().uuidString)", directoryHint: .isDirectory)
+  }
+
+  private func canonicalPath(_ url: URL) -> String {
+    url.resolvingSymlinksInPath().path(percentEncoded: false)
+  }
+
+  private func canonicalPath(_ path: String) -> String {
+    URL(filePath: path).resolvingSymlinksInPath().path(percentEncoded: false)
   }
 }

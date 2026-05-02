@@ -27,6 +27,7 @@ struct GitClient {
     async let remotes = remotes(in: repository)
     async let stashes = stashes(in: repository)
     async let submodules = submodules(in: repository)
+    async let worktrees = worktrees(in: repository)
     async let integrations = integrations(in: repository)
 
     let resolvedCommits = try await commits
@@ -41,6 +42,7 @@ struct GitClient {
       remotes: remotes,
       stashes: stashes,
       submodules: submodules,
+      worktrees: worktrees,
       integrations: integrations
     )
   }
@@ -100,6 +102,11 @@ struct GitClient {
   func submodules(in repository: GitRepository) async throws -> [GitSubmodule] {
     let output = try? await git(["submodule", "status", "--recursive"], in: repository.url)
     return GitParsers.parseSubmodules(output?.stdout ?? "")
+  }
+
+  func worktrees(in repository: GitRepository) async throws -> [GitWorktree] {
+    let output = try? await git(["worktree", "list", "--porcelain"], in: repository.url)
+    return GitParsers.parseWorktrees(output?.stdout ?? "")
   }
 
   func integrations(in repository: GitRepository) async -> GitIntegrationStatus {
@@ -292,6 +299,14 @@ struct GitClient {
 
   func deleteTag(_ name: String, in repository: GitRepository) async throws -> String {
     try await runRaw(["tag", "-d", name], in: repository)
+  }
+
+  func createWorktree(at path: String, startPoint: String, in repository: GitRepository) async throws -> String {
+    try await runRaw(["worktree", "add", "--detach", path, startPoint], in: repository)
+  }
+
+  func removeWorktree(_ worktree: GitWorktree, in repository: GitRepository) async throws -> String {
+    try await runRaw(["worktree", "remove", worktree.path], in: repository)
   }
 
   func stashPush(message: String?, in repository: GitRepository) async throws -> String {

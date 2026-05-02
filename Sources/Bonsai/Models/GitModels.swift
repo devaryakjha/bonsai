@@ -120,6 +120,30 @@ struct GitSubmodule: Identifiable, Hashable {
   var id: String { path }
 }
 
+struct GitWorktree: Identifiable, Hashable {
+  var path: String
+  var head: String?
+  var branch: String?
+  var isDetached: Bool
+  var isBare: Bool
+  var isPrunable: Bool
+
+  var id: String { path }
+  var name: String { URL(filePath: path).lastPathComponent }
+  var displayState: String {
+    if let branch {
+      return branch.replacingOccurrences(of: "refs/heads/", with: "")
+    }
+    if isDetached {
+      return "Detached"
+    }
+    if isBare {
+      return "Bare"
+    }
+    return head.map { String($0.prefix(7)) } ?? "Unknown"
+  }
+}
+
 struct GitLFSFile: Identifiable, Hashable {
   var oid: String
   var path: String
@@ -217,6 +241,7 @@ struct RepositorySnapshot {
   var remotes: [GitRemote] = []
   var stashes: [GitStash] = []
   var submodules: [GitSubmodule] = []
+  var worktrees: [GitWorktree] = []
   var integrations = GitIntegrationStatus()
 }
 
@@ -407,6 +432,7 @@ enum RepositoryAction: String {
 enum GitOperationKind: String, Identifiable {
   case createBranch
   case createTag
+  case createWorktree
   case stashPush
   case gitFlowFeatureStart
   case gitFlowReleaseStart
