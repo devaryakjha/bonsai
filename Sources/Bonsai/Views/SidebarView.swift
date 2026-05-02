@@ -204,6 +204,14 @@ struct SidebarView: View {
                   Task { await store.unsetUpstream(branch) }
                 }
               }
+              if let webURL = store.githubWebURL(forLocalBranch: branch) {
+                Button("Open in Browser") {
+                  store.openLocalBranchInBrowser(branch)
+                }
+                Button("Copy Web URL") {
+                  PasteboardWriter.copy(webURL.absoluteString)
+                }
+              }
               Divider()
               ReferenceCopyMenu(ref: branch)
               Divider()

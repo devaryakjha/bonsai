@@ -367,6 +367,54 @@ final class GitHubNotificationTests: XCTestCase {
   }
 
   @MainActor
+  func testStoreLocalBranchWebURLUsesGitHubUpstream() {
+    let store = RepositoryStore()
+    let branch = GitRef(
+      name: "refs/heads/dashboard",
+      shortName: "dashboard",
+      objectName: "abc123",
+      upstream: "origin/feature/dashboard polish",
+      isHead: true,
+      kind: .localBranch
+    )
+    store.snapshot.remotes = [
+      GitRemote(name: "origin", fetchURL: "https://github.com/example/bonsai.git", pushURL: nil)
+    ]
+
+    XCTAssertEqual(
+      store.githubWebURL(forLocalBranch: branch)?.absoluteString,
+      "https://github.com/example/bonsai/tree/feature/dashboard%20polish"
+    )
+  }
+
+  @MainActor
+  func testStoreLocalBranchWebURLRequiresGitHubUpstream() {
+    let store = RepositoryStore()
+    let branch = GitRef(
+      name: "refs/heads/dashboard",
+      shortName: "dashboard",
+      objectName: "abc123",
+      upstream: "origin/dashboard",
+      isHead: true,
+      kind: .localBranch
+    )
+    let untrackedBranch = GitRef(
+      name: "refs/heads/preview",
+      shortName: "preview",
+      objectName: "def456",
+      upstream: nil,
+      isHead: false,
+      kind: .localBranch
+    )
+    store.snapshot.remotes = [
+      GitRemote(name: "origin", fetchURL: "git@gitlab.com:example/bonsai.git", pushURL: nil)
+    ]
+
+    XCTAssertNil(store.githubWebURL(forLocalBranch: branch))
+    XCTAssertNil(store.githubWebURL(forLocalBranch: untrackedBranch))
+  }
+
+  @MainActor
   func testStoreTagWebURLPrefersOriginGitHubRemote() {
     let store = RepositoryStore()
     let tag = GitRef(name: "refs/tags/v1.0.0", shortName: "v1.0.0", objectName: "abc123", isHead: false, kind: .tag)

@@ -958,6 +958,20 @@ final class RepositoryStore {
     NSWorkspace.shared.open(url)
   }
 
+  func githubWebURL(forLocalBranch branch: GitRef) -> URL? {
+    guard let remoteName = branch.upstreamRemoteName,
+          let branchName = branch.upstreamBranchName,
+          let remote = snapshot.remotes.first(where: { $0.name == remoteName }) else {
+      return nil
+    }
+    return remote.githubBranchWebURL(branchName: branchName)
+  }
+
+  func openLocalBranchInBrowser(_ branch: GitRef) {
+    guard let url = githubWebURL(forLocalBranch: branch) else { return }
+    NSWorkspace.shared.open(url)
+  }
+
   func githubWebURL(forTag tag: GitRef) -> URL? {
     guard tag.kind == .tag else { return nil }
     return preferredGitHubRemote?.githubTagWebURL(tagName: tag.shortName)
