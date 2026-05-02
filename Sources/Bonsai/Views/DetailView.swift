@@ -269,10 +269,9 @@ private struct DiffHeaderControls: View {
   }
 
   private var matchLabel: String? {
-    DiffSearch.matchLabel(
-      for: DiffSearch.matchCount(in: searchableText, query: searchText),
-      query: searchText
-    )
+    DiffSearch.matchLabel(query: searchText) {
+      searchableText
+    }
   }
 
   private var searchableText: String {

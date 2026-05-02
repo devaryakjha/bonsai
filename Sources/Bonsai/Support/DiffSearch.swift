@@ -39,6 +39,11 @@ enum DiffSearch {
     return count == 1 ? "1 match" : "\(count.formatted()) matches"
   }
 
+  static func matchLabel(query: String, visibleText: () -> String) -> String? {
+    guard !normalizedQuery(query).isEmpty else { return nil }
+    return matchLabel(for: matchCount(in: visibleText(), query: query), query: query)
+  }
+
   static func ranges(in text: String, query: String, limit: Int? = nil) -> [NSRange] {
     let query = normalizedQuery(query)
     guard !query.isEmpty, !text.isEmpty else { return [] }

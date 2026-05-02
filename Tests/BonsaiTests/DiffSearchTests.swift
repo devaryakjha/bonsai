@@ -27,6 +27,26 @@ final class DiffSearchTests: XCTestCase {
     XCTAssertEqual(DiffSearch.matchLabel(for: 2, query: "needle"), "2 matches")
   }
 
+  func testMatchLabelSkipsVisibleTextForEmptyQueries() {
+    var didEvaluateVisibleText = false
+
+    let label = DiffSearch.matchLabel(query: "  \n ") {
+      didEvaluateVisibleText = true
+      return "needle"
+    }
+
+    XCTAssertNil(label)
+    XCTAssertFalse(didEvaluateVisibleText)
+  }
+
+  func testMatchLabelCountsVisibleTextForNonEmptyQueries() {
+    let label = DiffSearch.matchLabel(query: "needle") {
+      "needle haystack needle"
+    }
+
+    XCTAssertEqual(label, "2 matches")
+  }
+
   func testDiffSearchRangeLimitBoundsWork() {
     XCTAssertEqual(DiffSearch.ranges(in: "abc abc abc", query: "abc", limit: 2).count, 2)
   }
