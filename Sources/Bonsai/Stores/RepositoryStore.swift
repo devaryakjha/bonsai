@@ -348,8 +348,8 @@ final class RepositoryStore {
         output = try await gitClient.initializeRepository(at: destination)
       }
 
-      commandResult = CommandResult(title: mode.title, output: output.isEmpty ? "Completed." : output, isError: false)
       await openRepository(at: destination)
+      commandResult = CommandResult(title: mode.title, output: output.isEmpty ? "Completed." : output, isError: false)
       rescanProjectsDirectory()
     } catch {
       commandResult = CommandResult(title: mode.title, output: error.localizedDescription, isError: true)

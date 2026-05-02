@@ -51,6 +51,82 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(recentRepositories.isEmpty)
   }
 
+  func testCreateRepositorySetupOpensEmptyRepositoryAndRecordsRecent() async throws {
+    let previousRecents = UserDefaults.standard.data(forKey: "bonsai.recentRepositories")
+    UserDefaults.standard.removeObject(forKey: "bonsai.recentRepositories")
+    defer {
+      if let previousRecents {
+        UserDefaults.standard.set(previousRecents, forKey: "bonsai.recentRepositories")
+      } else {
+        UserDefaults.standard.removeObject(forKey: "bonsai.recentRepositories")
+      }
+    }
+
+    let destination = temporaryDirectory()
+    let store = await RepositoryStore()
+    await MainActor.run {
+      store.repositorySetupMode = .create
+      store.repositorySetupDestinationPath = destination.path(percentEncoded: false)
+    }
+
+    await store.confirmRepositorySetup()
+
+    try await client.validateRepository(at: destination)
+    let selectedRepository = await store.selectedRepository
+    let recentRepositories = await store.recentRepositories
+    let commandResult = await store.commandResult
+    let commits = await store.snapshot.commits
+    let errorMessage = await store.errorMessage
+    XCTAssertEqual(selectedRepository?.path, destination.path(percentEncoded: false))
+    XCTAssertEqual(recentRepositories.first?.path, destination.path(percentEncoded: false))
+    XCTAssertEqual(commandResult?.title, "Create repository")
+    XCTAssertEqual(commandResult?.isError, false)
+    XCTAssertTrue(commits.isEmpty)
+    XCTAssertNil(errorMessage)
+  }
+
+  func testCloneRepositorySetupOpensCloneAndRecordsRecent() async throws {
+    let previousRecents = UserDefaults.standard.data(forKey: "bonsai.recentRepositories")
+    UserDefaults.standard.removeObject(forKey: "bonsai.recentRepositories")
+    defer {
+      if let previousRecents {
+        UserDefaults.standard.set(previousRecents, forKey: "bonsai.recentRepositories")
+      } else {
+        UserDefaults.standard.removeObject(forKey: "bonsai.recentRepositories")
+      }
+    }
+
+    let remote = try await makeBareRepository()
+    let source = try await makeRepository()
+    try write("remote\n", to: source.appending(path: "README.md"))
+    try await commitAll(in: source, message: "Remote seed")
+    _ = try await client.git(["remote", "add", "origin", remote.path(percentEncoded: false)], in: source)
+    _ = try await client.git(["push", "-u", "origin", "main"], in: source)
+
+    let destination = temporaryDirectory()
+    let store = await RepositoryStore()
+    await MainActor.run {
+      store.repositorySetupMode = .clone
+      store.repositorySetupRemoteURL = remote.path(percentEncoded: false)
+      store.repositorySetupDestinationPath = destination.path(percentEncoded: false)
+    }
+
+    await store.confirmRepositorySetup()
+
+    try await client.validateRepository(at: destination)
+    let selectedRepository = await store.selectedRepository
+    let recentRepositories = await store.recentRepositories
+    let commandResult = await store.commandResult
+    let commits = await store.snapshot.commits
+    let errorMessage = await store.errorMessage
+    XCTAssertEqual(selectedRepository?.path, destination.path(percentEncoded: false))
+    XCTAssertEqual(recentRepositories.first?.path, destination.path(percentEncoded: false))
+    XCTAssertEqual(commandResult?.title, "Clone repository")
+    XCTAssertEqual(commandResult?.isError, false)
+    XCTAssertEqual(commits.first?.subject, "Remote seed")
+    XCTAssertNil(errorMessage)
+  }
+
   func testModeSwitchSelectsMatchingDiffSurface() async throws {
     let repo = try await makeRepository()
     let file = repo.appending(path: "tracked.txt")
