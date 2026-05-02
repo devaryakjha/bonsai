@@ -24,10 +24,13 @@ Run these before opening a pull request:
 git diff --check
 swift test
 ./script/build_and_run.sh --verify
+./script/package_release.sh --verify
 ```
 
 For UI-only documentation changes, `git diff --check` is the minimum gate. Run
 the Swift validation commands when source, package, or script behavior changes.
+GitHub Actions mirrors the non-credentialed gates on macOS: shell syntax,
+`swift test`, and `./script/package_release.sh --verify`.
 
 ## Pull Requests
 
