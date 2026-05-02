@@ -128,6 +128,10 @@ struct RepositoryToolbarActionsMenu: View {
           store.openSelectedFile()
         }
         .disabled(!store.canOpenSelectedFile)
+        Button("Copy Selected File Absolute Path") {
+          store.copySelectedFileAbsolutePath()
+        }
+        .disabled(!store.canCopySelectedFileAbsolutePath)
         Button("Update Submodules") {
           Task { await store.updateSubmodules() }
         }

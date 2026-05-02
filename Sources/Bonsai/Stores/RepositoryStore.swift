@@ -126,6 +126,20 @@ final class RepositoryStore {
     selectedRepository != nil && selectedPreviewPath != nil
   }
 
+  var canCopySelectedFileAbsolutePath: Bool {
+    selectedRepository != nil && selectedPreviewPath != nil
+  }
+
+  func copySelectedFileAbsolutePath() {
+    guard let path = selectedPreviewPath else { return }
+    copyAbsoluteFilePath(path: path)
+  }
+
+  func copyAbsoluteFilePath(path: String) {
+    guard let selectedRepository else { return }
+    PasteboardWriter.copy(RepositoryFileLocator.filePath(repository: selectedRepository, path: path))
+  }
+
   func openSelectedFile() {
     guard let path = selectedPreviewPath else { return }
     openFile(path: path)

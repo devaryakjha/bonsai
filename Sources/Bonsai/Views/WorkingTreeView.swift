@@ -155,6 +155,9 @@ private struct StatusRow: View {
         Button("Copy Path") {
           copyPath()
         }
+        Button("Copy Absolute Path") {
+          copyAbsolutePath()
+        }
         Button("Open") {
           openFile()
         }
@@ -199,6 +202,9 @@ private struct StatusRow: View {
       Button("Copy Path") {
         copyPath()
       }
+      Button("Copy Absolute Path") {
+        copyAbsolutePath()
+      }
       Button("Open") {
         openFile()
       }
@@ -239,6 +245,10 @@ private struct StatusRow: View {
 
   private func copyPath() {
     PasteboardWriter.copy(entry.path)
+  }
+
+  private func copyAbsolutePath() {
+    store.copyAbsoluteFilePath(path: entry.path)
   }
 
   private func openFile() {

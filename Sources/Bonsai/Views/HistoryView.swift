@@ -309,6 +309,9 @@ private struct ChangedFilesView: View {
               Button("Copy Path") {
                 PasteboardWriter.copy(file.path)
               }
+              Button("Copy Absolute Path") {
+                store.copyAbsoluteFilePath(path: file.path)
+              }
               Button("Open") {
                 store.openFile(path: file.path)
               }
@@ -367,6 +370,9 @@ private struct ChangedFilesView: View {
               .contextMenu {
                 Button("Copy Path") {
                   PasteboardWriter.copy(entry.path)
+                }
+                Button("Copy Absolute Path") {
+                  store.copyAbsoluteFilePath(path: entry.path)
                 }
                 Button("Open") {
                   store.openFile(path: entry.path)

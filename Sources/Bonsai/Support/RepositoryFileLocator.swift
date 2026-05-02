@@ -8,4 +8,8 @@ enum RepositoryFileLocator {
   static func fileURL(repository: GitRepository, path: String) -> URL {
     repositoryURL(repository).appending(path: path)
   }
+
+  static func filePath(repository: GitRepository, path: String) -> String {
+    fileURL(repository: repository, path: path).path(percentEncoded: false)
+  }
 }

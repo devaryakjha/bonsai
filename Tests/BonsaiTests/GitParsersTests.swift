@@ -362,6 +362,10 @@ final class GitParsersTests: XCTestCase {
 
     XCTAssertEqual(RepositoryFileLocator.repositoryURL(repository).path(percentEncoded: false), "/Users/arya/projects/bonsai")
     XCTAssertEqual(url.path(percentEncoded: false), "/Users/arya/projects/bonsai/Sources/Bonsai/App.swift")
+    XCTAssertEqual(
+      RepositoryFileLocator.filePath(repository: repository, path: "Sources/Bonsai/App.swift"),
+      "/Users/arya/projects/bonsai/Sources/Bonsai/App.swift"
+    )
   }
 
   func testDeleteRefRequestCopyNamesReferenceKind() {
