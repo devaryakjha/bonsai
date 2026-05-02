@@ -394,6 +394,15 @@ struct SidebarView: View {
           Button("Create Branch from Here...") {
             store.presentCreateBranch(from: tag)
           }
+          if !store.tagPushRemotes.isEmpty {
+            Menu("Push to Remote") {
+              ForEach(store.tagPushRemotes) { remote in
+                Button(remote.name) {
+                  Task { await store.pushTag(tag, to: remote) }
+                }
+              }
+            }
+          }
           Divider()
           ReferenceCopyMenu(ref: tag)
           Divider()

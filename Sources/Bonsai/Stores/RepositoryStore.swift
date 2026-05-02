@@ -275,6 +275,10 @@ final class RepositoryStore {
     snapshot.refs.filter { $0.kind == .tag }
   }
 
+  var tagPushRemotes: [GitRemote] {
+    snapshot.remotes.filter { $0.fetchURL != nil || $0.pushURL != nil }
+  }
+
   var filteredCommits: [GitCommit] {
     CommitFilter.filter(snapshot.commits, query: historySearchText)
   }
@@ -1072,6 +1076,12 @@ final class RepositoryStore {
   func unsetUpstream(_ branch: GitRef) async {
     await runMutation(title: "Unset upstream \(branch.shortName)") {
       try await gitClient.unsetUpstream(for: branch.shortName, in: requiredRepository())
+    }
+  }
+
+  func pushTag(_ tag: GitRef, to remote: GitRemote) async {
+    await runMutation(title: "Push tag \(tag.shortName)") {
+      try await gitClient.pushTag(tag.shortName, remote: remote.name, in: requiredRepository())
     }
   }
 

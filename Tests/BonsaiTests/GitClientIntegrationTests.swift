@@ -652,6 +652,31 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(tagHash, firstHash)
   }
 
+  func testStorePushesTagToRemote() async throws {
+    let repo = try await makeRepository()
+    let bare = try await makeBareRepository()
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    try write("initial\n", to: repo.appending(path: "file.txt"))
+    try await commitAll(in: repo, message: "Initial")
+    _ = try await client.addRemote(name: "origin", url: bare.path(percentEncoded: false), in: repository)
+    _ = try await client.createTag(named: "v1.0.0", target: nil, in: repository)
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    let tags = await store.tags
+    let remotes = await store.tagPushRemotes
+    let tag = try XCTUnwrap(tags.first { $0.shortName == "v1.0.0" })
+    let remote = try XCTUnwrap(remotes.first { $0.name == "origin" })
+
+    await store.pushTag(tag, to: remote)
+
+    let remoteTags = try await client.git(["ls-remote", "--tags", bare.path(percentEncoded: false)], in: repo).stdout
+    let commandResult = await store.commandResult
+    XCTAssertTrue(remoteTags.contains("refs/tags/v1.0.0"))
+    XCTAssertEqual(commandResult?.title, "Push tag v1.0.0")
+    XCTAssertEqual(commandResult?.isError, false)
+  }
+
   func testLineChangeStagingLeavesOtherChangesUnstaged() async throws {
     let repo = try await makeRepository()
     let file = repo.appending(path: "file.txt")
