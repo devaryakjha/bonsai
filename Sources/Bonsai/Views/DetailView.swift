@@ -486,16 +486,7 @@ private struct HunkActionStrip: View {
   var body: some View {
     ScrollView(.horizontal) {
       HStack(spacing: 8) {
-        ForEach(hunks) { hunk in
-          Button {
-            onSelectHunk(hunk)
-          } label: {
-            Label(isStaged ? "Unstage hunk \(hunk.id + 1)" : "Stage hunk \(hunk.id + 1)", systemImage: isStaged ? "minus.circle" : "plus.circle")
-          }
-          .buttonStyle(.bordered)
-          .controlSize(.small)
-          .help(hunk.header)
-        }
+        hunkActions
 
         if !lineChanges.isEmpty {
           Divider()
@@ -556,6 +547,42 @@ private struct HunkActionStrip: View {
       .padding(.horizontal, 10)
       .padding(.vertical, 7)
     }
+  }
+
+  @ViewBuilder
+  private var hunkActions: some View {
+    if hunks.count == 1, let hunk = hunks.first {
+      Button {
+        onSelectHunk(hunk)
+      } label: {
+        Label(hunkActionTitle(for: hunk), systemImage: hunkActionSystemImage)
+      }
+      .buttonStyle(.bordered)
+      .controlSize(.small)
+      .help(hunk.header)
+    } else {
+      Menu {
+        ForEach(hunks) { hunk in
+          Button(hunkActionTitle(for: hunk)) {
+            onSelectHunk(hunk)
+          }
+          .help(hunk.header)
+        }
+      } label: {
+        Label(isStaged ? "Unstage hunk" : "Stage hunk", systemImage: hunkActionSystemImage)
+      }
+      .menuStyle(.borderedButton)
+      .controlSize(.small)
+      .help(isStaged ? "Unstage a hunk" : "Stage a hunk")
+    }
+  }
+
+  private var hunkActionSystemImage: String {
+    isStaged ? "minus.circle" : "plus.circle"
+  }
+
+  private func hunkActionTitle(for hunk: DiffHunk) -> String {
+    "\(isStaged ? "Unstage" : "Stage") hunk \(hunk.id + 1)"
   }
 }
 
