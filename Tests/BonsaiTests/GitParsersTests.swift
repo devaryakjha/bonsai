@@ -522,6 +522,30 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(split.newLines.map(\.number), [nil, 1, 2, 3, 4, 5])
   }
 
+  func testSplitDiffGutterWidthUsesLargestLineNumberAcrossBothSides() {
+    let split = SplitDiff(
+      oldLines: [
+        SplitDiffLine(number: 8, text: " old"),
+        SplitDiffLine(number: 9, text: "-old")
+      ],
+      newLines: [
+        SplitDiffLine(number: 1000, text: " new"),
+        SplitDiffLine(number: 1001, text: "+new")
+      ]
+    )
+
+    XCTAssertEqual(split.gutterNumberWidth, 4)
+  }
+
+  func testSplitDiffGutterWidthKeepsMinimumForSmallFiles() {
+    let split = SplitDiff(
+      oldLines: [SplitDiffLine(number: 1, text: " old")],
+      newLines: [SplitDiffLine(number: 2, text: " new")]
+    )
+
+    XCTAssertEqual(split.gutterNumberWidth, 3)
+  }
+
   func testSplitDiffLinesSeparatePatchMarkersFromDisplayText() {
     let deleted = SplitDiffLine(number: 2, text: "-old value")
     let added = SplitDiffLine(number: 2, text: "+new value")

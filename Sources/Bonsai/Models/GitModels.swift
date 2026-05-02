@@ -791,6 +791,16 @@ struct SplitDiff: Hashable {
   var oldLines: [SplitDiffLine]
   var newLines: [SplitDiffLine]
 
+  var gutterNumberWidth: Int {
+    max(
+      3,
+      (oldLines + newLines)
+        .compactMap(\.number)
+        .map { "\($0)".count }
+        .max() ?? 3
+    )
+  }
+
   var oldText: String {
     oldLines.map(\.text).joined(separator: "\n")
   }

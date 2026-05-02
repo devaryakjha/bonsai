@@ -38,8 +38,18 @@ struct SplitDiffTextView: NSViewRepresentable {
     context.coordinator.updatePaneContextIfNeeded(paneContext)
     guard context.coordinator.lastDiff != splitDiff else { return }
     context.coordinator.lastDiff = splitDiff
-    context.coordinator.oldTextView?.textStorage?.setAttributedString(Self.attributedDiff(splitDiff.oldLines, counterpart: splitDiff.newLines, side: .old))
-    context.coordinator.newTextView?.textStorage?.setAttributedString(Self.attributedDiff(splitDiff.newLines, counterpart: splitDiff.oldLines, side: .new))
+    context.coordinator.oldTextView?.textStorage?.setAttributedString(Self.attributedDiff(
+      splitDiff.oldLines,
+      counterpart: splitDiff.newLines,
+      side: .old,
+      numberWidth: splitDiff.gutterNumberWidth
+    ))
+    context.coordinator.newTextView?.textStorage?.setAttributedString(Self.attributedDiff(
+      splitDiff.newLines,
+      counterpart: splitDiff.oldLines,
+      side: .new,
+      numberWidth: splitDiff.gutterNumberWidth
+    ))
   }
 
   final class Coordinator {
@@ -229,14 +239,18 @@ struct SplitDiffTextView: NSViewRepresentable {
     case new
   }
 
-  private static func attributedDiff(_ lines: [SplitDiffLine], counterpart: [SplitDiffLine], side: SplitSide) -> NSAttributedString {
+  private static func attributedDiff(
+    _ lines: [SplitDiffLine],
+    counterpart: [SplitDiffLine],
+    side: SplitSide,
+    numberWidth: Int
+  ) -> NSAttributedString {
     let result = NSMutableAttributedString()
     let baseFont = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
     let paragraph = NSMutableParagraphStyle()
     paragraph.lineBreakMode = .byClipping
     paragraph.lineSpacing = 1
 
-    let numberWidth = max(3, lines.compactMap(\.number).map { "\($0)".count }.max() ?? 3)
     for index in lines.indices {
       let line = lines[index].text
       let counterpartLine = counterpart.indices.contains(index) ? counterpart[index].text : ""
