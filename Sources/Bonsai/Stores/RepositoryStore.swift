@@ -355,6 +355,11 @@ final class RepositoryStore {
     saveRecents()
   }
 
+  func clearRecentRepositories() {
+    recentRepositories.removeAll()
+    saveRecents()
+  }
+
   func rescanProjectsDirectory() {
     refreshProjectRepositories()
   }

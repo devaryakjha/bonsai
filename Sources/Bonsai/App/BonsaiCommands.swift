@@ -19,6 +19,11 @@ struct BonsaiCommands: Commands {
         store.presentCreateRepository()
       }
 
+      Button("Clear Recent Repositories") {
+        store.clearRecentRepositories()
+      }
+      .disabled(store.recentRepositories.isEmpty)
+
       Divider()
 
       Button("Copy Repository Path") {

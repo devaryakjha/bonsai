@@ -29,6 +29,28 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertNil(errorMessage)
   }
 
+  func testClearRecentRepositoriesKeepsSelectedRepository() async throws {
+    let previousRecents = UserDefaults.standard.data(forKey: "bonsai.recentRepositories")
+    defer {
+      if let previousRecents {
+        UserDefaults.standard.set(previousRecents, forKey: "bonsai.recentRepositories")
+      } else {
+        UserDefaults.standard.removeObject(forKey: "bonsai.recentRepositories")
+      }
+    }
+
+    let repo = try await makeRepository()
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+
+    await store.clearRecentRepositories()
+
+    let selectedRepository = await store.selectedRepository
+    let recentRepositories = await store.recentRepositories
+    XCTAssertEqual(selectedRepository?.path, repo.path(percentEncoded: false))
+    XCTAssertTrue(recentRepositories.isEmpty)
+  }
+
   func testModeSwitchSelectsMatchingDiffSurface() async throws {
     let repo = try await makeRepository()
     let file = repo.appending(path: "tracked.txt")
