@@ -122,6 +122,16 @@ Doctor mode does not build, sign, submit, staple, or rewrite artifacts. It
 returns a non-zero status until Developer ID and notarytool credentials are
 ready.
 
+To verify an existing zip and manifest pair without rebuilding:
+
+```sh
+script/package_release.sh --verify-artifacts
+```
+
+This extracts `dist/release/Bonsai.zip`, validates the app bundle metadata and
+signature, validates `dist/release/Bonsai.release.plist`, and compares the
+manifest archive name, byte size, and SHA-256 to the actual zip.
+
 ## Outputs
 
 - `dist/release/Bonsai.app`

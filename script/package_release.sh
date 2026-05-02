@@ -22,12 +22,13 @@ APP_MARK_SOURCE="$ROOT_DIR/Assets/AppIcon/bonsai-worktree-topology.svg"
 
 usage() {
   cat >&2 <<USAGE
-usage: script/package_release.sh [--verify|--verify-archive|--archive|--notarize|--check-credentials|--doctor]
+usage: script/package_release.sh [--verify|--verify-archive|--archive|--notarize|--verify-artifacts|--check-credentials|--doctor]
 
   --verify             Build, stage, ad-hoc sign, and validate the release app bundle.
   --verify-archive     Build, ad-hoc sign, validate, and write a local test archive.
   --archive            Build, Developer ID sign, validate, and write dist/release/Bonsai.zip.
   --notarize           Build, Developer ID sign, archive, submit to notarytool, and staple.
+  --verify-artifacts   Validate dist/release/Bonsai.zip against Bonsai.release.plist.
   --check-credentials  Validate Developer ID and notarytool credentials without packaging.
   --doctor             Report local release credential readiness without changing artifacts.
 
@@ -251,6 +252,36 @@ validate_release_manifest() {
   plutil -extract notarized raw "$MANIFEST_PATH" >/dev/null
 }
 
+verify_release_artifacts() {
+  local expected_name actual_name expected_size actual_size expected_sha actual_sha
+
+  validate_archive
+  validate_release_manifest
+
+  expected_name="$(plutil -extract archiveName raw "$MANIFEST_PATH")"
+  actual_name="$(basename "$ARCHIVE_PATH")"
+  if [[ "$expected_name" != "$actual_name" ]]; then
+    echo "manifest archiveName mismatch: expected $actual_name, got $expected_name" >&2
+    exit 1
+  fi
+
+  expected_size="$(plutil -extract archiveByteSize raw "$MANIFEST_PATH")"
+  actual_size="$(stat -f%z "$ARCHIVE_PATH")"
+  if [[ "$expected_size" != "$actual_size" ]]; then
+    echo "manifest archiveByteSize mismatch: expected $actual_size, got $expected_size" >&2
+    exit 1
+  fi
+
+  expected_sha="$(plutil -extract archiveSHA256 raw "$MANIFEST_PATH")"
+  actual_sha="$(shasum -a 256 "$ARCHIVE_PATH" | awk '{print $1}')"
+  if [[ "$expected_sha" != "$actual_sha" ]]; then
+    echo "manifest archiveSHA256 mismatch: expected $actual_sha, got $expected_sha" >&2
+    exit 1
+  fi
+
+  echo "Release artifacts verified"
+}
+
 validate_archive() {
   local archive_app_bundle archive_extract_dir archive_info_plist
   archive_extract_dir="$(mktemp -d)"
@@ -449,6 +480,9 @@ case "$MODE" in
     spctl -a -vv -t exec "$APP_BUNDLE"
     create_archive
     write_release_manifest "$(developer_id_identity)" true
+    ;;
+  --verify-artifacts|verify-artifacts)
+    verify_release_artifacts
     ;;
   --check-credentials|check-credentials)
     check_distribution_credentials

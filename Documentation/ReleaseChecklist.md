@@ -22,6 +22,7 @@ swift test
 ./script/build_and_run.sh --verify
 ./script/package_release.sh --verify
 ./script/package_release.sh --verify-archive
+./script/package_release.sh --verify-artifacts
 ```
 
 For diff performance-sensitive changes, also run:
@@ -100,6 +101,8 @@ that final zip.
 ## 6. Post-Release Check
 
 - Download the uploaded zip on a clean macOS account or machine.
+- Put `Bonsai.zip` and `Bonsai.release.plist` in `dist/release/`, then run
+  `./script/package_release.sh --verify-artifacts`.
 - Open Bonsai from the downloaded artifact.
 - Confirm Gatekeeper accepts the app.
 - Open a local Git repository and verify history, working tree, and diff loading.
