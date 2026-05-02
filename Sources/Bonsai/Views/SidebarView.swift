@@ -461,7 +461,7 @@ private struct WorktreeSidebarRow: View {
     AdvancedSidebarRow(
       title: worktree.name,
       detail: worktree.displayState,
-      tertiary: worktree.path,
+      tertiary: nil,
       systemImage: isCurrent ? "checkmark.circle.fill" : "square.stack.3d.up",
       iconStyle: isCurrent ? .green : .secondary
     )
@@ -475,12 +475,34 @@ private struct RemoteSidebarRow: View {
   var body: some View {
     AdvancedSidebarRow(
       title: remote.name,
-      detail: remote.fetchURL ?? remote.pushURL ?? "No URL configured",
+      detail: detail,
       tertiary: nil,
       systemImage: "network",
       iconStyle: .secondary
     )
-    .help(remote.fetchURL ?? remote.pushURL ?? remote.name)
+    .help(helpText)
+  }
+
+  private var detail: String {
+    switch (remote.fetchURL, remote.pushURL) {
+    case (.some, .some):
+      return "Fetch and push"
+    case (.some, .none):
+      return "Fetch only"
+    case (.none, .some):
+      return "Push only"
+    case (.none, .none):
+      return "No URL configured"
+    }
+  }
+
+  private var helpText: String {
+    let urls = [
+      remote.fetchURL.map { "Fetch: \($0)" },
+      remote.pushURL.map { "Push: \($0)" }
+    ]
+    .compactMap { $0 }
+    return urls.isEmpty ? "No URL configured" : urls.joined(separator: "\n")
   }
 }
 
