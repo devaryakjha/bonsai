@@ -180,7 +180,7 @@ struct SplitDiffTextView: NSViewRepresentable {
   private static func renderLine(_ line: SplitDiffLine, numberWidth: Int, counterpart: String) -> String {
     let number = line.number.map { String($0).leftPadded(to: numberWidth) } ?? String(repeating: " ", count: numberWidth)
     if line.text.isEmpty && !counterpart.isEmpty {
-      return "\(number) │ \(String(repeating: " ", count: max(24, counterpart.count)))"
+      return "\(number) │ \(String(repeating: " ", count: DiffRenderPolicy.placeholderColumns(for: counterpart)))"
     }
     return "\(number) │ \(line.text)"
   }
@@ -201,12 +201,14 @@ struct SplitDiffTextView: NSViewRepresentable {
       guard line.hasPrefix("-"), counterpart.hasPrefix("+") else { return nil }
       let oldLine = String(line.dropFirst())
       let newLine = String(counterpart.dropFirst())
+      guard DiffRenderPolicy.allowsInlineHighlight(oldLine: oldLine, newLine: newLine) else { return nil }
       guard let range = DiffInlineHighlighter.changedRanges(old: oldLine, new: newLine).oldRange else { return nil }
       return nsRange(for: range, in: oldLine, markerOffset: contentOffset + 1)
     case .new:
       guard line.hasPrefix("+"), counterpart.hasPrefix("-") else { return nil }
       let oldLine = String(counterpart.dropFirst())
       let newLine = String(line.dropFirst())
+      guard DiffRenderPolicy.allowsInlineHighlight(oldLine: oldLine, newLine: newLine) else { return nil }
       guard let range = DiffInlineHighlighter.changedRanges(old: oldLine, new: newLine).newRange else { return nil }
       return nsRange(for: range, in: newLine, markerOffset: contentOffset + 1)
     }

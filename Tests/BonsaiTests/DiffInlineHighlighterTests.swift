@@ -28,4 +28,18 @@ final class DiffInlineHighlighterTests: XCTestCase {
     let newRange = try XCTUnwrap(ranges.newRange)
     XCTAssertEqual(String(new[newRange]), "--track ")
   }
+
+  func testRenderPolicySkipsInlineHighlightForVeryLongLines() {
+    let longLine = String(repeating: "a", count: DiffRenderPolicy.maxInlineComparableLength + 1)
+
+    XCTAssertFalse(DiffRenderPolicy.allowsInlineHighlight(oldLine: longLine, newLine: "short"))
+    XCTAssertFalse(DiffRenderPolicy.allowsInlineHighlight(oldLine: "short", newLine: longLine))
+  }
+
+  func testRenderPolicyBoundsSplitPlaceholderColumns() {
+    XCTAssertEqual(DiffRenderPolicy.placeholderColumns(for: "short"), DiffRenderPolicy.minPlaceholderColumns)
+
+    let longLine = String(repeating: "a", count: DiffRenderPolicy.maxPlaceholderColumns + 1_000)
+    XCTAssertEqual(DiffRenderPolicy.placeholderColumns(for: longLine), DiffRenderPolicy.maxPlaceholderColumns)
+  }
 }

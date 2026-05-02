@@ -117,6 +117,7 @@ struct RichDiffTextView: NSViewRepresentable {
       oldLine = String(line.dropFirst())
       newLine = String(lines[index + 1].dropFirst())
     }
+    guard DiffRenderPolicy.allowsInlineHighlight(oldLine: oldLine, newLine: newLine) else { return nil }
 
     let ranges = DiffInlineHighlighter.changedRanges(old: oldLine, new: newLine)
     let content = isAddition ? newLine : oldLine
