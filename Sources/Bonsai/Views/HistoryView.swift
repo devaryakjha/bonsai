@@ -241,6 +241,9 @@ private struct ChangedFilesView: View {
               Button("Copy Path") {
                 PasteboardWriter.copy(file.path)
               }
+              Button("Reveal in Finder") {
+                store.revealInFinder(path: file.path)
+              }
               if let oldPath = file.oldPath {
                 Button("Copy Previous Path") {
                   PasteboardWriter.copy(oldPath)
@@ -293,6 +296,9 @@ private struct ChangedFilesView: View {
               .contextMenu {
                 Button("Copy Path") {
                   PasteboardWriter.copy(entry.path)
+                }
+                Button("Reveal in Finder") {
+                  store.revealInFinder(path: entry.path)
                 }
               }
             }

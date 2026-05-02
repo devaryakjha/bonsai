@@ -296,6 +296,13 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(RevisionCommandRequest(command: .rebase, commit: commit).message, "Rebase onto abcdef1.")
   }
 
+  func testRepositoryFileLocatorBuildsRepositoryRelativeURLs() {
+    let repository = GitRepository(path: "/Users/arya/projects/bonsai")
+    let url = RepositoryFileLocator.fileURL(repository: repository, path: "Sources/Bonsai/App.swift")
+
+    XCTAssertEqual(url.path(percentEncoded: false), "/Users/arya/projects/bonsai/Sources/Bonsai/App.swift")
+  }
+
   func testDeleteRefRequestCopyNamesReferenceKind() {
     let local = GitRef(name: "refs/heads/feature", shortName: "feature", objectName: "abc123", isHead: false, kind: .localBranch)
     let remote = GitRef(name: "refs/remotes/origin/feature", shortName: "origin/feature", objectName: "abc123", isHead: false, kind: .remoteBranch)

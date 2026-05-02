@@ -189,11 +189,7 @@ private struct StatusRow: View {
   }
 
   private func revealInFinder() {
-    if let repository = store.selectedRepository {
-      NSWorkspace.shared.activateFileViewerSelecting([
-        URL(filePath: repository.path).appending(path: entry.path)
-      ])
-    }
+    store.revealInFinder(path: entry.path)
   }
 }
 
