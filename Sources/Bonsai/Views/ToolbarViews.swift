@@ -21,20 +21,20 @@ struct RepositoryToolbarActionsMenu: View {
       }
 
       Menu("Revision") {
-        Button("Cherry-pick Selected Commit") {
-          Task { await store.runRevisionCommand("cherry-pick") }
+        Button(GitRevisionCommand.cherryPick.selectedCommitTitle) {
+          Task { await store.runRevisionCommand(.cherryPick) }
         }
         .disabled(store.selectedCommit == nil)
-        Button("Revert Selected Commit") {
-          Task { await store.runRevisionCommand("revert") }
+        Button(GitRevisionCommand.revert.selectedCommitTitle) {
+          Task { await store.runRevisionCommand(.revert) }
         }
         .disabled(store.selectedCommit == nil)
-        Button("Merge Selected Commit") {
-          Task { await store.runRevisionCommand("merge") }
+        Button(GitRevisionCommand.merge.selectedCommitTitle) {
+          Task { await store.runRevisionCommand(.merge) }
         }
         .disabled(store.selectedCommit == nil)
-        Button("Rebase Onto Selected Commit") {
-          Task { await store.runRevisionCommand("rebase") }
+        Button(GitRevisionCommand.rebase.selectedCommitTitle) {
+          Task { await store.runRevisionCommand(.rebase) }
         }
         .disabled(store.selectedCommit == nil)
         Button("Reset to Selected Commit...") {

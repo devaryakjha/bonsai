@@ -720,6 +720,46 @@ enum ResetMode: String, CaseIterable, Identifiable {
   var flag: String { "--\(rawValue)" }
 }
 
+enum GitRevisionCommand: String, CaseIterable, Identifiable {
+  case cherryPick = "cherry-pick"
+  case revert
+  case merge
+  case rebase
+
+  var id: String { rawValue }
+  var gitSubcommand: String { rawValue }
+
+  var historyTitle: String {
+    switch self {
+    case .cherryPick:
+      return "Cherry-pick"
+    case .revert:
+      return "Revert"
+    case .merge:
+      return "Merge"
+    case .rebase:
+      return "Rebase onto"
+    }
+  }
+
+  var selectedCommitTitle: String {
+    switch self {
+    case .cherryPick:
+      return "Cherry-pick selected commit"
+    case .revert:
+      return "Revert selected commit"
+    case .merge:
+      return "Merge selected commit"
+    case .rebase:
+      return "Rebase onto selected commit"
+    }
+  }
+
+  func resultTitle(shortHash: String) -> String {
+    "\(historyTitle) \(shortHash)"
+  }
+}
+
 struct ResetRequest: Identifiable, Hashable {
   var commit: GitCommit
   var mode: ResetMode = .mixed

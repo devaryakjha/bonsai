@@ -251,6 +251,25 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(GitChangeStatusRole(code: "X").colorToken, .neutral)
   }
 
+  func testRevisionCommandsOwnCopyAndGitSubcommands() {
+    XCTAssertEqual(GitRevisionCommand.cherryPick.gitSubcommand, "cherry-pick")
+    XCTAssertEqual(GitRevisionCommand.cherryPick.historyTitle, "Cherry-pick")
+    XCTAssertEqual(GitRevisionCommand.cherryPick.selectedCommitTitle, "Cherry-pick selected commit")
+    XCTAssertEqual(GitRevisionCommand.cherryPick.resultTitle(shortHash: "abc1234"), "Cherry-pick abc1234")
+
+    XCTAssertEqual(GitRevisionCommand.revert.gitSubcommand, "revert")
+    XCTAssertEqual(GitRevisionCommand.revert.historyTitle, "Revert")
+    XCTAssertEqual(GitRevisionCommand.revert.selectedCommitTitle, "Revert selected commit")
+
+    XCTAssertEqual(GitRevisionCommand.merge.gitSubcommand, "merge")
+    XCTAssertEqual(GitRevisionCommand.merge.historyTitle, "Merge")
+    XCTAssertEqual(GitRevisionCommand.merge.selectedCommitTitle, "Merge selected commit")
+
+    XCTAssertEqual(GitRevisionCommand.rebase.gitSubcommand, "rebase")
+    XCTAssertEqual(GitRevisionCommand.rebase.historyTitle, "Rebase onto")
+    XCTAssertEqual(GitRevisionCommand.rebase.selectedCommitTitle, "Rebase onto selected commit")
+  }
+
   func testDeleteRefRequestCopyNamesReferenceKind() {
     let local = GitRef(name: "refs/heads/feature", shortName: "feature", objectName: "abc123", isHead: false, kind: .localBranch)
     let remote = GitRef(name: "refs/remotes/origin/feature", shortName: "origin/feature", objectName: "abc123", isHead: false, kind: .remoteBranch)
