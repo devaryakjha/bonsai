@@ -302,6 +302,10 @@ struct GitClient {
     return output.combinedOutput
   }
 
+  func publishBranch(_ branch: String, remote: String, in repository: GitRepository) async throws -> String {
+    try await runRaw(["push", "-u", remote, branch], in: repository)
+  }
+
   func runRaw(_ arguments: [String], in repository: GitRepository) async throws -> String {
     let output = try await git(arguments, in: repository.url)
     return output.combinedOutput

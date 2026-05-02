@@ -410,6 +410,22 @@ final class GitClientIntegrationTests: XCTestCase {
     refs = try await client.refs(in: repository)
     XCTAssertEqual(refs.first { $0.shortName == "main" && $0.kind == .localBranch }?.upstream, "origin/main")
 
+    _ = try await client.createBranch(named: "feature/publish", startPoint: nil, in: repository)
+    _ = try await client.checkout("feature/publish", in: repository)
+    try write("publish\n", to: repo.appending(path: "publish.txt"))
+    try await commitAll(in: repo, message: "Publish branch")
+    let publishStore = await RepositoryStore()
+    await publishStore.openRepository(at: repo)
+    let pushActionTitle = await publishStore.pushActionTitle
+    XCTAssertEqual(pushActionTitle, "Publish")
+    await publishStore.runRepositoryAction(.push)
+    let publishError = await publishStore.errorMessage
+    XCTAssertNil(publishError)
+    refs = try await client.refs(in: repository)
+    XCTAssertEqual(refs.first { $0.shortName == "feature/publish" && $0.kind == .localBranch }?.upstream, "origin/feature/publish")
+    XCTAssertTrue(refs.contains { $0.shortName == "origin/feature/publish" && $0.kind == .remoteBranch })
+    _ = try await client.checkout("main", in: repository)
+
     let remoteFeature = try XCTUnwrap(refs.first { $0.shortName == "origin/feature/remote" && $0.kind == .remoteBranch })
     XCTAssertEqual(remoteFeature.remoteTrackingLocalName, "feature/remote")
     _ = try await client.checkoutTrackingRemote(remoteFeature, in: repository)

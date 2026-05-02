@@ -147,6 +147,18 @@ final class RepositoryStore {
     localBranches.first(where: \.isHead)
   }
 
+  var publishRemote: GitRemote? {
+    snapshot.remotes.first(where: { $0.name == "origin" }) ?? snapshot.remotes.first
+  }
+
+  var shouldPublishCurrentBranch: Bool {
+    currentBranch?.upstream == nil && publishRemote != nil
+  }
+
+  var pushActionTitle: String {
+    shouldPublishCurrentBranch ? "Publish" : (currentBranch?.pushTitle ?? "Push")
+  }
+
   var remoteBranches: [GitRef] {
     snapshot.refs.filter { $0.kind == .remoteBranch }
   }
@@ -542,6 +554,13 @@ final class RepositoryStore {
   }
 
   func runRepositoryAction(_ action: RepositoryAction) async {
+    if action == .push, shouldPublishCurrentBranch, let currentBranch, let publishRemote {
+      await runMutation(title: "Publish \(currentBranch.shortName)") {
+        try await gitClient.publishBranch(currentBranch.shortName, remote: publishRemote.name, in: requiredRepository())
+      }
+      return
+    }
+
     await runMutation(title: action.rawValue) {
       try await gitClient.runAction(action, in: requiredRepository())
     }

@@ -60,7 +60,7 @@ struct ContentView: View {
         Button {
           Task { await store.runRepositoryAction(.push) }
         } label: {
-          ToolbarLabel(store.currentBranch?.pushTitle ?? "Push", systemImage: "arrow.up.to.line.circle", showTitle: showToolbarLabels)
+          ToolbarLabel(store.pushActionTitle, systemImage: "arrow.up.to.line.circle", showTitle: showToolbarLabels)
         }
         .disabled(store.selectedRepository == nil)
       }
