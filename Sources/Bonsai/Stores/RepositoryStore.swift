@@ -183,7 +183,7 @@ final class RepositoryStore {
       let url = FileOpenLauncher.targetURL(repository: selectedRepository, path: path)
       let output = "Could not open \(url.path(percentEncoded: false))."
       errorMessage = output
-      commandResult = CommandResult(title: "Open File", output: output, isError: true)
+      commandResult = CommandResult(title: PlatformFailureCopy.openFileTitle, output: output, isError: true)
     }
   }
 
@@ -253,7 +253,7 @@ final class RepositoryStore {
     } catch {
       let output = "Could not open Terminal for \(directoryURL.path(percentEncoded: false))."
       errorMessage = output
-      commandResult = CommandResult(title: "Open in Terminal", output: output, isError: true)
+      commandResult = CommandResult(title: PlatformFailureCopy.openInTerminalTitle, output: output, isError: true)
     }
   }
 
