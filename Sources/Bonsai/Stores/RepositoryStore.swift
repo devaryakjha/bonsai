@@ -1676,6 +1676,18 @@ final class RepositoryStore {
     }
   }
 
+  func lfsFetch() async {
+    await runMutation(title: "Git LFS fetch") {
+      try await gitClient.lfsFetch(in: requiredRepository())
+    }
+  }
+
+  func lfsCheckout() async {
+    await runMutation(title: "Git LFS checkout") {
+      try await gitClient.lfsCheckout(in: requiredRepository())
+    }
+  }
+
   func lfsPrune() async {
     await runMutation(title: "Git LFS prune") {
       try await gitClient.lfsPrune(in: requiredRepository())

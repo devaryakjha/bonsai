@@ -2,6 +2,20 @@ import XCTest
 @testable import Bonsai
 
 final class GitClientCommandArgumentsTests: XCTestCase {
+  func testLFSFetchArgumentsUseGitLFSFetch() {
+    XCTAssertEqual(
+      GitClient.lfsFetchArguments(),
+      ["lfs", "fetch"]
+    )
+  }
+
+  func testLFSCheckoutArgumentsUseGitLFSCheckout() {
+    XCTAssertEqual(
+      GitClient.lfsCheckoutArguments(),
+      ["lfs", "checkout"]
+    )
+  }
+
   func testLFSPruneArgumentsUseGitLFSPrune() {
     XCTAssertEqual(
       GitClient.lfsPruneArguments(),

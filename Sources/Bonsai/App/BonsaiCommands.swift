@@ -230,10 +230,22 @@ struct BonsaiCommands: Commands {
         }
         .disabled(store.selectedRepository == nil || !store.snapshot.integrations.lfsAvailable)
 
+        Button("Fetch") {
+          Task { await store.lfsFetch() }
+        }
+        .disabled(store.selectedRepository == nil || !store.snapshot.integrations.lfsAvailable)
+
+        Button("Checkout Files") {
+          Task { await store.lfsCheckout() }
+        }
+        .disabled(store.selectedRepository == nil || !store.snapshot.integrations.lfsAvailable)
+
         Button("Prune") {
           Task { await store.lfsPrune() }
         }
         .disabled(store.selectedRepository == nil || !store.snapshot.integrations.lfsAvailable)
+
+        Divider()
 
         Button("Lock Selected File") {
           Task { await store.lfsLockSelectedFile() }
