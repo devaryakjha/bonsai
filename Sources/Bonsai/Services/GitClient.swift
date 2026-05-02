@@ -271,6 +271,11 @@ struct GitClient {
     return output.combinedOutput
   }
 
+  func applyPatch(_ patch: String, in repository: GitRepository) async throws -> String {
+    let output = try await git(["apply"], in: repository.url, standardInput: patch)
+    return output.combinedOutput
+  }
+
   func commit(message: String, amend: Bool, sign: Bool, in repository: GitRepository) async throws -> String {
     var args = ["commit", "-m", message]
     if amend { args.append("--amend") }

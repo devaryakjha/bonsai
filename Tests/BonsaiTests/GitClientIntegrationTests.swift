@@ -156,6 +156,22 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(finalDiff.contains("line eighteen changed"))
   }
 
+  func testApplyPatchUsesGitPatchEngine() async throws {
+    let repo = try await makeRepository()
+    let file = repo.appending(path: "README.md")
+    try write("before\n", to: file)
+    try await commitAll(in: repo, message: "Initial")
+
+    try write("after\n", to: file)
+    let patch = try await client.git(["diff", "--", "README.md"], in: repo).stdout
+    _ = try await client.git(["restore", "--", "README.md"], in: repo)
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    _ = try await client.applyPatch(patch, in: repository)
+
+    XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), "after\n")
+  }
+
   func testImageDiffSnapshotsReadWorkingTreeIndexAndCommitBlobs() async throws {
     let repo = try await makeRepository()
     let image = repo.appending(path: "image.png")

@@ -147,6 +147,14 @@ struct ContentView: View {
             Task { await store.showFileHistoryForSelection() }
           }
           .disabled(store.selectedChangedFile == nil && store.selectedStatusEntry == nil)
+          Divider()
+          Button("Copy Current Patch") {
+            store.copyCurrentPatch()
+          }
+          .disabled(!store.canCopyCurrentPatch)
+          Button("Apply Patch from Clipboard") {
+            Task { await store.applyPatchFromClipboard() }
+          }
           Button("Update Submodules") {
             Task { await store.updateSubmodules() }
           }

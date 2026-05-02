@@ -71,6 +71,16 @@ struct BonsaiCommands: Commands {
       }
       .disabled(store.selectedRepository == nil)
 
+      Button("Copy Current Patch") {
+        store.copyCurrentPatch()
+      }
+      .disabled(!store.canCopyCurrentPatch)
+
+      Button("Apply Patch from Clipboard") {
+        Task { await store.applyPatchFromClipboard() }
+      }
+      .disabled(store.selectedRepository == nil)
+
       Button("Reset to Selected Commit...") {
         store.presentResetToSelectedCommit()
       }

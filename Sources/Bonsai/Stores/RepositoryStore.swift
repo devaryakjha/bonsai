@@ -101,6 +101,10 @@ final class RepositoryStore {
     FilePreviewSupport.isBinaryDiff(diffText)
   }
 
+  var canCopyCurrentPatch: Bool {
+    !diffText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+  }
+
   var stagedChanges: [GitStatusEntry] {
     snapshot.status.filter(\.isStaged)
   }
@@ -472,6 +476,26 @@ final class RepositoryStore {
   func unstageLineChange(_ change: DiffLineChange) async {
     await runMutation(title: "Unstage \(change.title)") {
       try await gitClient.unstageLineChange(change, in: requiredRepository())
+    }
+  }
+
+  func copyCurrentPatch() {
+    guard canCopyCurrentPatch else { return }
+    NSPasteboard.general.clearContents()
+    NSPasteboard.general.setString(diffText, forType: .string)
+    commandResult = CommandResult(title: "Copy Patch", output: "Copied current diff to the clipboard.", isError: false)
+  }
+
+  func applyPatchFromClipboard() async {
+    let patch = NSPasteboard.general.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    guard !patch.isEmpty else {
+      commandResult = CommandResult(title: "Apply Patch", output: "The clipboard does not contain patch text.", isError: true)
+      errorMessage = "The clipboard does not contain patch text."
+      return
+    }
+
+    await runMutation(title: "Apply Patch") {
+      try await gitClient.applyPatch(patch, in: requiredRepository())
     }
   }
 

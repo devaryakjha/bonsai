@@ -53,6 +53,14 @@ private struct DetailHeaderView: View {
           .pickerStyle(.segmented)
           .controlSize(.small)
           .frame(width: 168)
+
+          Button {
+            store.copyCurrentPatch()
+          } label: {
+            Label("Copy Patch", systemImage: "doc.on.doc")
+          }
+          .controlSize(.small)
+          .disabled(!store.canCopyCurrentPatch)
         }
       }
 
