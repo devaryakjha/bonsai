@@ -503,6 +503,18 @@ private struct CommitComposerView: View {
         .help(commitOptionsHelp)
         .accessibilityLabel("Commit settings")
 
+        Button {
+          Task { await store.generateCommitMessageWithClaude() }
+        } label: {
+          Label("Generate commit message", systemImage: "sparkles")
+            .labelStyle(.iconOnly)
+            .lineLimit(1)
+        }
+        .buttonStyle(.borderless)
+        .disabled(!store.canGenerateCommitMessageWithClaude)
+        .help(store.generateCommitMessageWithClaudeHelp)
+        .accessibilityLabel("Generate commit message")
+
         if !store.commitOptionsSummary.isEmpty {
           Text(store.commitOptionsSummary)
             .font(.caption)

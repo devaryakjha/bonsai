@@ -19,6 +19,7 @@ private struct DiffParseCache {
 final class RepositoryStore {
   private let gitClient = GitClient()
   private let gitHubClient = GitHubClient()
+  private let claudeCodeClient = ClaudeCodeClient()
   private let recentsKey = "bonsai.recentRepositories"
   private let recentCommitMessagesKey = "bonsai.recentCommitMessages"
   private let autoRefreshKey = "bonsai.autoRefresh"
@@ -114,6 +115,7 @@ final class RepositoryStore {
   var recentCommitMessages: [String] = []
   var amendCommit = false
   var signCommit = false
+  var isGeneratingCommitMessage = false
   var diffAlgorithm: DiffAlgorithm = DiffAlgorithm(
     rawValue: UserDefaults.standard.string(forKey: "bonsai.diffAlgorithm") ?? ""
   ) ?? .histogram {
@@ -345,6 +347,20 @@ final class RepositoryStore {
 
   var canCommit: Bool {
     commitReadinessIssue == nil
+  }
+
+  var canGenerateCommitMessageWithClaude: Bool {
+    selectedRepository != nil && !stagedChanges.isEmpty && !isGeneratingCommitMessage
+  }
+
+  var generateCommitMessageWithClaudeHelp: String {
+    if isGeneratingCommitMessage {
+      return "Generating commit message"
+    }
+    if stagedChanges.isEmpty {
+      return "Stage changes before generating a commit message"
+    }
+    return "Generate commit message with Claude Code"
   }
 
   var commitOptionsSummary: String {
@@ -1053,6 +1069,25 @@ final class RepositoryStore {
       commitMessage = ""
       amendCommit = false
       rememberCommitMessage(message)
+    }
+  }
+
+  func generateCommitMessageWithClaude() async {
+    guard let repository = selectedRepository else { return }
+    guard !stagedChanges.isEmpty else {
+      let output = ClaudeCodeClientError.noStagedChanges.localizedDescription
+      commandResult = CommandResult(title: "Generate commit message", output: output, isError: true)
+      return
+    }
+
+    isGeneratingCommitMessage = true
+    defer { isGeneratingCommitMessage = false }
+
+    do {
+      commitMessage = try await claudeCodeClient.generateCommitMessage(in: repository)
+      commandResult = CommandResult(title: "Generate commit message", output: "Commit message updated.", isError: false)
+    } catch {
+      commandResult = CommandResult(title: "Generate commit message", output: error.localizedDescription, isError: true)
     }
   }
 
