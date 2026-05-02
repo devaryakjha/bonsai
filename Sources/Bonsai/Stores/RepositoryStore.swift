@@ -923,6 +923,12 @@ final class RepositoryStore {
     }
   }
 
+  func pruneRemote(_ remote: GitRemote) async {
+    await runMutation(title: "Prune \(remote.name)") {
+      try await gitClient.pruneRemote(remote, in: requiredRepository())
+    }
+  }
+
   func fetchRemoteBranch(_ branch: GitRef) async {
     await runMutation(title: "Fetch \(branch.shortName)") {
       try await gitClient.fetchRemoteBranch(branch, in: requiredRepository())

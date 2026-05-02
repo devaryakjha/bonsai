@@ -69,6 +69,41 @@ final class RemoteManagementTests: XCTestCase {
     XCTAssertTrue(refs.contains { $0.shortName == "origin/main" && $0.kind == .remoteBranch })
   }
 
+  func testStorePrunesStaleRemoteTrackingBranch() async throws {
+    let remote = try await makeBareRepository()
+    let source = try await makeRepository()
+    try write("seed\n", to: source.appending(path: "README.md"))
+    try await commitAll(in: source, message: "Remote seed")
+    _ = try await client.git(["remote", "add", "origin", remote.path(percentEncoded: false)], in: source)
+    _ = try await client.git(["push", "-u", "origin", "main"], in: source)
+    _ = try await client.git(["checkout", "-b", "stale"], in: source)
+    try write("stale\n", to: source.appending(path: "stale.txt"))
+    try await commitAll(in: source, message: "Stale branch")
+    _ = try await client.git(["push", "-u", "origin", "stale"], in: source)
+
+    let repo = try await makeRepository()
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    _ = try await client.addRemote(name: "origin", url: remote.path(percentEncoded: false), in: repository)
+    let remotes = try await client.remotes(in: repository)
+    let origin = try XCTUnwrap(remotes.first { $0.name == "origin" })
+    _ = try await client.fetchRemote(origin, in: repository)
+    let refsBeforePrune = try await client.refs(in: repository)
+    XCTAssertTrue(refsBeforePrune.contains { $0.shortName == "origin/stale" && $0.kind == .remoteBranch })
+
+    _ = try await client.git(["checkout", "main"], in: source)
+    _ = try await client.git(["push", "origin", "--delete", "stale"], in: source)
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    await store.pruneRemote(origin)
+
+    let refs = try await client.refs(in: repository)
+    let commandResult = await store.commandResult
+    XCTAssertFalse(refs.contains { $0.shortName == "origin/stale" && $0.kind == .remoteBranch })
+    XCTAssertEqual(commandResult?.title, "Prune origin")
+    XCTAssertEqual(commandResult?.isError, false)
+  }
+
   private func makeRepository() async throws -> URL {
     let url = temporaryDirectory()
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)

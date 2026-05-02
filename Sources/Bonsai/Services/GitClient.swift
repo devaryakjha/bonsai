@@ -126,6 +126,10 @@ struct GitClient {
     try await runRaw(["fetch", "--prune", remote.name], in: repository)
   }
 
+  func pruneRemote(_ remote: GitRemote, in repository: GitRepository) async throws -> String {
+    try await runRaw(["remote", "prune", remote.name], in: repository)
+  }
+
   func fetchRemoteBranch(_ branch: GitRef, in repository: GitRepository) async throws -> String {
     guard let remoteName = branch.remoteName,
           let branchName = branch.remoteBranchName else {

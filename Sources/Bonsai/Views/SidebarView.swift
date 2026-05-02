@@ -510,6 +510,9 @@ struct SidebarView: View {
         Button("Fetch") {
           Task { await store.fetchRemote(remote) }
         }
+        Button("Prune") {
+          Task { await store.pruneRemote(remote) }
+        }
         if let fetchURL = remote.fetchURL {
           Button("Copy Fetch URL") {
             PasteboardWriter.copy(fetchURL)
