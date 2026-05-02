@@ -128,6 +128,9 @@ struct SidebarView: View {
                   Task { await store.unsetUpstream(branch) }
                 }
               }
+              Divider()
+              ReferenceCopyMenu(ref: branch)
+              Divider()
               Button("Delete", role: .destructive) {
                 store.presentDelete(branch)
               }
@@ -305,6 +308,9 @@ struct SidebarView: View {
             Task { await store.setCurrentBranchUpstream(branch) }
           }
           .disabled(store.currentBranch == nil)
+          Divider()
+          ReferenceCopyMenu(ref: branch)
+          Divider()
           Button("Delete", role: .destructive) {
             store.presentDelete(branch)
           }
@@ -321,6 +327,9 @@ struct SidebarView: View {
           Button("Create Branch from Here...") {
             store.presentCreateBranch(from: tag)
           }
+          Divider()
+          ReferenceCopyMenu(ref: tag)
+          Divider()
           Button("Delete", role: .destructive) {
             store.presentDelete(tag)
           }
@@ -440,6 +449,22 @@ private struct BranchRow: View {
           .padding(.vertical, 2)
           .background(.quaternary, in: Capsule())
       }
+    }
+  }
+}
+
+private struct ReferenceCopyMenu: View {
+  var ref: GitRef
+
+  var body: some View {
+    Button("Copy Name") {
+      PasteboardWriter.copy(ref.shortName)
+    }
+    Button("Copy Full Reference Name") {
+      PasteboardWriter.copy(ref.name)
+    }
+    Button("Copy Commit Hash") {
+      PasteboardWriter.copy(ref.objectName)
     }
   }
 }
