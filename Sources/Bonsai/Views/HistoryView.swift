@@ -74,6 +74,10 @@ struct HistoryView: View {
                 store.selectCommit(commit)
                 store.presentCreateBranch()
               }
+              Button("Create Tag Here") {
+                store.selectCommit(commit)
+                store.presentCreateTag()
+              }
               Divider()
               Button("Copy Hash") {
                 NSPasteboard.general.clearContents()

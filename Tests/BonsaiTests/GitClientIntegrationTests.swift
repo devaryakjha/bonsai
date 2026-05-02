@@ -146,6 +146,29 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(canAmendWithoutStagedChanges)
   }
 
+  func testStoreCreatesTagAtSelectedHistoryCommit() async throws {
+    let repo = try await makeRepository()
+    try write("first\n", to: repo.appending(path: "file.txt"))
+    try await commitAll(in: repo, message: "First")
+    let firstHash = try await client.git(["rev-parse", "HEAD"], in: repo).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+    try write("second\n", to: repo.appending(path: "file.txt"))
+    try await commitAll(in: repo, message: "Second")
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    let commits = await store.snapshot.commits
+    let firstCommit = try XCTUnwrap(commits.first { $0.hash == firstHash })
+    await MainActor.run {
+      store.selectCommit(firstCommit)
+      store.presentCreateTag()
+      store.operationInput = "first-tag"
+    }
+
+    await store.confirmOperation()
+    let tagHash = try await client.git(["rev-list", "-n", "1", "first-tag"], in: repo).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+    XCTAssertEqual(tagHash, firstHash)
+  }
+
   func testLineChangeStagingLeavesOtherChangesUnstaged() async throws {
     let repo = try await makeRepository()
     let file = repo.appending(path: "file.txt")
