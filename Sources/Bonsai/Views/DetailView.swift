@@ -34,10 +34,6 @@ private struct DetailHeaderView: View {
 
         DiffHeaderControls(store: store)
       }
-
-      if !store.diffText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-        DiffSummaryStrip(summary: DiffSummary(diffText: store.diffText, hunkCount: store.diffHunks.count))
-      }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(.horizontal, 14)
@@ -123,6 +119,16 @@ private struct DiffHeaderControls: View {
       .frame(width: 150)
 
       Menu {
+        if let summary {
+          Section("Summary") {
+            Label("\(summary.additions.formatted()) added", systemImage: "plus")
+            Label("\(summary.deletions.formatted()) removed", systemImage: "minus")
+            Label("\(summary.hunkCount.formatted()) hunks", systemImage: "text.alignleft")
+            if summary.isMetadataOnly {
+              Label("Metadata-only change", systemImage: "info.circle")
+            }
+          }
+        }
         Section("Algorithm") {
           ForEach(DiffAlgorithm.allCases) { algorithm in
             Button {
@@ -154,6 +160,12 @@ private struct DiffHeaderControls: View {
       .disabled(!store.canCopyCurrentPatch)
     }
     .fixedSize()
+  }
+
+  private var summary: DiffSummary? {
+    let diffText = store.diffText.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !diffText.isEmpty else { return nil }
+    return DiffSummary(diffText: store.diffText, hunkCount: store.diffHunks.count)
   }
 }
 
@@ -409,45 +421,6 @@ private struct HunkActionStrip: View {
       .padding(.horizontal, 10)
       .padding(.vertical, 7)
     }
-  }
-}
-
-private struct DiffSummaryStrip: View {
-  var summary: DiffSummary
-
-  var body: some View {
-    HStack(spacing: 8) {
-      DiffMetric(label: "Added", value: summary.additions, color: .green)
-      DiffMetric(label: "Removed", value: summary.deletions, color: .red)
-      DiffMetric(label: "Hunks", value: summary.hunkCount, color: .blue)
-      Spacer()
-      if summary.isMetadataOnly {
-        Label("Metadata-only change", systemImage: "info.circle")
-          .foregroundStyle(.secondary)
-      }
-    }
-    .font(.caption)
-  }
-}
-
-private struct DiffMetric: View {
-  var label: String
-  var value: Int
-  var color: Color
-
-  var body: some View {
-    HStack(spacing: 4) {
-      Circle()
-        .fill(color)
-        .frame(width: 6, height: 6)
-      Text(label)
-      Text(value.formatted())
-        .fontWeight(.semibold)
-        .monospacedDigit()
-    }
-    .padding(.horizontal, 8)
-    .padding(.vertical, 4)
-    .background(.quaternary, in: Capsule())
   }
 }
 
