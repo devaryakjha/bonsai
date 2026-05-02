@@ -187,6 +187,10 @@ struct GitRef: Identifiable, Hashable {
     remoteBranchParts?.branch
   }
 
+  var isConcreteRemoteBranch: Bool {
+    remoteBranchParts != nil
+  }
+
   private var remoteBranchParts: (remote: String, branch: String)? {
     guard kind == .remoteBranch else { return nil }
     let parts = shortName.split(separator: "/", maxSplits: 1).map(String.init)

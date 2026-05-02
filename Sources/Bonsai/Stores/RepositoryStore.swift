@@ -1403,6 +1403,9 @@ final class RepositoryStore {
   }
 
   func checkout(_ ref: GitRef) async {
+    if ref.kind == .remoteBranch && !ref.isConcreteRemoteBranch {
+      return
+    }
     await runMutation(title: "Checkout \(ref.shortName)") {
       if let localName = ref.remoteTrackingLocalName {
         if localBranches.contains(where: { $0.shortName == localName }) {
@@ -1470,7 +1473,7 @@ final class RepositoryStore {
 
   private func canUseAsRefOperationTarget(_ ref: GitRef) -> Bool {
     guard currentBranch != nil, !ref.isHead else { return false }
-    return ref.kind == .localBranch || ref.kind == .tag || ref.remoteBranchName != nil
+    return ref.kind == .localBranch || ref.kind == .tag || ref.isConcreteRemoteBranch
   }
 
   func unsetUpstream(_ branch: GitRef) async {

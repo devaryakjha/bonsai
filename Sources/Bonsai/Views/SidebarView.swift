@@ -424,11 +424,13 @@ struct SidebarView: View {
       Label(branch.shortName, systemImage: "network")
         .lineLimit(1)
         .contextMenu {
-          Button("Checkout as Local Branch") {
-            Task { await store.checkout(branch) }
-          }
-          Button("Fetch Branch") {
-            Task { await store.fetchRemoteBranch(branch) }
+          if branch.isConcreteRemoteBranch {
+            Button("Checkout as Local Branch") {
+              Task { await store.checkout(branch) }
+            }
+            Button("Fetch Branch") {
+              Task { await store.fetchRemoteBranch(branch) }
+            }
           }
           Button("Create Branch from Here...") {
             store.presentCreateBranch(from: branch)
@@ -439,18 +441,20 @@ struct SidebarView: View {
           Button("Create Annotated Tag Here...") {
             store.presentCreateAnnotatedTag(from: branch)
           }
-          Button("Set as Upstream for Current Branch") {
-            Task { await store.setCurrentBranchUpstream(branch) }
+          if branch.isConcreteRemoteBranch {
+            Button("Set as Upstream for Current Branch") {
+              Task { await store.setCurrentBranchUpstream(branch) }
+            }
+            .disabled(store.currentBranch == nil)
+            Button("Merge into Current Branch") {
+              Task { await store.mergeReference(branch) }
+            }
+            .disabled(store.currentBranch == nil)
+            Button("Rebase Current onto Branch") {
+              Task { await store.rebaseOntoReference(branch) }
+            }
+            .disabled(store.currentBranch == nil)
           }
-          .disabled(store.currentBranch == nil)
-          Button("Merge into Current Branch") {
-            Task { await store.mergeReference(branch) }
-          }
-          .disabled(store.currentBranch == nil || branch.remoteBranchName == nil)
-          Button("Rebase Current onto Branch") {
-            Task { await store.rebaseOntoReference(branch) }
-          }
-          .disabled(store.currentBranch == nil || branch.remoteBranchName == nil)
           if let webURL = store.webURL(forRemoteBranch: branch) {
             Button("Open in Browser") {
               store.openRemoteBranchInBrowser(branch)
@@ -461,7 +465,7 @@ struct SidebarView: View {
           }
           Divider()
           ReferenceCopyMenu(ref: branch)
-          if branch.remoteBranchName != nil {
+          if branch.isConcreteRemoteBranch {
             Divider()
             Button("Delete", role: .destructive) {
               store.presentDelete(branch)

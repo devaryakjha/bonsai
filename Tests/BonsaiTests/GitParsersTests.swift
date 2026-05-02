@@ -80,11 +80,14 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(branch.remoteName, "origin")
     XCTAssertEqual(branch.remoteBranchName, "feature/dashboard")
     XCTAssertEqual(branch.remoteTrackingLocalName, "feature/dashboard")
+    XCTAssertTrue(branch.isConcreteRemoteBranch)
     XCTAssertNil(remoteHead.remoteName)
     XCTAssertNil(remoteHead.remoteBranchName)
     XCTAssertNil(remoteHead.remoteTrackingLocalName)
+    XCTAssertFalse(remoteHead.isConcreteRemoteBranch)
     XCTAssertNil(localBranch.remoteName)
     XCTAssertNil(localBranch.remoteBranchName)
+    XCTAssertFalse(localBranch.isConcreteRemoteBranch)
   }
 
   func testParseCommitsKeepsGraphLaneAndSkipsContinuationRows() {
