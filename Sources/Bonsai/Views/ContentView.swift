@@ -257,6 +257,17 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.removeWorktreeRequest) { request in
+      RemoveWorktreeSheet(
+        request: request,
+        onCancel: {
+          store.removeWorktreeRequest = nil
+        },
+        onRemove: {
+          Task { await store.removeRequestedWorktree() }
+        }
+      )
+    }
     .sheet(item: $store.gitHubRepositoryRequest) { request in
       GitHubRepositorySheet(
         request: request,
@@ -686,6 +697,38 @@ private struct RemoteEditorSheet: View {
 
 private struct RemoveRemoteSheet: View {
   var request: RemoveRemoteRequest
+  var onCancel: () -> Void
+  var onRemove: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text(request.title)
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      Text(request.message)
+        .font(.body.monospaced())
+        .lineLimit(2)
+
+      Text(request.detail)
+        .foregroundStyle(.secondary)
+        .lineLimit(3)
+        .textSelection(.enabled)
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button("Remove", role: .destructive, action: onRemove)
+          .buttonStyle(.borderedProminent)
+      }
+    }
+    .padding(20)
+    .frame(width: 520)
+  }
+}
+
+private struct RemoveWorktreeSheet: View {
+  var request: RemoveWorktreeRequest
   var onCancel: () -> Void
   var onRemove: () -> Void
 

@@ -754,6 +754,15 @@ struct RemoveRemoteRequest: Identifiable, Hashable {
   }
 }
 
+struct RemoveWorktreeRequest: Identifiable, Hashable {
+  var worktree: GitWorktree
+
+  var id: String { worktree.id }
+  var title: String { "Remove worktree" }
+  var message: String { "Remove worktree \(worktree.name)." }
+  var detail: String { worktree.path }
+}
+
 enum RemoteEditorMode: String, Identifiable {
   case add
   case edit

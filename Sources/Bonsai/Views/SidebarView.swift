@@ -284,8 +284,8 @@ struct SidebarView: View {
         Button("Open Worktree") {
           store.openRecent(GitRepository(path: worktree.path))
         }
-        Button("Remove Worktree", role: .destructive) {
-          Task { await store.removeWorktree(worktree) }
+        Button("Remove worktree", role: .destructive) {
+          store.presentRemoveWorktree(worktree)
         }
         .disabled(worktree.path == store.selectedRepository?.path)
       }

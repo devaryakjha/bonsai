@@ -256,6 +256,22 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(request.detail, "git@example.com:bonsai.git")
   }
 
+  func testRemoveWorktreeRequestCopyNamesWorktreeAndPath() {
+    let worktree = GitWorktree(
+      path: "/Users/arya/projects/bonsai-worktree",
+      head: "abcdef123456",
+      branch: "refs/heads/feature",
+      isDetached: false,
+      isBare: false,
+      isPrunable: false
+    )
+    let request = RemoveWorktreeRequest(worktree: worktree)
+
+    XCTAssertEqual(request.title, "Remove worktree")
+    XCTAssertEqual(request.message, "Remove worktree bonsai-worktree.")
+    XCTAssertEqual(request.detail, "/Users/arya/projects/bonsai-worktree")
+  }
+
   func testParseLineHistoryEntriesReadsCommitsAndSkipsPatchBodies() {
     let entries = GitParsers.parseLineHistoryEntries("""
     \u{1e}abcdef1234567890\u{1f}abcdef1\u{1f}Asha\u{1f}asha@example.test\u{1f}2026-05-02T10:00:00+05:30\u{1f}Update line
