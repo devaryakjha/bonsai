@@ -61,25 +61,49 @@ private struct DetailHeaderView: View {
   var onNavigateSearch: (DiffSearch.NavigationDirection) -> Void
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      HStack(alignment: .top, spacing: 12) {
-        VStack(alignment: .leading, spacing: 5) {
-          titleView
-        }
-
-        Spacer(minLength: 16)
-
-        DiffHeaderControls(
-          store: store,
-          searchText: $diffSearchText,
-          isSearchVisible: $isDiffSearchVisible,
-          onNavigateSearch: onNavigateSearch
-        )
+    VStack(alignment: .leading, spacing: 10) {
+      ViewThatFits(in: .horizontal) {
+        horizontalHeader
+        stackedHeader
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(.horizontal, 14)
     .padding(.vertical, 12)
+  }
+
+  private var horizontalHeader: some View {
+    HStack(alignment: .top, spacing: 12) {
+      titleColumn
+
+      Spacer(minLength: 16)
+
+      controls
+    }
+  }
+
+  private var stackedHeader: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      titleColumn
+      controls
+    }
+  }
+
+  private var titleColumn: some View {
+    VStack(alignment: .leading, spacing: 5) {
+      titleView
+    }
+    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+    .layoutPriority(1)
+  }
+
+  private var controls: some View {
+    DiffHeaderControls(
+      store: store,
+      searchText: $diffSearchText,
+      isSearchVisible: $isDiffSearchVisible,
+      onNavigateSearch: onNavigateSearch
+    )
   }
 
   @ViewBuilder
@@ -89,8 +113,9 @@ private struct DetailHeaderView: View {
         ChangeStatusBadge(changedFile: file)
         Text(file.path)
           .font(.headline)
-          .lineLimit(2)
+          .lineLimit(1)
           .truncationMode(.middle)
+          .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
           .help(file.oldPath.map { "\($0) -> \(file.path)" } ?? file.path)
       }
       selectedChangedFileContext(file)
@@ -107,8 +132,9 @@ private struct DetailHeaderView: View {
     } else if let entry = store.selectedTreeEntry, let commit = store.selectedCommit, store.mainMode == .history {
       Text(entry.path)
         .font(.headline)
-        .lineLimit(2)
+        .lineLimit(1)
         .truncationMode(.middle)
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         .help(entry.path)
       HStack(spacing: 8) {
         Text(commit.shortHash)
@@ -121,7 +147,10 @@ private struct DetailHeaderView: View {
     } else if let commit = store.selectedCommit, store.mainMode == .history {
       Text(commit.subject)
         .font(.headline)
-        .lineLimit(2)
+        .lineLimit(1)
+        .truncationMode(.tail)
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+        .help(commit.subject)
       HStack(spacing: 8) {
         Text(commit.shortHash)
           .monospaced()
@@ -136,8 +165,9 @@ private struct DetailHeaderView: View {
     } else if let entry = store.selectedStatusEntry {
       Text(entry.path)
         .font(.headline)
-        .lineLimit(2)
+        .lineLimit(1)
         .truncationMode(.middle)
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         .help(entry.path)
       HStack(spacing: 8) {
         ChangeStatusBadge(statusEntry: entry)
