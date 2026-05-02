@@ -90,11 +90,11 @@ struct HistoryView: View {
                 store.selectCommit(commit)
                 store.presentResetToSelectedCommit()
               }
-              Button("Create Branch Here") {
+              Button("Create Branch Here…") {
                 store.selectCommit(commit)
                 store.presentCreateBranch()
               }
-              Button("Create Tag Here") {
+              Button("Create Tag Here…") {
                 store.selectCommit(commit)
                 store.presentCreateTag()
               }

@@ -639,7 +639,7 @@ struct SidebarView: View {
             PasteboardWriter.copy(pushURL)
           }
         }
-        Button("Edit URL") {
+        Button("Edit URL…") {
           store.presentEditRemote(remote)
         }
         Button("Remove", role: .destructive) {

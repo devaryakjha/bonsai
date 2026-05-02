@@ -7,7 +7,8 @@ single ellipsis glyph for actions that open another step.
 
 ## Requirements
 
-- Replace three-period ellipses in user-facing command labels with `…`.
+- Use `…` in user-facing command labels that need more input before running.
+- Replace existing three-period ellipses in user-facing command labels with `…`.
 - Keep action labels otherwise unchanged unless the wording itself is wrong.
 - Use the same glyph for shortened preview text so truncation reads like native
   app copy.
