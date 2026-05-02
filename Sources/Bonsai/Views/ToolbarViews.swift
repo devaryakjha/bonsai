@@ -124,6 +124,10 @@ struct RepositoryToolbarActionsMenu: View {
         Button("Apply Patch from Clipboard") {
           Task { await store.applyPatchFromClipboard() }
         }
+        Button("Open Selected File") {
+          store.openSelectedFile()
+        }
+        .disabled(!store.canOpenSelectedFile)
         Button("Update Submodules") {
           Task { await store.updateSubmodules() }
         }

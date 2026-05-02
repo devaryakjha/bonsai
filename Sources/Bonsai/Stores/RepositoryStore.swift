@@ -122,6 +122,25 @@ final class RepositoryStore {
     !diffText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
   }
 
+  var canOpenSelectedFile: Bool {
+    selectedRepository != nil && selectedPreviewPath != nil
+  }
+
+  func openSelectedFile() {
+    guard let path = selectedPreviewPath else { return }
+    openFile(path: path)
+  }
+
+  func openFile(path: String) {
+    guard let selectedRepository else { return }
+    if !FileOpenLauncher.openFile(repository: selectedRepository, path: path) {
+      let url = FileOpenLauncher.targetURL(repository: selectedRepository, path: path)
+      let output = "Could not open \(url.path(percentEncoded: false))."
+      errorMessage = output
+      commandResult = CommandResult(title: "Open File", output: output, isError: true)
+    }
+  }
+
   func revealInFinder(path: String) {
     guard let selectedRepository else { return }
     NSWorkspace.shared.activateFileViewerSelecting([

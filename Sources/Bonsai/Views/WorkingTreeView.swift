@@ -155,6 +155,9 @@ private struct StatusRow: View {
         Button("Copy Path") {
           copyPath()
         }
+        Button("Open") {
+          openFile()
+        }
         Button("Reveal in Finder") {
           revealInFinder()
         }
@@ -196,6 +199,9 @@ private struct StatusRow: View {
       Button("Copy Path") {
         copyPath()
       }
+      Button("Open") {
+        openFile()
+      }
       Button("Reveal in Finder") {
         revealInFinder()
       }
@@ -233,6 +239,10 @@ private struct StatusRow: View {
 
   private func copyPath() {
     PasteboardWriter.copy(entry.path)
+  }
+
+  private func openFile() {
+    store.openFile(path: entry.path)
   }
 
   private func revealInFinder() {

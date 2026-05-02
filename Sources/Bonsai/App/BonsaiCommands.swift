@@ -136,6 +136,11 @@ struct BonsaiCommands: Commands {
       }
       .disabled(store.selectedRepository == nil)
 
+      Button("Open Selected File") {
+        store.openSelectedFile()
+      }
+      .disabled(!store.canOpenSelectedFile)
+
       Button("Reset to Selected Commit...") {
         store.presentResetToSelectedCommit()
       }

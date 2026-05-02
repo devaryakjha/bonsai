@@ -309,6 +309,9 @@ private struct ChangedFilesView: View {
               Button("Copy Path") {
                 PasteboardWriter.copy(file.path)
               }
+              Button("Open") {
+                store.openFile(path: file.path)
+              }
               Button("Reveal in Finder") {
                 store.revealInFinder(path: file.path)
               }
@@ -364,6 +367,9 @@ private struct ChangedFilesView: View {
               .contextMenu {
                 Button("Copy Path") {
                   PasteboardWriter.copy(entry.path)
+                }
+                Button("Open") {
+                  store.openFile(path: entry.path)
                 }
                 Button("Reveal in Finder") {
                   store.revealInFinder(path: entry.path)
