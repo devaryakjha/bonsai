@@ -28,6 +28,35 @@ enum GitChangeStatusRole: String {
       self = .unknown
     }
   }
+
+  var colorToken: GitChangeStatusColorToken {
+    switch self {
+    case .added:
+      return .green
+    case .deleted:
+      return .red
+    case .modified:
+      return .amber
+    case .renamed:
+      return .purple
+    case .copied:
+      return .blue
+    case .conflicted:
+      return .orange
+    case .untracked, .unknown:
+      return .neutral
+    }
+  }
+}
+
+enum GitChangeStatusColorToken: String {
+  case green
+  case red
+  case amber
+  case purple
+  case blue
+  case orange
+  case neutral
 }
 
 extension GitStatusEntry {

@@ -33,26 +33,26 @@ struct ChangeStatusBadge: View {
   }
 
   private var style: (foreground: Color, background: Color) {
-    switch role {
-    case .added:
+    switch role.colorToken {
+    case .green:
       return palette(.systemGreen)
-    case .deleted:
+    case .red:
       return palette(.systemRed)
-    case .modified:
+    case .amber:
       return palette(.systemYellow)
-    case .renamed:
+    case .purple:
       return palette(.systemPurple)
-    case .copied:
+    case .blue:
       return palette(.systemBlue)
-    case .conflicted:
+    case .orange:
       return palette(.systemOrange)
-    case .untracked, .unknown:
+    case .neutral:
       return (.secondary, .secondary.opacity(0.12))
     }
   }
 
   private func palette(_ color: NSColor) -> (foreground: Color, background: Color) {
     let accent = Color(nsColor: color)
-    return (accent, accent.opacity(0.22))
+    return (accent, accent.opacity(0.28))
   }
 }

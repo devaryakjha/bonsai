@@ -239,6 +239,16 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(GitChangeStatusRole(code: "U"), .conflicted)
     XCTAssertEqual(GitChangeStatusRole(code: "?"), .untracked)
     XCTAssertEqual(GitChangeStatusRole(code: "X"), .unknown)
+
+    XCTAssertEqual(GitChangeStatusRole(code: "A").colorToken, .green)
+    XCTAssertEqual(GitChangeStatusRole(code: "D").colorToken, .red)
+    XCTAssertEqual(GitChangeStatusRole(code: "M").colorToken, .amber)
+    XCTAssertEqual(GitChangeStatusRole(code: "T").colorToken, .amber)
+    XCTAssertEqual(GitChangeStatusRole(code: "R100").colorToken, .purple)
+    XCTAssertEqual(GitChangeStatusRole(code: "C75").colorToken, .blue)
+    XCTAssertEqual(GitChangeStatusRole(code: "U").colorToken, .orange)
+    XCTAssertEqual(GitChangeStatusRole(code: "?").colorToken, .neutral)
+    XCTAssertEqual(GitChangeStatusRole(code: "X").colorToken, .neutral)
   }
 
   func testDeleteRefRequestCopyNamesReferenceKind() {

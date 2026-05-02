@@ -8,6 +8,9 @@ Make Git change status indicators immediately meaningful by rendering `M`, `A`,
 ## Requirements
 
 - Raw changed-file status indicators must render as badges, not neutral text.
+- Single-letter Git indicators must use the industry-standard semantic mapping:
+  `A` green, `D` red, `M` and `T` amber, `R` purple, `C` blue, `U` orange,
+  and `?` neutral.
 - Added files use green, deleted files use red, modified/type-changed files use
   amber, renamed files use purple, copied files use blue, and conflicts use
   orange.
@@ -21,5 +24,5 @@ Make Git change status indicators immediately meaningful by rendering `M`, `A`,
 
 - `M`, `A`, and `D` are visually distinguishable without reading surrounding
   text.
-- Status mapping is covered by unit tests.
+- Status role and color-token mapping are covered by unit tests.
 - `swift test`, the app verification script, and whitespace checks pass.
