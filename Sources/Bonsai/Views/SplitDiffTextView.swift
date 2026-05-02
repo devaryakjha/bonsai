@@ -5,6 +5,7 @@ struct SplitDiffTextView: NSViewRepresentable {
   var splitDiff: SplitDiff
   var paneContext: SplitDiffPaneContext = .fallback
   var searchText: String = ""
+  var searchNavigationRequest: DiffSearch.NavigationRequest?
 
   func makeCoordinator() -> Coordinator {
     Coordinator()
@@ -37,23 +38,29 @@ struct SplitDiffTextView: NSViewRepresentable {
   func updateNSView(_ splitView: NSSplitView, context: Context) {
     context.coordinator.setInitialDividerPositionIfNeeded(in: splitView)
     context.coordinator.updatePaneContextIfNeeded(paneContext)
-    guard context.coordinator.lastDiff != splitDiff || context.coordinator.lastSearchText != searchText else { return }
-    context.coordinator.lastDiff = splitDiff
-    context.coordinator.lastSearchText = searchText
-    context.coordinator.oldTextView?.textStorage?.setAttributedString(Self.attributedDiff(
-      splitDiff.oldLines,
-      counterpart: splitDiff.newLines,
-      side: .old,
-      numberWidth: splitDiff.gutterNumberWidth,
-      searchText: searchText
-    ))
-    context.coordinator.newTextView?.textStorage?.setAttributedString(Self.attributedDiff(
-      splitDiff.newLines,
-      counterpart: splitDiff.oldLines,
-      side: .new,
-      numberWidth: splitDiff.gutterNumberWidth,
-      searchText: searchText
-    ))
+    let shouldRender = context.coordinator.lastDiff != splitDiff || context.coordinator.lastSearchText != searchText
+    if shouldRender {
+      context.coordinator.lastDiff = splitDiff
+      context.coordinator.lastSearchText = searchText
+      context.coordinator.oldTextView?.textStorage?.setAttributedString(Self.attributedDiff(
+        splitDiff.oldLines,
+        counterpart: splitDiff.newLines,
+        side: .old,
+        numberWidth: splitDiff.gutterNumberWidth,
+        searchText: searchText
+      ))
+      context.coordinator.newTextView?.textStorage?.setAttributedString(Self.attributedDiff(
+        splitDiff.newLines,
+        counterpart: splitDiff.oldLines,
+        side: .new,
+        numberWidth: splitDiff.gutterNumberWidth,
+        searchText: searchText
+      ))
+    }
+
+    guard context.coordinator.lastSearchNavigationRequest != searchNavigationRequest else { return }
+    context.coordinator.lastSearchNavigationRequest = searchNavigationRequest
+    context.coordinator.navigateSearch(query: searchText, request: searchNavigationRequest)
   }
 
   final class Coordinator {
@@ -67,6 +74,7 @@ struct SplitDiffTextView: NSViewRepresentable {
     weak var newDetailLabel: NSTextField?
     var lastDiff: SplitDiff?
     var lastSearchText: String?
+    var lastSearchNavigationRequest: DiffSearch.NavigationRequest?
     private var lastPaneContext: SplitDiffPaneContext?
     private var didSetInitialDividerPosition = false
     private var isSyncing = false
@@ -141,6 +149,92 @@ struct SplitDiffTextView: NSViewRepresentable {
       detailLabel?.stringValue = descriptor.detail ?? ""
       detailLabel?.isHidden = descriptor.detail == nil
       detailLabel?.toolTip = descriptor.detail
+    }
+
+    func navigateSearch(query: String, request: DiffSearch.NavigationRequest?) {
+      guard let request,
+            !DiffSearch.normalizedQuery(query).isEmpty else { return }
+
+      let activeTextView = NSApp.keyWindow?.firstResponder as? NSTextView
+      let oldIsActive = activeTextView === oldTextView
+      let newIsActive = activeTextView === newTextView
+
+      switch request.direction {
+      case .next:
+        if oldIsActive {
+          if selectMatch(in: oldTextView, query: query, direction: .next, allowsWrap: false) { return }
+          if selectEdgeMatch(in: newTextView, query: query, direction: .next) { return }
+          _ = selectEdgeMatch(in: oldTextView, query: query, direction: .next)
+        } else if newIsActive {
+          if selectMatch(in: newTextView, query: query, direction: .next, allowsWrap: false) { return }
+          if selectEdgeMatch(in: oldTextView, query: query, direction: .next) { return }
+          _ = selectEdgeMatch(in: newTextView, query: query, direction: .next)
+        } else {
+          if selectEdgeMatch(in: oldTextView, query: query, direction: .next) { return }
+          _ = selectEdgeMatch(in: newTextView, query: query, direction: .next)
+        }
+      case .previous:
+        if newIsActive {
+          if selectMatch(in: newTextView, query: query, direction: .previous, allowsWrap: false) { return }
+          if selectEdgeMatch(in: oldTextView, query: query, direction: .previous) { return }
+          _ = selectEdgeMatch(in: newTextView, query: query, direction: .previous)
+        } else if oldIsActive {
+          if selectMatch(in: oldTextView, query: query, direction: .previous, allowsWrap: false) { return }
+          if selectEdgeMatch(in: newTextView, query: query, direction: .previous) { return }
+          _ = selectEdgeMatch(in: oldTextView, query: query, direction: .previous)
+        } else {
+          if selectEdgeMatch(in: newTextView, query: query, direction: .previous) { return }
+          _ = selectEdgeMatch(in: oldTextView, query: query, direction: .previous)
+        }
+      }
+    }
+
+    private func selectMatch(
+      in textView: NSTextView?,
+      query: String,
+      direction: DiffSearch.NavigationDirection,
+      allowsWrap: Bool
+    ) -> Bool {
+      guard let textView,
+            let range = DiffSearch.navigationRange(
+              in: textView.string,
+              query: query,
+              selectedRange: textView.selectedRange(),
+              direction: direction,
+              allowsWrap: allowsWrap
+            ) else { return false }
+      select(range, in: textView)
+      return true
+    }
+
+    private func selectEdgeMatch(
+      in textView: NSTextView?,
+      query: String,
+      direction: DiffSearch.NavigationDirection
+    ) -> Bool {
+      guard let textView else { return false }
+      let selection: NSRange
+      switch direction {
+      case .next:
+        selection = NSRange(location: 0, length: 0)
+      case .previous:
+        selection = NSRange(location: (textView.string as NSString).length, length: 0)
+      }
+      guard let range = DiffSearch.navigationRange(
+        in: textView.string,
+        query: query,
+        selectedRange: selection,
+        direction: direction,
+        allowsWrap: false
+      ) else { return false }
+      select(range, in: textView)
+      return true
+    }
+
+    private func select(_ range: NSRange, in textView: NSTextView) {
+      textView.setSelectedRange(range)
+      textView.scrollRangeToVisible(range)
+      textView.window?.makeFirstResponder(textView)
     }
   }
 

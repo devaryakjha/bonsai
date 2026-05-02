@@ -1,6 +1,16 @@
 import Foundation
 
 enum DiffSearch {
+  enum NavigationDirection: Equatable {
+    case previous
+    case next
+  }
+
+  struct NavigationRequest: Equatable {
+    var id: Int
+    var direction: NavigationDirection
+  }
+
   struct MatchSummary: Equatable {
     var count: Int
     var isLimited: Bool
@@ -62,6 +72,32 @@ enum DiffSearch {
   static func matchLabel(query: String, visibleMatchSummary: () -> MatchSummary) -> String? {
     guard !normalizedQuery(query).isEmpty else { return nil }
     return matchLabel(for: visibleMatchSummary(), query: query)
+  }
+
+  static func navigationRange(
+    in text: String,
+    query: String,
+    selectedRange: NSRange,
+    direction: NavigationDirection,
+    allowsWrap: Bool = true
+  ) -> NSRange? {
+    let ranges = ranges(in: text, query: query)
+    guard !ranges.isEmpty else { return nil }
+
+    switch direction {
+    case .next:
+      let anchor = NSMaxRange(selectedRange)
+      if let range = ranges.first(where: { $0.location >= anchor }) {
+        return range
+      }
+      return allowsWrap ? ranges.first : nil
+    case .previous:
+      let anchor = selectedRange.location
+      if let range = ranges.reversed().first(where: { NSMaxRange($0) <= anchor }) {
+        return range
+      }
+      return allowsWrap ? ranges.last : nil
+    }
   }
 
   static func visibleUnifiedMatchSummary(

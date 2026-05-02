@@ -5,16 +5,23 @@ struct DetailView: View {
   let store: RepositoryStore
   @State private var diffSearchText = ""
   @State private var isDiffSearchVisible = false
+  @State private var diffSearchNavigationID = 0
+  @State private var diffSearchNavigationRequest: DiffSearch.NavigationRequest?
 
   var body: some View {
     VStack(spacing: 0) {
       DetailHeaderView(
         store: store,
         diffSearchText: $diffSearchText,
-        isDiffSearchVisible: $isDiffSearchVisible
+        isDiffSearchVisible: $isDiffSearchVisible,
+        onNavigateSearch: navigateDiffSearch
       )
       Divider()
-      DiffView(store: store, searchText: diffSearchText)
+      DiffView(
+        store: store,
+        searchText: diffSearchText,
+        searchNavigationRequest: diffSearchNavigationRequest
+      )
       if let result = store.commandResult {
         Divider()
         CommandResultView(result: result) {
@@ -25,12 +32,19 @@ struct DetailView: View {
     }
     .focusedSceneValue(\.diffFindVisible, $isDiffSearchVisible)
   }
+
+  private func navigateDiffSearch(_ direction: DiffSearch.NavigationDirection) {
+    guard !DiffSearch.normalizedQuery(diffSearchText).isEmpty else { return }
+    diffSearchNavigationID += 1
+    diffSearchNavigationRequest = DiffSearch.NavigationRequest(id: diffSearchNavigationID, direction: direction)
+  }
 }
 
 private struct DetailHeaderView: View {
   let store: RepositoryStore
   @Binding var diffSearchText: String
   @Binding var isDiffSearchVisible: Bool
+  var onNavigateSearch: (DiffSearch.NavigationDirection) -> Void
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
@@ -44,7 +58,8 @@ private struct DetailHeaderView: View {
         DiffHeaderControls(
           store: store,
           searchText: $diffSearchText,
-          isSearchVisible: $isDiffSearchVisible
+          isSearchVisible: $isDiffSearchVisible,
+          onNavigateSearch: onNavigateSearch
         )
       }
     }
@@ -153,6 +168,7 @@ private struct DiffHeaderControls: View {
   let store: RepositoryStore
   @Binding var searchText: String
   @Binding var isSearchVisible: Bool
+  var onNavigateSearch: (DiffSearch.NavigationDirection) -> Void
 
   var body: some View {
     HStack(spacing: 8) {
@@ -176,6 +192,9 @@ private struct DiffHeaderControls: View {
           .controlSize(.small)
           .frame(width: 180)
           .accessibilityLabel("Find in diff")
+          .onSubmit {
+            onNavigateSearch(.next)
+          }
 
         if let matchLabel {
           Text(matchLabel)
@@ -185,6 +204,28 @@ private struct DiffHeaderControls: View {
             .lineLimit(1)
             .frame(minWidth: 72, alignment: .leading)
         }
+
+        ControlGroup {
+          Button {
+            onNavigateSearch(.previous)
+          } label: {
+            Label("Previous match", systemImage: "chevron.up")
+              .labelStyle(.iconOnly)
+          }
+          .help("Previous match")
+          .accessibilityLabel("Previous match")
+
+          Button {
+            onNavigateSearch(.next)
+          } label: {
+            Label("Next match", systemImage: "chevron.down")
+              .labelStyle(.iconOnly)
+          }
+          .help("Next match")
+          .accessibilityLabel("Next match")
+        }
+        .controlSize(.small)
+        .disabled(!hasSearchMatches)
       }
 
       Picker("Diff view", selection: Binding(
@@ -278,11 +319,22 @@ private struct DiffHeaderControls: View {
       }
     }
   }
+
+  private var hasSearchMatches: Bool {
+    guard !DiffSearch.normalizedQuery(searchText).isEmpty else { return false }
+    switch store.diffDisplayMode {
+    case .unified:
+      return DiffSearch.visibleUnifiedMatchSummary(from: store.diffText, query: searchText, limit: 1).count > 0
+    case .split:
+      return DiffSearch.visibleSplitMatchSummary(from: store.splitDiff, query: searchText, limit: 1).count > 0
+    }
+  }
 }
 
 private struct DiffView: View {
   let store: RepositoryStore
   var searchText: String
+  var searchNavigationRequest: DiffSearch.NavigationRequest?
 
   var body: some View {
     VStack(spacing: 0) {
@@ -339,9 +391,18 @@ private struct DiffView: View {
         } else {
           switch store.diffDisplayMode {
           case .unified:
-            RichDiffTextView(text: store.diffText, searchText: searchText)
+            RichDiffTextView(
+              text: store.diffText,
+              searchText: searchText,
+              searchNavigationRequest: searchNavigationRequest
+            )
           case .split:
-            SplitDiffViewer(splitDiff: store.splitDiff, paneContext: splitPaneContext, searchText: searchText)
+            SplitDiffViewer(
+              splitDiff: store.splitDiff,
+              paneContext: splitPaneContext,
+              searchText: searchText,
+              searchNavigationRequest: searchNavigationRequest
+            )
           }
         }
       }
@@ -373,9 +434,15 @@ private struct SplitDiffViewer: View {
   var splitDiff: SplitDiff
   var paneContext: SplitDiffPaneContext
   var searchText: String
+  var searchNavigationRequest: DiffSearch.NavigationRequest?
 
   var body: some View {
-    SplitDiffTextView(splitDiff: splitDiff, paneContext: paneContext, searchText: searchText)
+    SplitDiffTextView(
+      splitDiff: splitDiff,
+      paneContext: paneContext,
+      searchText: searchText,
+      searchNavigationRequest: searchNavigationRequest
+    )
   }
 }
 

@@ -67,6 +67,61 @@ final class DiffSearchTests: XCTestCase {
     XCTAssertEqual(DiffSearch.ranges(in: "abc abc abc", query: "abc", limit: 2).count, 2)
   }
 
+  func testSearchNavigationMovesForwardAndWraps() {
+    let text = "needle middle needle"
+
+    XCTAssertEqual(
+      DiffSearch.navigationRange(
+        in: text,
+        query: "needle",
+        selectedRange: NSRange(location: 0, length: 0),
+        direction: .next
+      ),
+      NSRange(location: 0, length: 6)
+    )
+    XCTAssertEqual(
+      DiffSearch.navigationRange(
+        in: text,
+        query: "needle",
+        selectedRange: NSRange(location: 0, length: 6),
+        direction: .next
+      ),
+      NSRange(location: 14, length: 6)
+    )
+    XCTAssertEqual(
+      DiffSearch.navigationRange(
+        in: text,
+        query: "needle",
+        selectedRange: NSRange(location: 14, length: 6),
+        direction: .next
+      ),
+      NSRange(location: 0, length: 6)
+    )
+  }
+
+  func testSearchNavigationMovesBackwardAndCanAvoidWrapping() {
+    let text = "needle middle needle"
+
+    XCTAssertEqual(
+      DiffSearch.navigationRange(
+        in: text,
+        query: "needle",
+        selectedRange: NSRange(location: 14, length: 6),
+        direction: .previous
+      ),
+      NSRange(location: 0, length: 6)
+    )
+    XCTAssertNil(
+      DiffSearch.navigationRange(
+        in: text,
+        query: "needle",
+        selectedRange: NSRange(location: 0, length: 0),
+        direction: .previous,
+        allowsWrap: false
+      )
+    )
+  }
+
   func testVisibleUnifiedTextSkipsHiddenPatchMetadata() {
     let text = """
     diff --git a/App.swift b/App.swift

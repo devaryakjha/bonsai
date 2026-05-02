@@ -4,6 +4,7 @@ import SwiftUI
 struct RichDiffTextView: NSViewRepresentable {
   var text: String
   var searchText: String = ""
+  var searchNavigationRequest: DiffSearch.NavigationRequest?
 
   func makeCoordinator() -> Coordinator {
     Coordinator()
@@ -41,16 +42,39 @@ struct RichDiffTextView: NSViewRepresentable {
   }
 
   func updateNSView(_ scrollView: NSScrollView, context: Context) {
-    guard context.coordinator.lastText != text || context.coordinator.lastSearchText != searchText else { return }
-    context.coordinator.lastText = text
-    context.coordinator.lastSearchText = searchText
-    context.coordinator.textView?.textStorage?.setAttributedString(Self.attributedDiff(text, searchText: searchText))
+    let shouldRender = context.coordinator.lastText != text || context.coordinator.lastSearchText != searchText
+    if shouldRender {
+      context.coordinator.lastText = text
+      context.coordinator.lastSearchText = searchText
+      context.coordinator.textView?.textStorage?.setAttributedString(Self.attributedDiff(text, searchText: searchText))
+    }
+
+    guard context.coordinator.lastSearchNavigationRequest != searchNavigationRequest else { return }
+    context.coordinator.lastSearchNavigationRequest = searchNavigationRequest
+    context.coordinator.navigateSearch(query: searchText, request: searchNavigationRequest)
   }
 
   final class Coordinator {
     weak var textView: NSTextView?
     var lastText: String?
     var lastSearchText: String?
+    var lastSearchNavigationRequest: DiffSearch.NavigationRequest?
+
+    func navigateSearch(query: String, request: DiffSearch.NavigationRequest?) {
+      guard let request,
+            !DiffSearch.normalizedQuery(query).isEmpty,
+            let textView,
+            let range = DiffSearch.navigationRange(
+              in: textView.string,
+              query: query,
+              selectedRange: textView.selectedRange(),
+              direction: request.direction
+            ) else { return }
+
+      textView.setSelectedRange(range)
+      textView.scrollRangeToVisible(range)
+      textView.window?.makeFirstResponder(textView)
+    }
   }
 
   private static func attributedDiff(_ text: String, searchText: String) -> NSAttributedString {
