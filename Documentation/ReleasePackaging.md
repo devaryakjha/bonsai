@@ -127,5 +127,6 @@ ready.
 - `dist/release/Bonsai.app`
 - `dist/release/Bonsai.zip` for `--verify-archive`, `--archive`, and
   `--notarize`
+- `dist/release/Bonsai.release.plist` for archive-producing modes
 
 The `dist/` directory is ignored by Git.

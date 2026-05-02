@@ -133,6 +133,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Bonsai-${{ env.BONSAI_VERSION }}-${{ env.BONSAI_BUILD_NUMBER }}
-          path: dist/release/Bonsai.zip
+          path: |
+            dist/release/Bonsai.zip
+            dist/release/Bonsai.release.plist
           if-no-files-found: error
           retention-days: 30

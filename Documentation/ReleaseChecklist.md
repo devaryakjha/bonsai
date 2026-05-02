@@ -71,6 +71,7 @@ Expected local outputs:
 
 - `dist/release/Bonsai.app`
 - `dist/release/Bonsai.zip`
+- `dist/release/Bonsai.release.plist`
 
 Do not publish the ad-hoc artifact created by `--verify`.
 
@@ -89,8 +90,9 @@ that final zip.
 - Run the manual `Release` workflow if the artifact should be produced by
   GitHub Actions.
 - Tag the release from the audited commit.
-- Attach the notarized `dist/release/Bonsai.zip` from the local notarization
-  run or from the `Release` workflow artifact.
+- Attach the notarized `dist/release/Bonsai.zip` and
+  `dist/release/Bonsai.release.plist` from the local notarization run or from
+  the `Release` workflow artifact.
 - Include a concise summary of v0 parity coverage and known limitations.
 - Link `Specs/0242-v0-parity-evidence.md` for parity evidence.
 - Link `Documentation/ReleasePackaging.md` for build and notarization details.

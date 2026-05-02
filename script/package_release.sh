@@ -16,6 +16,7 @@ APP_RESOURCES="$APP_CONTENTS/Resources"
 APP_BINARY="$APP_MACOS/$APP_NAME"
 INFO_PLIST="$APP_CONTENTS/Info.plist"
 ARCHIVE_PATH="$DIST_DIR/$APP_NAME.zip"
+MANIFEST_PATH="$DIST_DIR/$APP_NAME.release.plist"
 APP_ICON_SOURCE="$ROOT_DIR/Assets/AppIcon/Bonsai.icns"
 APP_MARK_SOURCE="$ROOT_DIR/Assets/AppIcon/bonsai-worktree-topology.svg"
 
@@ -185,6 +186,69 @@ create_archive() {
   ditto -c -k --keepParent "$APP_BUNDLE" "$ARCHIVE_PATH"
   require_file "$ARCHIVE_PATH"
   validate_archive
+}
+
+write_release_manifest() {
+  local signing_identity="$1" notarized="$2"
+  local archive_sha archive_size git_commit signature_kind team_identifier
+  local codesign_details
+
+  require_file "$ARCHIVE_PATH"
+  archive_sha="$(shasum -a 256 "$ARCHIVE_PATH" | awk '{print $1}')"
+  archive_size="$(stat -f%z "$ARCHIVE_PATH")"
+  git_commit="$(git -C "$ROOT_DIR" rev-parse HEAD 2>/dev/null || printf 'unknown')"
+  codesign_details="$(codesign -dvvv "$APP_BUNDLE" 2>&1 || true)"
+  signature_kind="$(printf '%s\n' "$codesign_details" | awk -F= '/^Signature=/{print $2; exit}')"
+  team_identifier="$(printf '%s\n' "$codesign_details" | awk -F= '/^TeamIdentifier=/{print $2; exit}')"
+
+  if [[ -z "$signature_kind" ]]; then
+    signature_kind="unknown"
+  fi
+  if [[ -z "$team_identifier" ]]; then
+    team_identifier="not set"
+  fi
+  if [[ "$signing_identity" == "-" ]]; then
+    signing_identity="ad-hoc"
+  fi
+
+  cat >"$MANIFEST_PATH" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict/>
+</plist>
+PLIST
+
+  plutil -insert appName -string "$APP_NAME" "$MANIFEST_PATH"
+  plutil -insert bundleIdentifier -string "$BUNDLE_ID" "$MANIFEST_PATH"
+  plutil -insert version -string "$(app_version)" "$MANIFEST_PATH"
+  plutil -insert buildNumber -string "$(build_number)" "$MANIFEST_PATH"
+  plutil -insert gitCommit -string "$git_commit" "$MANIFEST_PATH"
+  plutil -insert archiveName -string "$(basename "$ARCHIVE_PATH")" "$MANIFEST_PATH"
+  plutil -insert archiveByteSize -integer "$archive_size" "$MANIFEST_PATH"
+  plutil -insert archiveSHA256 -string "$archive_sha" "$MANIFEST_PATH"
+  plutil -insert signingIdentity -string "$signing_identity" "$MANIFEST_PATH"
+  plutil -insert signatureKind -string "$signature_kind" "$MANIFEST_PATH"
+  plutil -insert teamIdentifier -string "$team_identifier" "$MANIFEST_PATH"
+  plutil -insert notarized -bool "$notarized" "$MANIFEST_PATH"
+  validate_release_manifest
+}
+
+validate_release_manifest() {
+  require_file "$MANIFEST_PATH"
+  plutil -lint "$MANIFEST_PATH" >/dev/null
+  plutil -extract appName raw "$MANIFEST_PATH" >/dev/null
+  plutil -extract bundleIdentifier raw "$MANIFEST_PATH" >/dev/null
+  plutil -extract version raw "$MANIFEST_PATH" >/dev/null
+  plutil -extract buildNumber raw "$MANIFEST_PATH" >/dev/null
+  plutil -extract gitCommit raw "$MANIFEST_PATH" >/dev/null
+  plutil -extract archiveName raw "$MANIFEST_PATH" >/dev/null
+  plutil -extract archiveByteSize raw "$MANIFEST_PATH" >/dev/null
+  plutil -extract archiveSHA256 raw "$MANIFEST_PATH" >/dev/null
+  plutil -extract signingIdentity raw "$MANIFEST_PATH" >/dev/null
+  plutil -extract signatureKind raw "$MANIFEST_PATH" >/dev/null
+  plutil -extract teamIdentifier raw "$MANIFEST_PATH" >/dev/null
+  plutil -extract notarized raw "$MANIFEST_PATH" >/dev/null
 }
 
 validate_archive() {
@@ -363,11 +427,13 @@ case "$MODE" in
   --verify-archive|verify-archive)
     package_with_identity "-"
     create_archive
+    write_release_manifest "-" false
     ;;
   --archive|archive)
     check_archive_credentials
     package_with_identity "$(developer_id_identity)"
     create_archive
+    write_release_manifest "$(developer_id_identity)" false
     ;;
   --notarize|notarize)
     check_distribution_credentials
@@ -382,6 +448,7 @@ case "$MODE" in
     xcrun stapler validate "$APP_BUNDLE"
     spctl -a -vv -t exec "$APP_BUNDLE"
     create_archive
+    write_release_manifest "$(developer_id_identity)" true
     ;;
   --check-credentials|check-credentials)
     check_distribution_credentials
