@@ -418,6 +418,9 @@ struct SidebarView: View {
           Button("Create Branch from Here...") {
             store.presentCreateBranch(from: tag)
           }
+          Button("Rename...") {
+            store.presentRenameTag(tag)
+          }
           if !store.tagPushRemotes.isEmpty {
             Menu("Push to Remote") {
               ForEach(store.tagPushRemotes) { remote in

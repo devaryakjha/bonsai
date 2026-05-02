@@ -44,6 +44,7 @@ final class RepositoryStore {
   var operationInput = ""
   var branchRenameSource: GitRef?
   var branchStartPoint: String?
+  var tagRenameSource: GitRef?
   var tagTarget: String?
   var stashBranchSource: GitStash?
   var conflictResolutionRequest: ConflictResolutionRequest?
@@ -929,6 +930,7 @@ final class RepositoryStore {
   func presentCreateBranch() {
     branchRenameSource = nil
     branchStartPoint = selectedCommit?.hash
+    tagRenameSource = nil
     tagTarget = nil
     operationInput = ""
     operationRequest = GitOperationRequest(
@@ -944,6 +946,7 @@ final class RepositoryStore {
   func presentCreateBranch(from ref: GitRef) {
     branchRenameSource = nil
     branchStartPoint = ref.shortName
+    tagRenameSource = nil
     tagTarget = nil
     operationInput = ""
     operationRequest = GitOperationRequest(
@@ -959,6 +962,7 @@ final class RepositoryStore {
   func presentRenameBranch(_ branch: GitRef) {
     branchRenameSource = branch
     branchStartPoint = nil
+    tagRenameSource = nil
     tagTarget = nil
     operationInput = branch.shortName
     operationRequest = GitOperationRequest(
@@ -974,6 +978,7 @@ final class RepositoryStore {
   func presentCreateTag() {
     branchRenameSource = nil
     branchStartPoint = nil
+    tagRenameSource = nil
     tagTarget = selectedCommit?.hash
     operationInput = ""
     operationRequest = GitOperationRequest(
@@ -989,6 +994,7 @@ final class RepositoryStore {
   func presentCreateTag(from ref: GitRef) {
     branchRenameSource = nil
     branchStartPoint = nil
+    tagRenameSource = nil
     tagTarget = ref.shortName
     operationInput = ""
     operationRequest = GitOperationRequest(
@@ -998,6 +1004,22 @@ final class RepositoryStore {
       placeholder: "v0.1.0",
       defaultValue: "",
       primaryActionTitle: "Create"
+    )
+  }
+
+  func presentRenameTag(_ tag: GitRef) {
+    branchRenameSource = nil
+    branchStartPoint = nil
+    tagRenameSource = tag
+    tagTarget = nil
+    operationInput = tag.shortName
+    operationRequest = GitOperationRequest(
+      kind: .renameTag,
+      title: "Rename tag",
+      message: "Rename \(tag.shortName).",
+      placeholder: "v0.2.0",
+      defaultValue: tag.shortName,
+      primaryActionTitle: "Rename"
     )
   }
 
@@ -1085,11 +1107,13 @@ final class RepositoryStore {
     let value = operationInput.trimmingCharacters(in: .whitespacesAndNewlines)
     let branchToRename = branchRenameSource
     let branchStartPoint = branchStartPoint
+    let tagToRename = tagRenameSource
     let tagTarget = tagTarget
     let stashToBranch = stashBranchSource
     operationRequest = nil
     branchRenameSource = nil
     self.branchStartPoint = nil
+    tagRenameSource = nil
     self.tagTarget = nil
     stashBranchSource = nil
 
@@ -1108,6 +1132,11 @@ final class RepositoryStore {
       guard !value.isEmpty else { return }
       await runMutation(title: "Create tag \(value)") {
         try await gitClient.createTag(named: value, target: tagTarget, in: requiredRepository())
+      }
+    case .renameTag:
+      guard let tagToRename, !value.isEmpty else { return }
+      await runMutation(title: "Rename tag \(tagToRename.shortName)") {
+        try await gitClient.renameTag(from: tagToRename.shortName, to: value, in: requiredRepository())
       }
     case .stashPush:
       await runMutation(title: "Create stash") {

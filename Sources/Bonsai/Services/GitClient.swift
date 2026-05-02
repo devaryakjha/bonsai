@@ -425,6 +425,18 @@ struct GitClient {
     return try await runRaw(args, in: repository)
   }
 
+  func renameTag(from oldName: String, to newName: String, in repository: GitRepository) async throws -> String {
+    let oldRef = "refs/tags/\(oldName)"
+    let newRef = "refs/tags/\(newName)"
+    let object = try await git(["rev-parse", oldRef], in: repository.url).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let create = try await git(["update-ref", newRef, object, ""], in: repository.url)
+    let delete = try await git(["update-ref", "-d", oldRef], in: repository.url)
+    return [create.combinedOutput, delete.combinedOutput]
+      .filter { !$0.isEmpty }
+      .joined(separator: "\n")
+  }
+
   func checkout(_ ref: String, in repository: GitRepository) async throws -> String {
     try await runRaw(["checkout", ref], in: repository)
   }

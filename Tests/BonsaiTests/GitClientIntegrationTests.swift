@@ -652,6 +652,41 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(tagHash, firstHash)
   }
 
+  func testStoreRenamesAnnotatedTagWithoutFlatteningIt() async throws {
+    let repo = try await makeRepository()
+    try write("initial\n", to: repo.appending(path: "file.txt"))
+    try await commitAll(in: repo, message: "Initial")
+    _ = try await client.git(["tag", "-a", "v1.0.0", "-m", "Version 1"], in: repo)
+    let originalTagObject = try await client.git(["rev-parse", "refs/tags/v1.0.0"], in: repo).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    let tags = await store.tags
+    let tag = try XCTUnwrap(tags.first { $0.shortName == "v1.0.0" })
+    await MainActor.run {
+      store.presentRenameTag(tag)
+      store.operationInput = "v1.1.0"
+    }
+
+    await store.confirmOperation()
+
+    let oldTagLookup = try? await client.git(["rev-parse", "--verify", "refs/tags/v1.0.0"], in: repo)
+    let renamedTagObject = try await client.git(["rev-parse", "refs/tags/v1.1.0"], in: repo).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let renamedTagType = try await client.git(["cat-file", "-t", "refs/tags/v1.1.0"], in: repo).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let refs = try await client.refs(in: GitRepository(path: repo.path(percentEncoded: false)))
+    let commandResult = await store.commandResult
+    XCTAssertNil(oldTagLookup)
+    XCTAssertEqual(renamedTagObject, originalTagObject)
+    XCTAssertEqual(renamedTagType, "tag")
+    XCTAssertTrue(refs.contains { $0.shortName == "v1.1.0" && $0.kind == .tag })
+    XCTAssertFalse(refs.contains { $0.shortName == "v1.0.0" && $0.kind == .tag })
+    XCTAssertEqual(commandResult?.title, "Rename tag v1.0.0")
+    XCTAssertEqual(commandResult?.isError, false)
+  }
+
   func testStorePushesTagToRemote() async throws {
     let repo = try await makeRepository()
     let bare = try await makeBareRepository()

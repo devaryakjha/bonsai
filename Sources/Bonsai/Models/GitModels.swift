@@ -1154,6 +1154,7 @@ enum GitOperationKind: String, Identifiable {
   case createBranch
   case renameBranch
   case createTag
+  case renameTag
   case stashPush
   case stashPushIncludeUntracked
   case stashBranch
