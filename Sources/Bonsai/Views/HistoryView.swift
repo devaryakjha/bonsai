@@ -41,6 +41,9 @@ struct HistoryView: View {
                   Button("Create Branch...") {
                     store.presentStashBranch(stash)
                   }
+                  Divider()
+                  StashCopyMenu(stash: stash)
+                  Divider()
                   Button("Drop", role: .destructive) {
                     store.presentDropStash(stash)
                   }
