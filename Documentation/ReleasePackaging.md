@@ -63,6 +63,13 @@ Validate the stored profile before running a full release:
 xcrun notarytool history --keychain-profile bonsai-notary
 ```
 
+CI jobs may store the profile in a temporary keychain. In that case, export the
+keychain path so the release script passes it to `notarytool`:
+
+```sh
+export BONSAI_NOTARY_KEYCHAIN="$RUNNER_TEMP/bonsai-signing.keychain-db"
+```
+
 ## Signed Archive
 
 Set a Developer ID Application identity before creating a distributable archive:

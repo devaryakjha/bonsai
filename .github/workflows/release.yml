@@ -1,0 +1,138 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version. Defaults to VERSION.
+        required: false
+        type: string
+      build_number:
+        description: Build number. Defaults to the GitHub run number.
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  notarize:
+    name: Notarized macOS artifact
+    runs-on: macos-14
+    environment: release
+
+    env:
+      BONSAI_CODESIGN_IDENTITY: ${{ secrets.BONSAI_CODESIGN_IDENTITY }}
+      BONSAI_NOTARY_PROFILE: bonsai-ci-notary
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+
+      - name: Resolve release metadata
+        run: |
+          version="${{ inputs.version }}"
+          build_number="${{ inputs.build_number }}"
+          if [[ -z "$version" ]]; then
+            version="$(tr -d '[:space:]' < VERSION)"
+          fi
+          if [[ -z "$build_number" ]]; then
+            build_number="${{ github.run_number }}"
+          fi
+          {
+            echo "BONSAI_VERSION=$version"
+            echo "BONSAI_BUILD_NUMBER=$build_number"
+            echo "BONSAI_NOTARY_KEYCHAIN=$RUNNER_TEMP/bonsai-signing.keychain-db"
+          } >> "$GITHUB_ENV"
+
+      - name: Validate source
+        run: |
+          git diff --check
+          bash -n script/build_and_run.sh
+          bash -n script/package_release.sh
+          bash -n script/perf_large_repo.sh
+          swift test
+
+      - name: Check release secrets
+        env:
+          BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64: ${{ secrets.BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64 }}
+          BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+          BONSAI_NOTARY_APPLE_ID: ${{ secrets.BONSAI_NOTARY_APPLE_ID }}
+          BONSAI_NOTARY_APP_PASSWORD: ${{ secrets.BONSAI_NOTARY_APP_PASSWORD }}
+          BONSAI_NOTARY_TEAM_ID: ${{ secrets.BONSAI_NOTARY_TEAM_ID }}
+        run: |
+          missing=0
+          for name in \
+            BONSAI_CODESIGN_IDENTITY \
+            BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64 \
+            BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD \
+            BONSAI_NOTARY_APPLE_ID \
+            BONSAI_NOTARY_APP_PASSWORD \
+            BONSAI_NOTARY_TEAM_ID; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "$name is required"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Create signing keychain
+        env:
+          BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64: ${{ secrets.BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64 }}
+          BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+        run: |
+          keychain_password="$(openssl rand -base64 32)"
+          echo "::add-mask::$keychain_password"
+          security create-keychain -p "$keychain_password" "$BONSAI_NOTARY_KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$BONSAI_NOTARY_KEYCHAIN"
+          security unlock-keychain -p "$keychain_password" "$BONSAI_NOTARY_KEYCHAIN"
+          security list-keychains -d user -s "$BONSAI_NOTARY_KEYCHAIN"
+          security default-keychain -s "$BONSAI_NOTARY_KEYCHAIN"
+
+          certificate_path="$RUNNER_TEMP/bonsai-developer-id.p12"
+          printf '%s' "$BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64" | base64 --decode > "$certificate_path"
+          security import "$certificate_path" \
+            -k "$BONSAI_NOTARY_KEYCHAIN" \
+            -P "$BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: \
+            -s \
+            -k "$keychain_password" \
+            "$BONSAI_NOTARY_KEYCHAIN"
+          rm -f "$certificate_path"
+
+      - name: Store notarization credentials
+        env:
+          BONSAI_NOTARY_APPLE_ID: ${{ secrets.BONSAI_NOTARY_APPLE_ID }}
+          BONSAI_NOTARY_APP_PASSWORD: ${{ secrets.BONSAI_NOTARY_APP_PASSWORD }}
+          BONSAI_NOTARY_TEAM_ID: ${{ secrets.BONSAI_NOTARY_TEAM_ID }}
+        run: |
+          xcrun notarytool store-credentials "$BONSAI_NOTARY_PROFILE" \
+            --apple-id "$BONSAI_NOTARY_APPLE_ID" \
+            --team-id "$BONSAI_NOTARY_TEAM_ID" \
+            --password "$BONSAI_NOTARY_APP_PASSWORD" \
+            --keychain "$BONSAI_NOTARY_KEYCHAIN"
+
+      - name: Check release credentials
+        run: |
+          ./script/package_release.sh --doctor
+          ./script/package_release.sh --check-credentials
+
+      - name: Build signed and notarized archive
+        run: ./script/package_release.sh --notarize
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Bonsai-${{ env.BONSAI_VERSION }}-${{ env.BONSAI_BUILD_NUMBER }}
+          path: dist/release/Bonsai.zip
+          if-no-files-found: error
+          retention-days: 30

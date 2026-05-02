@@ -33,6 +33,7 @@ usage: script/package_release.sh [--verify|--verify-archive|--archive|--notarize
 Environment:
   BONSAI_CODESIGN_IDENTITY  Required for --archive and --notarize.
   BONSAI_NOTARY_PROFILE     Required for --notarize; xcrun notarytool keychain profile.
+  BONSAI_NOTARY_KEYCHAIN    Optional keychain path for CI-stored notarytool credentials.
   BONSAI_VERSION            Optional CFBundleShortVersionString override.
   BONSAI_BUILD_NUMBER       Optional CFBundleVersion override.
 USAGE
@@ -260,7 +261,12 @@ check_developer_id_identity() {
 
 check_notary_credentials() {
   local profile="$1"
-  if ! xcrun notarytool history --keychain-profile "$profile" >/dev/null; then
+  local args=(--keychain-profile "$profile")
+  if [[ -n "${BONSAI_NOTARY_KEYCHAIN:-}" ]]; then
+    args+=(--keychain "$BONSAI_NOTARY_KEYCHAIN")
+  fi
+
+  if ! xcrun notarytool history "${args[@]}" >/dev/null; then
     echo "notarytool keychain profile could not be validated: $profile" >&2
     exit 1
   fi
@@ -320,7 +326,12 @@ release_doctor() {
     failures=1
   else
     profile="$BONSAI_NOTARY_PROFILE"
-    if xcrun notarytool history --keychain-profile "$profile" >/dev/null 2>&1; then
+    local args=(--keychain-profile "$profile")
+    if [[ -n "${BONSAI_NOTARY_KEYCHAIN:-}" ]]; then
+      args+=(--keychain "$BONSAI_NOTARY_KEYCHAIN")
+    fi
+
+    if xcrun notarytool history "${args[@]}" >/dev/null 2>&1; then
       echo "BONSAI_NOTARY_PROFILE: valid"
     else
       echo "BONSAI_NOTARY_PROFILE: could not be validated"
@@ -362,9 +373,11 @@ case "$MODE" in
     check_distribution_credentials
     package_with_identity "$(developer_id_identity)"
     create_archive
-    xcrun notarytool submit "$ARCHIVE_PATH" \
-      --keychain-profile "$(notary_profile)" \
-      --wait
+    notary_submit_args=(--keychain-profile "$(notary_profile)")
+    if [[ -n "${BONSAI_NOTARY_KEYCHAIN:-}" ]]; then
+      notary_submit_args+=(--keychain "$BONSAI_NOTARY_KEYCHAIN")
+    fi
+    xcrun notarytool submit "$ARCHIVE_PATH" "${notary_submit_args[@]}" --wait
     xcrun stapler staple "$APP_BUNDLE"
     xcrun stapler validate "$APP_BUNDLE"
     spctl -a -vv -t exec "$APP_BUNDLE"

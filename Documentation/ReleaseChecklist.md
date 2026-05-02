@@ -79,8 +79,18 @@ that final zip.
 
 ## 5. GitHub Release
 
+- Configure the protected `release` environment with these secrets:
+  `BONSAI_CODESIGN_IDENTITY`,
+  `BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64`,
+  `BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD`,
+  `BONSAI_NOTARY_APPLE_ID`,
+  `BONSAI_NOTARY_APP_PASSWORD`, and
+  `BONSAI_NOTARY_TEAM_ID`.
+- Run the manual `Release` workflow if the artifact should be produced by
+  GitHub Actions.
 - Tag the release from the audited commit.
-- Attach `dist/release/Bonsai.zip`.
+- Attach the notarized `dist/release/Bonsai.zip` from the local notarization
+  run or from the `Release` workflow artifact.
 - Include a concise summary of v0 parity coverage and known limitations.
 - Link `Specs/0242-v0-parity-evidence.md` for parity evidence.
 - Link `Documentation/ReleasePackaging.md` for build and notarization details.
