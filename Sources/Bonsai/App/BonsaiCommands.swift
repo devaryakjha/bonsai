@@ -66,6 +66,14 @@ struct BonsaiCommands: Commands {
     }
 
     CommandMenu("Git") {
+      Button(store.amendCommit ? "Amend Commit" : "Commit") {
+        Task { await store.commit() }
+      }
+      .keyboardShortcut(.return, modifiers: [.command])
+      .disabled(store.selectedRepository == nil || !store.canCommit)
+
+      Divider()
+
       Button("Create Branch...") {
         store.presentCreateBranch()
       }
