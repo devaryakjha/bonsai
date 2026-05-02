@@ -161,8 +161,15 @@ struct SidebarView: View {
       if !store.localBranches.isEmpty {
         Section("Local branches") {
           ForEach(store.localBranches) { branch in
-            BranchRow(branch: branch)
-              .help(branch.upstream.map { "Upstream: \($0)" } ?? "No upstream configured")
+            BranchRow(
+              branch: branch,
+              indicator: BranchWorktreeIndicator(
+                branch: branch,
+                worktrees: store.snapshot.worktrees,
+                selectedRepositoryPath: store.selectedRepository?.path
+              )
+            )
+              .help(branchHelpText(branch))
             .contextMenu {
               Button("Checkout") {
                 Task { await store.checkout(branch) }
@@ -715,6 +722,20 @@ struct SidebarView: View {
     }
     return "\(branchName), \(state)"
   }
+
+  private func branchHelpText(_ branch: GitRef) -> String {
+    var lines: [String] = []
+    let indicator = BranchWorktreeIndicator(
+      branch: branch,
+      worktrees: store.snapshot.worktrees,
+      selectedRepositoryPath: store.selectedRepository?.path
+    )
+    if let indicatorHelp = indicator.helpText {
+      lines.append(indicatorHelp)
+    }
+    lines.append(branch.upstream.map { "Upstream: \($0)" } ?? "No upstream configured")
+    return lines.joined(separator: "\n")
+  }
 }
 
 private struct RepositoryHeaderRow: View {
@@ -745,11 +766,12 @@ private struct RepositoryHeaderRow: View {
 
 private struct BranchRow: View {
   var branch: GitRef
+  var indicator: BranchWorktreeIndicator
 
   var body: some View {
     HStack(spacing: 8) {
-      Image(systemName: branch.isHead ? "checkmark.circle.fill" : "circle")
-        .foregroundStyle(branch.isHead ? .green : .secondary)
+      Image(systemName: indicator.systemImage)
+        .foregroundStyle(iconStyle)
         .frame(width: 16)
       Text(branch.shortName)
         .lineLimit(1)
@@ -762,6 +784,17 @@ private struct BranchRow: View {
           .padding(.vertical, 2)
           .background(.quaternary, in: Capsule())
       }
+    }
+  }
+
+  private var iconStyle: Color {
+    switch indicator.kind {
+    case .current:
+      return .green
+    case .linkedWorktree:
+      return .accentColor
+    case .available:
+      return .secondary
     }
   }
 }
