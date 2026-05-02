@@ -129,6 +129,9 @@ jobs:
       - name: Build signed and notarized archive
         run: ./script/package_release.sh --notarize
 
+      - name: Verify release artifacts
+        run: ./script/package_release.sh --verify-artifacts
+
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:

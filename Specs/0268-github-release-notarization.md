@@ -15,7 +15,10 @@ available, without weakening local release validation.
 - Store the notarytool credentials in that temporary keychain for the job.
 - Run `./script/package_release.sh --doctor`, `--check-credentials`, and
   `--notarize`.
-- Upload the final stapled `dist/release/Bonsai.zip` as a workflow artifact.
+- Verify the final zip and manifest with
+  `./script/package_release.sh --verify-artifacts`.
+- Upload the final stapled `dist/release/Bonsai.zip` and
+  `dist/release/Bonsai.release.plist` as workflow artifacts.
 - Keep credential names documented and avoid checking secrets into the
   repository.
 
@@ -24,5 +27,6 @@ available, without weakening local release validation.
 - `.github/workflows/release.yml` is manual-only.
 - `script/package_release.sh` can validate and submit using an optional
   notarytool keychain path.
+- The workflow verifies release artifacts before upload.
 - `Documentation/ReleaseChecklist.md` documents both local and GitHub release
   paths.
