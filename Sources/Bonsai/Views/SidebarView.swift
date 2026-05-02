@@ -4,6 +4,7 @@ struct SidebarView: View {
   let store: RepositoryStore
   @AppStorage("bonsai.sidebar.repositoryDetailsExpanded") private var repositoryDetailsExpanded = false
   @AppStorage("bonsai.sidebar.referencesExpanded") private var referencesExpanded = false
+  @AppStorage("bonsai.sidebar.showAllReferences") private var showAllReferences = false
   @AppStorage("bonsai.sidebar.worktreesExpanded") private var worktreesExpanded = false
   @AppStorage("bonsai.sidebar.remotesExpanded") private var remotesExpanded = false
   @AppStorage("bonsai.sidebar.submodulesExpanded") private var submodulesExpanded = false
@@ -191,7 +192,7 @@ struct SidebarView: View {
           DisclosureGroup(isExpanded: $referencesExpanded) {
             referenceRows
           } label: {
-            Label("Remote branches and tags", systemImage: "tag")
+            SidebarDisclosureLabel(title: "Remote branches and tags", count: referenceCount, systemImage: "tag")
           }
         }
 
@@ -329,7 +330,7 @@ struct SidebarView: View {
 
   @ViewBuilder
   private var referenceRows: some View {
-    ForEach(store.remoteBranches.prefix(20)) { branch in
+    ForEach(ReferenceDisplayPolicy.visibleItems(store.remoteBranches, showAll: showAllReferences)) { branch in
       Label(branch.shortName, systemImage: "network")
         .lineLimit(1)
         .contextMenu {
@@ -355,7 +356,7 @@ struct SidebarView: View {
         }
     }
 
-    ForEach(store.tags.prefix(20)) { tag in
+    ForEach(ReferenceDisplayPolicy.visibleItems(store.tags, showAll: showAllReferences)) { tag in
       Label(tag.shortName, systemImage: "tag")
         .lineLimit(1)
         .contextMenu {
@@ -373,6 +374,36 @@ struct SidebarView: View {
           }
         }
     }
+
+    if hiddenReferenceCount > 0 {
+      Button {
+        showAllReferences = true
+      } label: {
+        SidebarInlineAction(title: "Show \(hiddenReferenceCount.formatted()) more", systemImage: "ellipsis.circle")
+      }
+      .buttonStyle(.plain)
+    } else if showAllReferences && cappedReferenceHiddenCount > 0 {
+      Button {
+        showAllReferences = false
+      } label: {
+        SidebarInlineAction(title: "Show fewer references", systemImage: "line.3.horizontal.decrease.circle")
+      }
+      .buttonStyle(.plain)
+    }
+  }
+
+  private var referenceCount: Int {
+    store.remoteBranches.count + store.tags.count
+  }
+
+  private var hiddenReferenceCount: Int {
+    ReferenceDisplayPolicy.hiddenCount(store.remoteBranches, showAll: showAllReferences)
+      + ReferenceDisplayPolicy.hiddenCount(store.tags, showAll: showAllReferences)
+  }
+
+  private var cappedReferenceHiddenCount: Int {
+    ReferenceDisplayPolicy.hiddenCount(store.remoteBranches, showAll: false)
+      + ReferenceDisplayPolicy.hiddenCount(store.tags, showAll: false)
   }
 
   @ViewBuilder
