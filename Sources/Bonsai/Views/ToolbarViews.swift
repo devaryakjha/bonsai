@@ -28,58 +28,64 @@ struct RepositoryToolbarActionsMenu: View {
       }
 
       Menu("Revision") {
-        Button(GitRevisionCommand.cherryPick.selectedCommitTitle) {
-          store.presentRevisionCommand(.cherryPick)
+        Menu(ToolbarRevisionMenuCopy.selectedCommitMenuTitle) {
+          Button(GitRevisionCommand.cherryPick.selectedCommitTitle) {
+            store.presentRevisionCommand(.cherryPick)
+          }
+          .disabled(store.selectedCommit == nil)
+          Button(GitRevisionCommand.revert.selectedCommitTitle) {
+            store.presentRevisionCommand(.revert)
+          }
+          .disabled(store.selectedCommit == nil)
+          Button(GitRevisionCommand.merge.selectedCommitTitle) {
+            store.presentRevisionCommand(.merge)
+          }
+          .disabled(store.selectedCommit == nil)
+          Button(GitRevisionCommand.rebase.selectedCommitTitle) {
+            store.presentRevisionCommand(.rebase)
+          }
+          .disabled(store.selectedCommit == nil)
+          Divider()
+          Button("Reset to Selected Commit…") {
+            store.presentResetToSelectedCommit()
+          }
+          .disabled(store.selectedCommit == nil)
         }
-        .disabled(store.selectedCommit == nil)
-        Button(GitRevisionCommand.revert.selectedCommitTitle) {
-          store.presentRevisionCommand(.revert)
+        Menu(ToolbarRevisionMenuCopy.currentOperationMenuTitle) {
+          Button("Continue") {
+            Task { await store.runInProgressOperation(.continueOperation) }
+          }
+          .disabled(!store.snapshot.inProgressOperation.active)
+          Button("Skip") {
+            Task { await store.runInProgressOperation(.skip) }
+          }
+          .disabled(!(store.snapshot.inProgressOperation.kind?.canSkip ?? false))
+          Button("Abort") {
+            Task { await store.runInProgressOperation(.abort) }
+          }
+          .disabled(!store.snapshot.inProgressOperation.active)
         }
-        .disabled(store.selectedCommit == nil)
-        Button(GitRevisionCommand.merge.selectedCommitTitle) {
-          store.presentRevisionCommand(.merge)
+        Menu(ToolbarRevisionMenuCopy.rebaseMenuTitle) {
+          Button("Interactive Rebase…") {
+            Task { await store.presentInteractiveRebase() }
+          }
         }
-        .disabled(store.selectedCommit == nil)
-        Button(GitRevisionCommand.rebase.selectedCommitTitle) {
-          store.presentRevisionCommand(.rebase)
-        }
-        .disabled(store.selectedCommit == nil)
-        Button("Reset to Selected Commit…") {
-          store.presentResetToSelectedCommit()
-        }
-        .disabled(store.selectedCommit == nil)
-        Divider()
-        Button("Continue Current Operation") {
-          Task { await store.runInProgressOperation(.continueOperation) }
-        }
-        .disabled(!store.snapshot.inProgressOperation.active)
-        Button("Skip Current Operation") {
-          Task { await store.runInProgressOperation(.skip) }
-        }
-        .disabled(!(store.snapshot.inProgressOperation.kind?.canSkip ?? false))
-        Button("Abort Current Operation") {
-          Task { await store.runInProgressOperation(.abort) }
-        }
-        .disabled(!store.snapshot.inProgressOperation.active)
-        Divider()
-        Button("Interactive Rebase…") {
-          Task { await store.presentInteractiveRebase() }
-        }
-        Divider()
-        Button("Start Bisect with Selected Commit…") {
-          store.presentStartBisect()
-        }
-        .disabled(store.selectedCommit == nil || store.snapshot.integrations.bisect.active)
-        ForEach(GitBisectMark.allCases) { mark in
-          Button("Mark Current Commit \(mark.title)") {
-            Task { await store.markBisect(mark) }
+        Menu(ToolbarRevisionMenuCopy.bisectMenuTitle) {
+          Button("Start with Selected Commit…") {
+            store.presentStartBisect()
+          }
+          .disabled(store.selectedCommit == nil || store.snapshot.integrations.bisect.active)
+          ForEach(GitBisectMark.allCases) { mark in
+            Button("Mark Current Commit \(mark.title)") {
+              Task { await store.markBisect(mark) }
+            }
+            .disabled(!store.snapshot.integrations.bisect.active)
+          }
+          Button("Reset") {
+            Task { await store.resetBisect() }
           }
           .disabled(!store.snapshot.integrations.bisect.active)
         }
-        Button("Reset Bisect") {
-          Task { await store.resetBisect() }
-        }
-        .disabled(!store.snapshot.integrations.bisect.active)
       }
 
       Menu("Stash") {
