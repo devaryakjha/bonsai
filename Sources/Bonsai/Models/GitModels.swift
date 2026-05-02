@@ -161,10 +161,10 @@ struct GitRef: Identifiable, Hashable {
     return parts.joined(separator: " ")
   }
   var pullTitle: String {
-    behind > 0 ? "Pull \(behind)" : "Pull"
+    behind > 0 ? "Pull ↓ \(behind)" : "Pull"
   }
   var pushTitle: String {
-    ahead > 0 ? "Push \(ahead)" : "Push"
+    ahead > 0 ? "Push ↑ \(ahead)" : "Push"
   }
 
   var remoteTrackingLocalName: String? {
