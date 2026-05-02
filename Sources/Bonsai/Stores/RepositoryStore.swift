@@ -123,6 +123,10 @@ final class RepositoryStore {
     snapshot.refs.filter { $0.kind == .localBranch }
   }
 
+  var currentBranch: GitRef? {
+    localBranches.first(where: \.isHead)
+  }
+
   var remoteBranches: [GitRef] {
     snapshot.refs.filter { $0.kind == .remoteBranch }
   }
@@ -725,6 +729,19 @@ final class RepositoryStore {
     guard let selectedCommit else { return }
     await runMutation(title: "Checkout \(selectedCommit.shortHash)") {
       try await gitClient.checkout(selectedCommit.hash, in: requiredRepository())
+    }
+  }
+
+  func setCurrentBranchUpstream(_ remoteBranch: GitRef) async {
+    guard let currentBranch else { return }
+    await runMutation(title: "Track \(remoteBranch.shortName)") {
+      try await gitClient.setUpstream(remoteBranch.shortName, for: currentBranch.shortName, in: requiredRepository())
+    }
+  }
+
+  func unsetUpstream(_ branch: GitRef) async {
+    await runMutation(title: "Unset Upstream \(branch.shortName)") {
+      try await gitClient.unsetUpstream(for: branch.shortName, in: requiredRepository())
     }
   }
 

@@ -331,6 +331,14 @@ struct GitClient {
     try await runRaw(["checkout", "--track", ref.shortName], in: repository)
   }
 
+  func setUpstream(_ upstream: String, for branch: String, in repository: GitRepository) async throws -> String {
+    try await runRaw(["branch", "--set-upstream-to=\(upstream)", branch], in: repository)
+  }
+
+  func unsetUpstream(for branch: String, in repository: GitRepository) async throws -> String {
+    try await runRaw(["branch", "--unset-upstream", branch], in: repository)
+  }
+
   func reset(to commit: GitCommit, mode: ResetMode, in repository: GitRepository) async throws -> String {
     try await runRaw(["reset", mode.flag, commit.hash], in: repository)
   }

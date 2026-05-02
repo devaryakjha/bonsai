@@ -149,6 +149,11 @@ struct SidebarView: View {
               Button("Rename...") {
                 store.presentRenameBranch(branch)
               }
+              if branch.upstream != nil {
+                Button("Unset Upstream") {
+                  Task { await store.unsetUpstream(branch) }
+                }
+              }
               Button("Delete") {
                 Task { await store.delete(branch) }
               }
@@ -167,6 +172,10 @@ struct SidebarView: View {
                 Button("Checkout as Local Branch") {
                   Task { await store.checkout(branch) }
                 }
+                Button("Set as Upstream for Current Branch") {
+                  Task { await store.setCurrentBranchUpstream(branch) }
+                }
+                .disabled(store.currentBranch == nil)
               }
           }
         }
