@@ -59,4 +59,15 @@ final class DiffInlineHighlighterTests: XCTestCase {
     let longLine = String(repeating: "a", count: DiffRenderPolicy.maxPlaceholderColumns + 1_000)
     XCTAssertEqual(DiffRenderPolicy.placeholderColumns(for: longLine), DiffRenderPolicy.maxPlaceholderColumns)
   }
+
+  func testRenderPolicyUsesBoundedSplitPlaceholderText() {
+    let shortPlaceholder = DiffRenderPolicy.splitPlaceholder(counterpart: "short")
+    XCTAssertTrue(shortPlaceholder.hasPrefix("No line"))
+    XCTAssertEqual(shortPlaceholder.count, DiffRenderPolicy.minPlaceholderColumns)
+
+    let longLine = String(repeating: "a", count: DiffRenderPolicy.maxPlaceholderColumns + 1_000)
+    let longPlaceholder = DiffRenderPolicy.splitPlaceholder(counterpart: longLine)
+    XCTAssertTrue(longPlaceholder.hasPrefix("No line"))
+    XCTAssertEqual(longPlaceholder.count, DiffRenderPolicy.maxPlaceholderColumns)
+  }
 }

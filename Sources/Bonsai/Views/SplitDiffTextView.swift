@@ -277,6 +277,7 @@ struct SplitDiffTextView: NSViewRepresentable {
         attributes[.foregroundColor] = NSColor.systemBlue
         attributes[.backgroundColor] = NSColor.systemBlue.withAlphaComponent(0.08)
       } else if line.isEmpty && !counterpartLine.isEmpty {
+        attributes[.foregroundColor] = NSColor.tertiaryLabelColor
         attributes[.backgroundColor] = placeholderColor(for: counterpartLine)
       }
 
@@ -287,7 +288,19 @@ struct SplitDiffTextView: NSViewRepresentable {
         .backgroundColor: NSColor.textBackgroundColor.withAlphaComponent(0.35)
       ], range: gutterRange)
 
-      if let inlineRange = inlineRange(
+      let isPlaceholder = line.isEmpty && !counterpartLine.isEmpty
+      if isPlaceholder {
+        let placeholderRange = NSRange(
+          location: renderedLine.contentOffset,
+          length: min(DiffRenderPolicy.splitPlaceholderText.count, max(lineString.length - renderedLine.contentOffset, 0))
+        )
+        if placeholderRange.length > 0 {
+          lineString.addAttributes([
+            .foregroundColor: NSColor.tertiaryLabelColor,
+            .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+          ], range: placeholderRange)
+        }
+      } else if let inlineRange = inlineRange(
         for: line,
         counterpart: counterpartLine,
         side: side,
@@ -299,7 +312,9 @@ struct SplitDiffTextView: NSViewRepresentable {
           : NSColor.systemRed.withAlphaComponent(0.24)
         lineString.addAttribute(.backgroundColor, value: highlightColor, range: inlineRange)
       }
-      applySearchHighlights(to: lineString, line: renderedLine.text, searchText: searchText, lineCount: lines.count)
+      if !isPlaceholder {
+        applySearchHighlights(to: lineString, line: renderedLine.text, searchText: searchText, lineCount: lines.count)
+      }
       result.append(lineString)
     }
     return result
@@ -309,7 +324,7 @@ struct SplitDiffTextView: NSViewRepresentable {
     let number = line.number.map { String($0).leftPadded(to: numberWidth) } ?? String(repeating: " ", count: numberWidth)
     if line.text.isEmpty && !counterpart.isEmpty {
       let prefix = "\(number)   │ "
-      let placeholder = String(repeating: " ", count: DiffRenderPolicy.placeholderColumns(for: SplitDiffLine(number: nil, text: counterpart).displayText))
+      let placeholder = DiffRenderPolicy.splitPlaceholder(counterpart: SplitDiffLine(number: nil, text: counterpart).displayText)
       return (prefix + placeholder, prefix.count)
     }
     let prefix = "\(number) \(line.changeMarker) │ "
