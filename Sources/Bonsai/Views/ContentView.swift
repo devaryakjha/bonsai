@@ -705,11 +705,23 @@ private struct GitHubRepositorySheet: View {
 
       if request.operation == .delete {
         VStack(alignment: .leading, spacing: 6) {
-          Text("Type \(deleteTarget) to confirm")
+          Text("Confirmation")
             .font(.caption)
             .foregroundStyle(.secondary)
+          Text(deleteTarget)
+            .font(.caption.monospaced())
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 5))
+            .help(deleteTarget)
+            .accessibilityLabel("Repository to confirm: \(deleteTarget)")
           TextField(deleteTarget, text: $deleteConfirmation)
             .textFieldStyle(.roundedBorder)
+            .help("Type \(deleteTarget) to confirm")
         }
       }
 
