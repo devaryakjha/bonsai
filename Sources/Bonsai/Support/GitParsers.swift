@@ -399,31 +399,41 @@ enum GitParsers {
   }
 
   static func parseSplitDiff(_ output: String) -> SplitDiff {
-    var oldLines: [String] = []
-    var newLines: [String] = []
+    var oldLines: [SplitDiffLine] = []
+    var newLines: [SplitDiffLine] = []
+    var oldLineNumber = 0
+    var newLineNumber = 0
 
     for line in output.split(separator: "\n", omittingEmptySubsequences: false).map(String.init) {
       if line.hasPrefix("diff --git") || line.hasPrefix("index ") || line.hasPrefix("---") || line.hasPrefix("+++") {
         continue
       }
       if line.hasPrefix("@@") {
-        oldLines.append(line)
-        newLines.append(line)
+        if let ranges = parseHunkRanges(line) {
+          oldLineNumber = ranges.oldStart
+          newLineNumber = ranges.newStart
+        }
+        oldLines.append(SplitDiffLine(number: nil, text: line))
+        newLines.append(SplitDiffLine(number: nil, text: line))
       } else if line.hasPrefix("-") {
-        oldLines.append(line)
-        newLines.append("")
+        oldLines.append(SplitDiffLine(number: oldLineNumber, text: line))
+        newLines.append(SplitDiffLine(number: nil, text: ""))
+        oldLineNumber += 1
       } else if line.hasPrefix("+") {
-        oldLines.append("")
-        newLines.append(line)
+        oldLines.append(SplitDiffLine(number: nil, text: ""))
+        newLines.append(SplitDiffLine(number: newLineNumber, text: line))
+        newLineNumber += 1
       } else if line.hasPrefix("\\ No newline") {
         continue
       } else {
-        oldLines.append(line)
-        newLines.append(line)
+        oldLines.append(SplitDiffLine(number: oldLineNumber, text: line))
+        newLines.append(SplitDiffLine(number: newLineNumber, text: line))
+        oldLineNumber += 1
+        newLineNumber += 1
       }
     }
 
-    return SplitDiff(oldText: oldLines.joined(separator: "\n"), newText: newLines.joined(separator: "\n"))
+    return SplitDiff(oldLines: oldLines, newLines: newLines)
   }
 
   static func parseDiffLineChanges(_ hunk: DiffHunk) -> [DiffLineChange] {

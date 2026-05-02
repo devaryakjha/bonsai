@@ -32,8 +32,8 @@ struct SplitDiffTextView: NSViewRepresentable {
     context.coordinator.setInitialDividerPositionIfNeeded(in: splitView)
     guard context.coordinator.lastDiff != splitDiff else { return }
     context.coordinator.lastDiff = splitDiff
-    context.coordinator.oldTextView?.textStorage?.setAttributedString(Self.attributedDiff(splitDiff.oldText, counterpart: splitDiff.newText, side: .old))
-    context.coordinator.newTextView?.textStorage?.setAttributedString(Self.attributedDiff(splitDiff.newText, counterpart: splitDiff.oldText, side: .new))
+    context.coordinator.oldTextView?.textStorage?.setAttributedString(Self.attributedDiff(splitDiff.oldLines, counterpart: splitDiff.newLines, side: .old))
+    context.coordinator.newTextView?.textStorage?.setAttributedString(Self.attributedDiff(splitDiff.newLines, counterpart: splitDiff.oldLines, side: .new))
   }
 
   final class Coordinator {
@@ -127,17 +127,18 @@ struct SplitDiffTextView: NSViewRepresentable {
     case new
   }
 
-  private static func attributedDiff(_ text: String, counterpart: String, side: SplitSide) -> NSAttributedString {
+  private static func attributedDiff(_ lines: [SplitDiffLine], counterpart: [SplitDiffLine], side: SplitSide) -> NSAttributedString {
     let result = NSMutableAttributedString()
     let baseFont = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
     let paragraph = NSMutableParagraphStyle()
     paragraph.lineBreakMode = .byClipping
     paragraph.lineSpacing = 1
 
-    let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
-    let counterpartLines = counterpart.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+    let numberWidth = max(3, lines.compactMap(\.number).map { "\($0)".count }.max() ?? 3)
     for index in lines.indices {
-      let line = lines[index]
+      let line = lines[index].text
+      let renderedLine = renderLine(lines[index], numberWidth: numberWidth)
+      let contentOffset = renderedLine.count - line.count
       var attributes: [NSAttributedString.Key: Any] = [
         .font: baseFont,
         .foregroundColor: NSColor.labelColor,
@@ -155,8 +156,15 @@ struct SplitDiffTextView: NSViewRepresentable {
         attributes[.backgroundColor] = NSColor.systemBlue.withAlphaComponent(0.08)
       }
 
-      let lineString = NSMutableAttributedString(string: line + "\n", attributes: attributes)
-      if let inlineRange = inlineRange(for: line, counterpart: counterpartLines.indices.contains(index) ? counterpartLines[index] : "", side: side) {
+      let lineString = NSMutableAttributedString(string: renderedLine + "\n", attributes: attributes)
+      let gutterRange = NSRange(location: 0, length: contentOffset)
+      lineString.addAttributes([
+        .foregroundColor: NSColor.tertiaryLabelColor,
+        .backgroundColor: NSColor.textBackgroundColor.withAlphaComponent(0.35)
+      ], range: gutterRange)
+
+      let counterpartLine = counterpart.indices.contains(index) ? counterpart[index].text : ""
+      if let inlineRange = inlineRange(for: line, counterpart: counterpartLine, side: side, contentOffset: contentOffset) {
         let highlightColor = side == .new
           ? NSColor.systemGreen.withAlphaComponent(0.24)
           : NSColor.systemRed.withAlphaComponent(0.24)
@@ -167,20 +175,25 @@ struct SplitDiffTextView: NSViewRepresentable {
     return result
   }
 
-  private static func inlineRange(for line: String, counterpart: String, side: SplitSide) -> NSRange? {
+  private static func renderLine(_ line: SplitDiffLine, numberWidth: Int) -> String {
+    let number = line.number.map { String($0).leftPadded(to: numberWidth) } ?? String(repeating: " ", count: numberWidth)
+    return "\(number) │ \(line.text)"
+  }
+
+  private static func inlineRange(for line: String, counterpart: String, side: SplitSide, contentOffset: Int) -> NSRange? {
     switch side {
     case .old:
       guard line.hasPrefix("-"), counterpart.hasPrefix("+") else { return nil }
       let oldLine = String(line.dropFirst())
       let newLine = String(counterpart.dropFirst())
       guard let range = DiffInlineHighlighter.changedRanges(old: oldLine, new: newLine).oldRange else { return nil }
-      return nsRange(for: range, in: oldLine, markerOffset: 1)
+      return nsRange(for: range, in: oldLine, markerOffset: contentOffset + 1)
     case .new:
       guard line.hasPrefix("+"), counterpart.hasPrefix("-") else { return nil }
       let oldLine = String(counterpart.dropFirst())
       let newLine = String(line.dropFirst())
       guard let range = DiffInlineHighlighter.changedRanges(old: oldLine, new: newLine).newRange else { return nil }
-      return nsRange(for: range, in: newLine, markerOffset: 1)
+      return nsRange(for: range, in: newLine, markerOffset: contentOffset + 1)
     }
   }
 
@@ -188,5 +201,12 @@ struct SplitDiffTextView: NSViewRepresentable {
     let lower = line.distance(from: line.startIndex, to: range.lowerBound) + markerOffset
     let length = line.distance(from: range.lowerBound, to: range.upperBound)
     return NSRange(location: lower, length: length)
+  }
+}
+
+private extension String {
+  func leftPadded(to width: Int) -> String {
+    guard count < width else { return self }
+    return String(repeating: " ", count: width - count) + self
   }
 }

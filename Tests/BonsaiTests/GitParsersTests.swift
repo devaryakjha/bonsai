@@ -283,6 +283,8 @@ final class GitParsersTests: XCTestCase {
     XCTAssertFalse(split.newText.contains("-two"))
     XCTAssertTrue(split.oldText.contains(" one"))
     XCTAssertTrue(split.newText.contains(" one"))
+    XCTAssertEqual(split.oldLines.map(\.number), [nil, 1, 2, nil, 3])
+    XCTAssertEqual(split.newLines.map(\.number), [nil, 1, nil, 2, 3])
   }
 
   func testParseLFSFilesExtractsOidAndPath() {

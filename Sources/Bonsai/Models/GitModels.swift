@@ -542,9 +542,22 @@ enum DiffDisplayMode: String, CaseIterable, Identifiable {
   var title: String { self == .unified ? "Unified" : "Split" }
 }
 
+struct SplitDiffLine: Hashable {
+  var number: Int?
+  var text: String
+}
+
 struct SplitDiff: Hashable {
-  var oldText: String
-  var newText: String
+  var oldLines: [SplitDiffLine]
+  var newLines: [SplitDiffLine]
+
+  var oldText: String {
+    oldLines.map(\.text).joined(separator: "\n")
+  }
+
+  var newText: String {
+    newLines.map(\.text).joined(separator: "\n")
+  }
 }
 
 struct ImageDiffSnapshot: Hashable {
