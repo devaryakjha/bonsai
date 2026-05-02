@@ -48,8 +48,8 @@ surfaces that are not all represented in the older homepage matrix.
 | Hunk history from the file tree / selected-code history | Verified |
 | Worktree branch icon | Verified |
 | SVG and TGA image support | Verified |
+| External editor reveal/open-in integrations | Verified |
 | Claude branch review and generated commit messages | Open |
-| External editor reveal/open-in integrations | Open |
 | Conflict-resolved diffs after external merge tools | Open |
 | Repository treemap and repository benchmark | Open |
 

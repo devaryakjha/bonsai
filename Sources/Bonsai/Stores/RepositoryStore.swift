@@ -199,6 +199,11 @@ final class RepositoryStore {
     openFile(path: path)
   }
 
+  func openSelectedFile(in editor: ExternalEditor) {
+    guard let path = selectedPreviewPath else { return }
+    openFile(path: path, in: editor)
+  }
+
   func openFile(path: String) {
     guard let selectedRepository else { return }
     if !FileOpenLauncher.openFile(repository: selectedRepository, path: path) {
@@ -206,6 +211,15 @@ final class RepositoryStore {
       let output = "Could not open \(url.path(percentEncoded: false))."
       errorMessage = output
       commandResult = CommandResult(title: PlatformFailureCopy.openFileTitle, output: output, isError: true)
+    }
+  }
+
+  func openFile(path: String, in editor: ExternalEditor) {
+    guard let selectedRepository else { return }
+    if !FileOpenLauncher.openFile(repository: selectedRepository, path: path, in: editor) {
+      let output = "\(editor.title) is not installed."
+      errorMessage = output
+      commandResult = CommandResult(title: editor.commandTitle, output: output, isError: true)
     }
   }
 

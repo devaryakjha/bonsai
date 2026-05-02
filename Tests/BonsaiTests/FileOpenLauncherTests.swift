@@ -8,4 +8,11 @@ final class FileOpenLauncherTests: XCTestCase {
 
     XCTAssertEqual(url.path(percentEncoded: false), "/Users/arya/projects/bonsai/Sources/Bonsai/App/BonsaiApp.swift")
   }
+
+  func testExternalEditorTitlesAndBundleIdentifiersAreStable() {
+    XCTAssertEqual(ExternalEditor.xcode.commandTitle, "Open in Xcode")
+    XCTAssertEqual(ExternalEditor.visualStudioCode.bundleIdentifiers, ["com.microsoft.VSCode", "com.microsoft.VSCodeInsiders"])
+    XCTAssertEqual(ExternalEditor.zed.bundleIdentifiers, ["dev.zed.Zed", "dev.zed.Zed-Preview"])
+    XCTAssertEqual(ExternalEditor.bbedit.bundleIdentifiers, ["com.barebones.bbedit"])
+  }
 }

@@ -222,6 +222,13 @@ private struct StatusRow: View {
         Button("Open") {
           openFile()
         }
+        Menu("Open In") {
+          ForEach(ExternalEditor.allCases) { editor in
+            Button(editor.title) {
+              store.openFile(path: entry.path, in: editor)
+            }
+          }
+        }
         Button("Reveal in Finder") {
           revealInFinder()
         }
@@ -415,6 +422,13 @@ private struct IgnoredStatusRow: View {
       }
       Button("Open") {
         store.openFile(path: entry.path)
+      }
+      Menu("Open In") {
+        ForEach(ExternalEditor.allCases) { editor in
+          Button(editor.title) {
+            store.openFile(path: entry.path, in: editor)
+          }
+        }
       }
       Button("Reveal in Finder") {
         store.revealInFinder(path: entry.path)

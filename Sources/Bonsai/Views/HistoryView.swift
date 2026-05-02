@@ -344,6 +344,13 @@ private struct ChangedFilesView: View {
               Button("Open") {
                 store.openFile(path: file.path)
               }
+              Menu("Open In") {
+                ForEach(ExternalEditor.allCases) { editor in
+                  Button(editor.title) {
+                    store.openFile(path: file.path, in: editor)
+                  }
+                }
+              }
               Button("Reveal in Finder") {
                 store.revealInFinder(path: file.path)
               }
@@ -409,6 +416,13 @@ private struct ChangedFilesView: View {
                   Divider()
                   Button("Open") {
                     store.openFile(path: entry.path)
+                  }
+                  Menu("Open In") {
+                    ForEach(ExternalEditor.allCases) { editor in
+                      Button(editor.title) {
+                        store.openFile(path: entry.path, in: editor)
+                      }
+                    }
                   }
                   Button("Reveal in Finder") {
                     store.revealInFinder(path: entry.path)

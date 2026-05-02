@@ -207,6 +207,15 @@ struct BonsaiCommands: Commands {
       }
       .disabled(!store.canOpenSelectedFile)
 
+      Menu("Open Selected File In") {
+        ForEach(ExternalEditor.allCases) { editor in
+          Button(editor.title) {
+            store.openSelectedFile(in: editor)
+          }
+          .disabled(!store.canOpenSelectedFile)
+        }
+      }
+
       Button("Reset to Selected Commit…") {
         store.presentResetToSelectedCommit()
       }

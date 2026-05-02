@@ -148,6 +148,14 @@ struct RepositoryToolbarActionsMenu: View {
             store.openSelectedFile()
           }
           .disabled(!store.canOpenSelectedFile)
+          Menu("Open In") {
+            ForEach(ExternalEditor.allCases) { editor in
+              Button(editor.title) {
+                store.openSelectedFile(in: editor)
+              }
+              .disabled(!store.canOpenSelectedFile)
+            }
+          }
           Button("Copy Selected File Absolute Path") {
             store.copySelectedFileAbsolutePath()
           }

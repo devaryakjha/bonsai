@@ -36,8 +36,8 @@ implementation evidence.
 | Hunk history / selected-code history | Covered by hunk and line-history actions from diff controls |
 | Worktree icon for branches checked out elsewhere | Covered by branch worktree indicators |
 | SVG and TGA image diffs | Covered by this spec |
+| External editor reveal/open-in additions | Covered by `Specs/0244-external-editor-open-in.md` |
 | Claude branch review and generated commit messages | Needs dedicated provider/local-AI design before v0 completion |
-| External editor reveal/open-in additions | Needs dedicated editor integration spec |
 | Conflict-resolved diffs after external merge tools | Needs dedicated conflict-diff spec |
 | Repository treemap and repository benchmark | Needs dedicated analytics/performance specs |
 
