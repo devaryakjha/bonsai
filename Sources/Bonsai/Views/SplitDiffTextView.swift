@@ -30,13 +30,15 @@ struct SplitDiffTextView: NSViewRepresentable {
     context.coordinator.newTitleLabel = newPane.titleLabel
     context.coordinator.newDetailLabel = newPane.detailLabel
     context.coordinator.installScrollSync()
+    context.coordinator.installFrameObserver(for: splitView)
 
     updateNSView(splitView, context: context)
     return splitView
   }
 
   func updateNSView(_ splitView: NSSplitView, context: Context) {
-    context.coordinator.setInitialDividerPositionIfNeeded(in: splitView)
+    context.coordinator.updateOrientationIfNeeded(in: splitView)
+    context.coordinator.setDividerPositionIfNeeded(in: splitView)
     context.coordinator.updatePaneContextIfNeeded(paneContext)
     let shouldRender = context.coordinator.lastDiff != splitDiff || context.coordinator.lastSearchText != searchText
     if shouldRender {
@@ -91,19 +93,50 @@ struct SplitDiffTextView: NSViewRepresentable {
     var newSearchRanges: [NSRange] = []
     private var lastPaneContext: SplitDiffPaneContext?
     private var didSetInitialDividerPosition = false
+    private var lastUsesSideBySide: Bool?
     private var isSyncing = false
+    private var frameObserver: NSObjectProtocol?
 
-    func setInitialDividerPositionIfNeeded(in splitView: NSSplitView) {
+    deinit {
+      if let frameObserver {
+        NotificationCenter.default.removeObserver(frameObserver)
+      }
+    }
+
+    func installFrameObserver(for splitView: NSSplitView) {
+      guard frameObserver == nil else { return }
+      splitView.postsFrameChangedNotifications = true
+      frameObserver = NotificationCenter.default.addObserver(
+        forName: NSView.frameDidChangeNotification,
+        object: splitView,
+        queue: .main
+      ) { [weak self, weak splitView] _ in
+        guard let self, let splitView else { return }
+        self.updateOrientationIfNeeded(in: splitView)
+        self.setDividerPositionIfNeeded(in: splitView)
+      }
+    }
+
+    func updateOrientationIfNeeded(in splitView: NSSplitView) {
+      let usesSideBySide = SplitDiffLayoutPolicy.usesSideBySide(width: splitView.bounds.width)
+      guard lastUsesSideBySide != usesSideBySide else { return }
+      splitView.isVertical = usesSideBySide
+      didSetInitialDividerPosition = false
+      lastUsesSideBySide = usesSideBySide
+    }
+
+    func setDividerPositionIfNeeded(in splitView: NSSplitView) {
       guard !didSetInitialDividerPosition else { return }
-      let width = splitView.bounds.width
-      guard width > 0 else {
+      let length = splitView.isVertical ? splitView.bounds.width : splitView.bounds.height
+      guard length > 0 else {
         DispatchQueue.main.async { [weak self, weak splitView] in
           guard let self, let splitView else { return }
-          self.setInitialDividerPositionIfNeeded(in: splitView)
+          self.updateOrientationIfNeeded(in: splitView)
+          self.setDividerPositionIfNeeded(in: splitView)
         }
         return
       }
-      splitView.setPosition(width / 2, ofDividerAt: 0)
+      splitView.setPosition(length / 2, ofDividerAt: 0)
       didSetInitialDividerPosition = true
     }
 

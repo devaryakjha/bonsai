@@ -62,14 +62,13 @@ surfaces that are not all represented in the older homepage matrix.
 | Repository benchmark | Verified |
 | Repository treemap | Verified |
 | Large-repository history and diff performance pass | Verified through `Specs/0256-large-repository-performance-pass.md` |
+| Compact/wide visual QA | Verified through `Specs/0257-visual-qa-adaptive-split-diff.md` |
 
 ## Remaining Completion Gates
 
 - Re-run a fresh parity scrape against current Fork public release notes before
   declaring v0 complete, then close or explicitly defer every open release-note
   delta above.
-- Do visual QA on the actual running app for sidebar density, toolbar wrapping,
-  sheet sizing, and split diff completeness at compact and wide window sizes.
 - Run the credentialed Developer ID signing and notarization path before any
   public binary distribution. The local release packaging verifier proves bundle
   structure and signability, not Apple notarization success.
