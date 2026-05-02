@@ -1209,7 +1209,7 @@ struct GitClient {
     try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: editorURL.path(percentEncoded: false))
 
     let output = try await git(
-      ["rebase", "-i", plan.upstream],
+      Self.startInteractiveRebaseArguments(plan),
       in: repository.url,
       environment: [
         "GIT_SEQUENCE_EDITOR": editorURL.path(percentEncoded: false),
@@ -1217,6 +1217,15 @@ struct GitClient {
       ]
     )
     return output.combinedOutput
+  }
+
+  static func startInteractiveRebaseArguments(_ plan: InteractiveRebasePlan) -> [String] {
+    var arguments = ["rebase", "-i"]
+    if plan.updateRefs {
+      arguments.append("--update-refs")
+    }
+    arguments.append(plan.upstream)
+    return arguments
   }
 
   func reflog(in repository: GitRepository) async throws -> String {

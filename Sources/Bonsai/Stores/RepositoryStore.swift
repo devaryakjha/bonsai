@@ -2017,6 +2017,10 @@ final class RepositoryStore {
     interactiveRebasePlan = plan
   }
 
+  func setInteractiveRebaseUpdateRefs(_ updateRefs: Bool) {
+    interactiveRebasePlan?.updateRefs = updateRefs
+  }
+
   func startInteractiveRebase() async {
     guard let plan = interactiveRebasePlan else { return }
     interactiveRebasePlan = nil

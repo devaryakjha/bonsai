@@ -1455,6 +1455,12 @@ private struct InteractiveRebaseSheet: View {
         .font(.caption)
         .foregroundStyle(.secondary)
 
+        Toggle("Update refs", isOn: Binding(
+          get: { store.interactiveRebasePlan?.updateRefs ?? false },
+          set: { store.setInteractiveRebaseUpdateRefs($0) }
+        ))
+        .help("Move branch refs that point into the rewritten range")
+
         VStack(spacing: 0) {
           ForEach(plan.items) { item in
             InteractiveRebaseRow(

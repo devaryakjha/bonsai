@@ -222,6 +222,15 @@ final class GitClientCommandArgumentsTests: XCTestCase {
     XCTAssertEqual(GitClient.rebaseUpstreamVerificationArguments(firstHash: "abc123456789"), ["rev-parse", "--verify", "abc123456789^"])
   }
 
+  func testInteractiveRebaseStartArgumentsRespectUpdateRefsOption() {
+    let item = InteractiveRebaseItem(action: .pick, hash: "abc123", shortHash: "abc123", subject: "First")
+    let defaultPlan = InteractiveRebasePlan(upstream: "abc123^", items: [item])
+    let updateRefsPlan = InteractiveRebasePlan(upstream: "abc123^", items: [item], updateRefs: true)
+
+    XCTAssertEqual(GitClient.startInteractiveRebaseArguments(defaultPlan), ["rebase", "-i", "abc123^"])
+    XCTAssertEqual(GitClient.startInteractiveRebaseArguments(updateRefsPlan), ["rebase", "-i", "--update-refs", "abc123^"])
+  }
+
   func testBranchPublishAndForcePushArgumentsPreserveRefs() throws {
     let branch = GitRef(
       name: "refs/heads/feature/local branch",

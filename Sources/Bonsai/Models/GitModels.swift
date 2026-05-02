@@ -1165,6 +1165,7 @@ struct InteractiveRebasePlan: Identifiable, Hashable {
   var id = UUID()
   var upstream: String
   var items: [InteractiveRebaseItem]
+  var updateRefs = false
 
   var todoText: String {
     items.map(\.todoLine).joined(separator: "\n") + "\n"
