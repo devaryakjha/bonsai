@@ -81,6 +81,12 @@ Current public Fork sources list these v0 parity surfaces:
 9. Git LFS, GPG, Git-flow.
 10. GitHub notifications and provider accounts.
 
+## Parity Evidence
+
+Current implementation evidence for each v0 parity surface is tracked in
+`Specs/0242-v0-parity-evidence.md`. That matrix is the working audit source and
+does not replace a fresh completion audit against Fork before declaring v0 done.
+
 ## Source Notes
 
 - Fork public homepage feature overview, accessed 2026-05-02:
