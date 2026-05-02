@@ -235,6 +235,43 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(modified.statusRole, .modified)
   }
 
+  func testFileHistoryCopyValuesAreStableAndUnique() {
+    let entry = GitFileHistoryEntry(
+      hash: "abcdef123456",
+      shortHash: "abcdef1",
+      authorName: "Asha",
+      authorEmail: "asha@example.com",
+      date: nil,
+      subject: "Move sources",
+      changes: [
+        GitChangedFile(status: "R100", path: "Sources/App.swift", oldPath: "App.swift"),
+        GitChangedFile(status: "M", path: "Sources/App.swift", oldPath: nil),
+        GitChangedFile(status: "C75", path: "Sources/AppCopy.swift", oldPath: "App.swift")
+      ]
+    )
+
+    XCTAssertEqual(entry.changedPathsForCopy, "Sources/App.swift\nSources/AppCopy.swift")
+    XCTAssertEqual(entry.changedPathCopyCount, 2)
+    XCTAssertEqual(entry.previousPathsForCopy, "App.swift")
+    XCTAssertEqual(entry.previousPathCopyCount, 1)
+  }
+
+  func testBlameLineReferenceUsesFinalLine() {
+    let line = GitBlameLine(
+      id: 12,
+      commitHash: "abcdef123456",
+      shortHash: "abcdef1",
+      author: "Asha",
+      authorMail: "asha@example.com",
+      authorTime: nil,
+      originalLine: 4,
+      finalLine: 12,
+      content: "let value = true"
+    )
+
+    XCTAssertEqual(line.lineReference(path: "Sources/App.swift"), "Sources/App.swift:12")
+  }
+
   func testStatusEntryPresentationUsesGitStatusLetters() {
     let entries = GitParsers.parseStatus("""
     A  Added.swift

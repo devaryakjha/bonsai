@@ -362,7 +362,7 @@ private struct FileHistorySheet: View {
       }
 
       List(entries) { entry in
-        FileHistoryRow(entry: entry, onSelectCommit: onSelectCommit)
+        FileHistoryRow(path: path, entry: entry, onSelectCommit: onSelectCommit)
       }
       .listStyle(.inset)
       .frame(minHeight: 420)
@@ -373,6 +373,7 @@ private struct FileHistorySheet: View {
 }
 
 private struct FileHistoryRow: View {
+  var path: String
   var entry: GitFileHistoryEntry
   var onSelectCommit: (GitFileHistoryEntry) -> Void
 
@@ -428,6 +429,27 @@ private struct FileHistoryRow: View {
       Button("Copy Commit Hash") {
         PasteboardWriter.copy(entry.hash)
       }
+      Button("Copy Subject") {
+        PasteboardWriter.copy(entry.subject)
+      }
+      if !entry.authorEmail.isEmpty {
+        Button("Copy Author Email") {
+          PasteboardWriter.copy(entry.authorEmail)
+        }
+      }
+      if !entry.changedPathsForCopy.isEmpty {
+        Button(entry.changedPathCopyCount == 1 ? "Copy Changed Path" : "Copy Changed Paths") {
+          PasteboardWriter.copy(entry.changedPathsForCopy)
+        }
+      }
+      if let previousPaths = entry.previousPathsForCopy {
+        Button(entry.previousPathCopyCount == 1 ? "Copy Previous Path" : "Copy Previous Paths") {
+          PasteboardWriter.copy(previousPaths)
+        }
+      }
+      Button("Copy Inspected Path") {
+        PasteboardWriter.copy(path)
+      }
     }
   }
 }
@@ -473,7 +495,7 @@ private struct BlameSheet: View {
         LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
           Section {
             ForEach(document.lines) { line in
-              BlameRow(line: line, onSelectCommit: onSelectCommit)
+              BlameRow(path: document.path, line: line, onSelectCommit: onSelectCommit)
               Divider()
             }
           } header: {
@@ -518,6 +540,7 @@ private struct BlameHeaderRow: View {
 }
 
 private struct BlameRow: View {
+  var path: String
   var line: GitBlameLine
   var onSelectCommit: (GitBlameLine) -> Void
 
@@ -566,6 +589,17 @@ private struct BlameRow: View {
       }
       Button("Copy Commit Hash") {
         PasteboardWriter.copy(line.commitHash)
+      }
+      Button("Copy Line Reference") {
+        PasteboardWriter.copy(line.lineReference(path: path))
+      }
+      Button("Copy Line Content") {
+        PasteboardWriter.copy(line.content)
+      }
+      if let authorMail = line.authorMail, !authorMail.isEmpty {
+        Button("Copy Author Email") {
+          PasteboardWriter.copy(authorMail)
+        }
       }
     }
   }

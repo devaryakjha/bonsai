@@ -217,6 +217,10 @@ struct GitBlameLine: Identifiable, Hashable {
   var originalLine: Int
   var finalLine: Int
   var content: String
+
+  func lineReference(path: String) -> String {
+    "\(path):\(finalLine)"
+  }
 }
 
 struct GitBlameDocument: Identifiable, Hashable {
@@ -236,6 +240,46 @@ struct GitFileHistoryEntry: Identifiable, Hashable {
   var changes: [GitChangedFile]
 
   var id: String { hash }
+  var changedPathsForCopy: String {
+    uniqueChangeValues(\.path).joined(separator: "\n")
+  }
+  var changedPathCopyCount: Int {
+    uniqueChangeValues(\.path).count
+  }
+  var previousPathsForCopy: String? {
+    let paths = uniqueChangeValues(\.oldPath)
+    return paths.isEmpty ? nil : paths.joined(separator: "\n")
+  }
+  var previousPathCopyCount: Int {
+    uniqueChangeValues(\.oldPath).count
+  }
+
+  private func uniqueChangeValues(_ keyPath: KeyPath<GitChangedFile, String?>) -> [String] {
+    var seen: Set<String> = []
+    var values: [String] = []
+
+    for change in changes {
+      guard let value = change[keyPath: keyPath], !value.isEmpty, seen.insert(value).inserted else {
+        continue
+      }
+      values.append(value)
+    }
+
+    return values
+  }
+
+  private func uniqueChangeValues(_ keyPath: KeyPath<GitChangedFile, String>) -> [String] {
+    var seen: Set<String> = []
+    var values: [String] = []
+
+    for change in changes {
+      let value = change[keyPath: keyPath]
+      guard !value.isEmpty, seen.insert(value).inserted else { continue }
+      values.append(value)
+    }
+
+    return values
+  }
 }
 
 struct GitFileHistoryDocument: Identifiable, Hashable {
