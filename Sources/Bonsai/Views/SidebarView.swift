@@ -700,13 +700,13 @@ private struct LFSFileSidebarRow: View {
 
   var body: some View {
     AdvancedSidebarRow(
-      title: file.path,
-      detail: file.shortOID,
+      title: file.sidebarTitle,
+      detail: file.sidebarDetail,
       tertiary: nil,
       systemImage: "doc",
       iconStyle: .secondary
     )
-    .help(file.oid)
+    .help(file.sidebarHelpText)
   }
 }
 

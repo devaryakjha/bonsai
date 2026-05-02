@@ -523,4 +523,12 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(files[0].path, "Assets/image.png")
     XCTAssertEqual(files[1].path, "Fixtures/archive.zip")
   }
+
+  func testLFSFileSidebarPresentationUsesPathShortOIDAndFullHelp() {
+    let file = GitLFSFile(oid: "2f9c2a4d3b123456", path: "Assets/image.png")
+
+    XCTAssertEqual(file.sidebarTitle, "Assets/image.png")
+    XCTAssertEqual(file.sidebarDetail, "2f9c2a4d3b")
+    XCTAssertEqual(file.sidebarHelpText, "Path: Assets/image.png\nObject ID: 2f9c2a4d3b123456")
+  }
 }

@@ -318,6 +318,14 @@ struct GitLFSFile: Identifiable, Hashable {
 
   var id: String { path }
   var shortOID: String { String(oid.prefix(10)) }
+  var sidebarTitle: String { path }
+  var sidebarDetail: String { shortOID }
+  var sidebarHelpText: String {
+    """
+    Path: \(path)
+    Object ID: \(oid)
+    """
+  }
 }
 
 struct GitBisectStatus: Hashable {
