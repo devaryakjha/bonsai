@@ -32,8 +32,8 @@ struct SplitDiffTextView: NSViewRepresentable {
     context.coordinator.setInitialDividerPositionIfNeeded(in: splitView)
     guard context.coordinator.lastDiff != splitDiff else { return }
     context.coordinator.lastDiff = splitDiff
-    context.coordinator.oldTextView?.textStorage?.setAttributedString(Self.attributedDiff(splitDiff.oldText))
-    context.coordinator.newTextView?.textStorage?.setAttributedString(Self.attributedDiff(splitDiff.newText))
+    context.coordinator.oldTextView?.textStorage?.setAttributedString(Self.attributedDiff(splitDiff.oldText, counterpart: splitDiff.newText, side: .old))
+    context.coordinator.newTextView?.textStorage?.setAttributedString(Self.attributedDiff(splitDiff.newText, counterpart: splitDiff.oldText, side: .new))
   }
 
   final class Coordinator {
@@ -122,14 +122,22 @@ struct SplitDiffTextView: NSViewRepresentable {
     return (scrollView, textView)
   }
 
-  private static func attributedDiff(_ text: String) -> NSAttributedString {
+  private enum SplitSide {
+    case old
+    case new
+  }
+
+  private static func attributedDiff(_ text: String, counterpart: String, side: SplitSide) -> NSAttributedString {
     let result = NSMutableAttributedString()
     let baseFont = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
     let paragraph = NSMutableParagraphStyle()
     paragraph.lineBreakMode = .byClipping
     paragraph.lineSpacing = 1
 
-    for line in text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init) {
+    let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+    let counterpartLines = counterpart.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+    for index in lines.indices {
+      let line = lines[index]
       var attributes: [NSAttributedString.Key: Any] = [
         .font: baseFont,
         .foregroundColor: NSColor.labelColor,
@@ -147,8 +155,38 @@ struct SplitDiffTextView: NSViewRepresentable {
         attributes[.backgroundColor] = NSColor.systemBlue.withAlphaComponent(0.08)
       }
 
-      result.append(NSAttributedString(string: line + "\n", attributes: attributes))
+      let lineString = NSMutableAttributedString(string: line + "\n", attributes: attributes)
+      if let inlineRange = inlineRange(for: line, counterpart: counterpartLines.indices.contains(index) ? counterpartLines[index] : "", side: side) {
+        let highlightColor = side == .new
+          ? NSColor.systemGreen.withAlphaComponent(0.24)
+          : NSColor.systemRed.withAlphaComponent(0.24)
+        lineString.addAttribute(.backgroundColor, value: highlightColor, range: inlineRange)
+      }
+      result.append(lineString)
     }
     return result
+  }
+
+  private static func inlineRange(for line: String, counterpart: String, side: SplitSide) -> NSRange? {
+    switch side {
+    case .old:
+      guard line.hasPrefix("-"), counterpart.hasPrefix("+") else { return nil }
+      let oldLine = String(line.dropFirst())
+      let newLine = String(counterpart.dropFirst())
+      guard let range = DiffInlineHighlighter.changedRanges(old: oldLine, new: newLine).oldRange else { return nil }
+      return nsRange(for: range, in: oldLine, markerOffset: 1)
+    case .new:
+      guard line.hasPrefix("+"), counterpart.hasPrefix("-") else { return nil }
+      let oldLine = String(counterpart.dropFirst())
+      let newLine = String(line.dropFirst())
+      guard let range = DiffInlineHighlighter.changedRanges(old: oldLine, new: newLine).newRange else { return nil }
+      return nsRange(for: range, in: newLine, markerOffset: 1)
+    }
+  }
+
+  private static func nsRange(for range: Range<String.Index>, in line: String, markerOffset: Int) -> NSRange {
+    let lower = line.distance(from: line.startIndex, to: range.lowerBound) + markerOffset
+    let length = line.distance(from: range.lowerBound, to: range.upperBound)
+    return NSRange(location: lower, length: length)
   }
 }

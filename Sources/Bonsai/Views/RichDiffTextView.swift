@@ -58,7 +58,9 @@ struct RichDiffTextView: NSViewRepresentable {
     paragraph.lineBreakMode = .byClipping
     paragraph.lineSpacing = 1
 
-    for line in text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init) {
+    let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+    for index in lines.indices {
+      let line = lines[index]
       guard !line.hasPrefix("index ") else { continue }
       let displayLine = displayText(for: line)
       var attributes: [NSAttributedString.Key: Any] = [
@@ -81,9 +83,44 @@ struct RichDiffTextView: NSViewRepresentable {
         attributes[.foregroundColor] = NSColor.secondaryLabelColor
       }
 
-      result.append(NSAttributedString(string: displayLine + "\n", attributes: attributes))
+      let lineString = NSMutableAttributedString(string: displayLine + "\n", attributes: attributes)
+      if let inlineRange = inlineRange(for: line, at: index, in: lines) {
+        let highlightColor = line.hasPrefix("+")
+          ? NSColor.systemGreen.withAlphaComponent(0.24)
+          : NSColor.systemRed.withAlphaComponent(0.24)
+        lineString.addAttribute(.backgroundColor, value: highlightColor, range: inlineRange)
+      }
+      result.append(lineString)
     }
     return result
+  }
+
+  private static func inlineRange(for line: String, at index: Int, in lines: [String]) -> NSRange? {
+    guard line.hasPrefix("+") || line.hasPrefix("-"),
+          !line.hasPrefix("+++") && !line.hasPrefix("---") else {
+      return nil
+    }
+
+    let oldLine: String
+    let newLine: String
+    let isAddition = line.hasPrefix("+")
+    if isAddition {
+      guard index > 0, lines[index - 1].hasPrefix("-"), !lines[index - 1].hasPrefix("---") else { return nil }
+      oldLine = String(lines[index - 1].dropFirst())
+      newLine = String(line.dropFirst())
+    } else {
+      guard lines.indices.contains(index + 1), lines[index + 1].hasPrefix("+"), !lines[index + 1].hasPrefix("+++") else { return nil }
+      oldLine = String(line.dropFirst())
+      newLine = String(lines[index + 1].dropFirst())
+    }
+
+    let ranges = DiffInlineHighlighter.changedRanges(old: oldLine, new: newLine)
+    let content = isAddition ? newLine : oldLine
+    let range = isAddition ? ranges.newRange : ranges.oldRange
+    guard let range else { return nil }
+    let lower = content.distance(from: content.startIndex, to: range.lowerBound) + 1
+    let length = content.distance(from: range.lowerBound, to: range.upperBound)
+    return NSRange(location: lower, length: length)
   }
 
   private static func displayText(for line: String) -> String {
