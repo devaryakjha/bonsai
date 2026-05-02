@@ -99,6 +99,8 @@ private struct StatusRow: View {
       VStack(alignment: .leading, spacing: 2) {
         Text(entry.path)
           .lineLimit(1)
+          .truncationMode(.middle)
+          .help(entry.path)
         if entry.isConflicted {
           Text("Conflict needs resolution")
             .font(.caption)
@@ -108,6 +110,8 @@ private struct StatusRow: View {
             .font(.caption.monospaced())
             .foregroundStyle(.secondary)
             .lineLimit(1)
+            .truncationMode(.middle)
+            .help(originalPath)
         }
       }
 

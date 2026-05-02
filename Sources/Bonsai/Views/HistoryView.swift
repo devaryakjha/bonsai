@@ -308,8 +308,10 @@ private struct ChangedFilesView: View {
               ChangeStatusBadge(changedFile: file)
               Text(file.path)
                 .lineLimit(1)
+                .truncationMode(.middle)
               Spacer()
             }
+            .help(file.oldPath.map { "\($0) -> \(file.path)" } ?? file.path)
             .tag(file.id)
             .contextMenu {
               Button("Blame") {
@@ -357,6 +359,8 @@ private struct ChangedFilesView: View {
               .font(.caption)
               .foregroundStyle(.secondary)
               .lineLimit(1)
+              .truncationMode(.middle)
+              .help(store.commitTreePath.isEmpty ? "/" : store.commitTreePath)
             Spacer()
           }
           .padding(.horizontal, 12)

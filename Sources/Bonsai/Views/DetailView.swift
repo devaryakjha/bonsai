@@ -61,6 +61,8 @@ private struct DetailHeaderView: View {
         Text(file.path)
           .font(.headline)
           .lineLimit(2)
+          .truncationMode(.middle)
+          .help(file.oldPath.map { "\($0) -> \(file.path)" } ?? file.path)
       }
       selectedChangedFileContext(file)
         .font(.caption)
@@ -77,6 +79,8 @@ private struct DetailHeaderView: View {
       Text(entry.path)
         .font(.headline)
         .lineLimit(2)
+        .truncationMode(.middle)
+        .help(entry.path)
       HStack(spacing: 8) {
         Text(commit.shortHash)
           .monospaced()
@@ -104,6 +108,8 @@ private struct DetailHeaderView: View {
       Text(entry.path)
         .font(.headline)
         .lineLimit(2)
+        .truncationMode(.middle)
+        .help(entry.path)
       HStack(spacing: 8) {
         ChangeStatusBadge(statusEntry: entry)
         if entry.isStaged {
@@ -385,6 +391,8 @@ private struct TreeBlobPreview: View {
         Image(systemName: "doc.text")
         Text(path)
           .lineLimit(1)
+          .truncationMode(.middle)
+          .help(path)
         Spacer()
       }
       .font(.caption)
@@ -421,7 +429,9 @@ private struct BinaryPreviewView: View {
           .font(.caption)
           .foregroundStyle(.secondary)
           .lineLimit(2)
+          .truncationMode(.middle)
           .multilineTextAlignment(.center)
+          .help(store.selectedPreviewPath ?? "No file selected")
 
         if !store.diffText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
           Text(store.diffText)

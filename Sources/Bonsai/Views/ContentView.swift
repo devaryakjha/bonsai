@@ -517,7 +517,9 @@ private struct FileChangePill: View {
       Text(change.oldPath.map { "\($0) -> \(change.path)" } ?? change.path)
         .font(.caption.monospaced())
         .lineLimit(1)
+        .truncationMode(.middle)
     }
+    .help(change.oldPath.map { "\($0) -> \(change.path)" } ?? change.path)
     .padding(.horizontal, 7)
     .padding(.vertical, 3)
     .background(.quaternary, in: RoundedRectangle(cornerRadius: 5))
