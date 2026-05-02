@@ -711,7 +711,13 @@ final class RepositoryStore {
 
   func checkout(_ ref: GitRef) async {
     await runMutation(title: "Checkout \(ref.shortName)") {
-      try await gitClient.checkout(ref.shortName, in: requiredRepository())
+      if let localName = ref.remoteTrackingLocalName {
+        if localBranches.contains(where: { $0.shortName == localName }) {
+          return try await gitClient.checkout(localName, in: requiredRepository())
+        }
+        return try await gitClient.checkoutTrackingRemote(ref, in: requiredRepository())
+      }
+      return try await gitClient.checkout(ref.shortName, in: requiredRepository())
     }
   }
 

@@ -110,6 +110,13 @@ struct GitRef: Identifiable, Hashable {
     if behind > 0 { parts.append("down \(behind)") }
     return parts.joined(separator: " ")
   }
+
+  var remoteTrackingLocalName: String? {
+    guard kind == .remoteBranch else { return nil }
+    let parts = shortName.split(separator: "/", maxSplits: 1).map(String.init)
+    guard parts.count == 2, parts[1] != "HEAD" else { return nil }
+    return parts[1]
+  }
 }
 
 struct GitRemote: Identifiable, Hashable {

@@ -327,6 +327,10 @@ struct GitClient {
     try await runRaw(["checkout", ref], in: repository)
   }
 
+  func checkoutTrackingRemote(_ ref: GitRef, in repository: GitRepository) async throws -> String {
+    try await runRaw(["checkout", "--track", ref.shortName], in: repository)
+  }
+
   func reset(to commit: GitCommit, mode: ResetMode, in repository: GitRepository) async throws -> String {
     try await runRaw(["reset", mode.flag, commit.hash], in: repository)
   }

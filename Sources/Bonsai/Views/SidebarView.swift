@@ -164,7 +164,7 @@ struct SidebarView: View {
             Label(branch.shortName, systemImage: "network")
               .lineLimit(1)
               .contextMenu {
-                Button("Checkout") {
+                Button("Checkout as Local Branch") {
                   Task { await store.checkout(branch) }
                 }
               }
