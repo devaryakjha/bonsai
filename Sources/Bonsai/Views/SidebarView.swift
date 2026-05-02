@@ -602,12 +602,17 @@ struct SidebarView: View {
       }
     }
 
+    if SidebarInfrastructureActionPlacement.showsDivider(beforeActionForCount: store.snapshot.worktrees.count) {
+      Divider()
+    }
+
     Button {
       store.presentCreateWorktree()
     } label: {
-      SidebarInlineAction(title: "Create worktree", systemImage: "plus.circle")
+      SidebarInlineAction(title: "Create worktree", systemImage: "plus.circle", iconStyle: .accentColor)
     }
     .buttonStyle(.plain)
+    .help("Create worktree")
   }
 
   @ViewBuilder
@@ -648,12 +653,17 @@ struct SidebarView: View {
       }
     }
 
+    if SidebarInfrastructureActionPlacement.showsDivider(beforeActionForCount: store.snapshot.remotes.count) {
+      Divider()
+    }
+
     Button {
       store.presentAddRemote()
     } label: {
-      SidebarInlineAction(title: "Add remote", systemImage: "plus.circle")
+      SidebarInlineAction(title: "Add remote", systemImage: "plus.circle", iconStyle: .accentColor)
     }
     .buttonStyle(.plain)
+    .help("Add remote")
   }
 
   @ViewBuilder
@@ -955,11 +965,12 @@ private struct AdvancedSidebarRow: View {
 private struct SidebarInlineAction: View {
   var title: String
   var systemImage: String
+  var iconStyle: Color = .secondary
 
   var body: some View {
     HStack(spacing: 10) {
       Image(systemName: systemImage)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(iconStyle)
         .frame(width: 16)
       Text(title)
     }
