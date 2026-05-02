@@ -98,6 +98,7 @@ final class GitClientIntegrationTests: XCTestCase {
     let fileHistory = try await client.fileHistoryEntries(path: "file.txt", in: repository)
     let changedBlameLine = try XCTUnwrap(blame.first { $0.content == "line twenty changed" })
     let resolvedCommit = try await client.commit(revision: changedBlameLine.commitHash, in: repository)
+    let lineHistory = try await client.lineHistoryEntries(path: "file.txt", startLine: 20, endLine: 20, in: repository)
     XCTAssertTrue(commitDiff.contains("line twenty changed"))
     XCTAssertTrue(reflog.contains { $0.subject.contains("Update file") })
     XCTAssertFalse(changedBlameLine.shortHash.isEmpty)
@@ -105,6 +106,7 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(resolvedCommit.subject, "Update file")
     XCTAssertTrue(fileHistory.contains { $0.subject == "Update file" })
     XCTAssertTrue(fileHistory.first?.changes.contains { $0.path == "file.txt" } ?? false)
+    XCTAssertTrue(lineHistory.contains { $0.subject == "Update file" })
 
     let initialCommit = try XCTUnwrap(commits.first { $0.subject == "Initial file" })
     let store = await RepositoryStore()

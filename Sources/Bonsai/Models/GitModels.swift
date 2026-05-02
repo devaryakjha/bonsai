@@ -176,6 +176,18 @@ struct GitFileHistoryDocument: Identifiable, Hashable {
   var id: String { path }
 }
 
+struct GitLineHistoryDocument: Identifiable, Hashable {
+  var path: String
+  var startLine: Int
+  var endLine: Int
+  var entries: [GitFileHistoryEntry]
+
+  var id: String { "\(path):\(startLine)-\(endLine)" }
+  var rangeTitle: String {
+    startLine == endLine ? "line \(startLine)" : "lines \(startLine)-\(endLine)"
+  }
+}
+
 struct GitSubmodule: Identifiable, Hashable {
   var path: String
   var commit: String
@@ -371,6 +383,22 @@ struct DiffLineChange: Identifiable, Hashable {
     case .replacement:
       return "Replace line \(oldStart)"
     }
+  }
+
+  var historyStartLine: Int {
+    if newCount > 0 {
+      return max(newStart, 1)
+    }
+    return max(newStart, 1)
+  }
+
+  var historyEndLine: Int {
+    let count = max(newCount, 1)
+    return historyStartLine + count - 1
+  }
+
+  var historyTitle: String {
+    historyStartLine == historyEndLine ? "Line \(historyStartLine)" : "Lines \(historyStartLine)-\(historyEndLine)"
   }
 }
 

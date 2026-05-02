@@ -196,6 +196,21 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(entries[1].changes.first?.path, "Sources/App.swift")
   }
 
+  func testParseLineHistoryEntriesReadsCommitsAndSkipsPatchBodies() {
+    let entries = GitParsers.parseLineHistoryEntries("""
+    \u{1e}abcdef1234567890\u{1f}abcdef1\u{1f}Asha\u{1f}asha@example.test\u{1f}2026-05-02T10:00:00+05:30\u{1f}Update line
+    diff --git a/Sources/App.swift b/Sources/App.swift
+    @@ -2,1 +2,1 @@
+    -old
+    +new
+    """)
+
+    XCTAssertEqual(entries.count, 1)
+    XCTAssertEqual(entries[0].shortHash, "abcdef1")
+    XCTAssertEqual(entries[0].subject, "Update line")
+    XCTAssertTrue(entries[0].changes.isEmpty)
+  }
+
   func testParseDiffHunksReconstructsPatchPerHunk() {
     let hunks = GitParsers.parseDiffHunks("""
     diff --git a/file.txt b/file.txt

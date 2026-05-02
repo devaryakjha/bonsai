@@ -327,9 +327,24 @@ struct ContentView: View {
     }
     .sheet(item: $store.fileHistoryDocument) { document in
       FileHistorySheet(
-        document: document,
+        title: "File History",
+        path: document.path,
+        entries: document.entries,
         onCancel: {
           store.fileHistoryDocument = nil
+        },
+        onSelectCommit: { entry in
+          Task { await store.focusCommit(hash: entry.hash) }
+        }
+      )
+    }
+    .sheet(item: $store.lineHistoryDocument) { document in
+      FileHistorySheet(
+        title: "Line History",
+        path: "\(document.path), \(document.rangeTitle)",
+        entries: document.entries,
+        onCancel: {
+          store.lineHistoryDocument = nil
         },
         onSelectCommit: { entry in
           Task { await store.focusCommit(hash: entry.hash) }
@@ -386,7 +401,9 @@ struct ContentView: View {
 }
 
 private struct FileHistorySheet: View {
-  var document: GitFileHistoryDocument
+  var title: String
+  var path: String
+  var entries: [GitFileHistoryEntry]
   var onCancel: () -> Void
   var onSelectCommit: (GitFileHistoryEntry) -> Void
 
@@ -394,10 +411,10 @@ private struct FileHistorySheet: View {
     VStack(alignment: .leading, spacing: 12) {
       HStack {
         VStack(alignment: .leading, spacing: 3) {
-          Text("File History")
+          Text(title)
             .font(.title3)
             .fontWeight(.semibold)
-          Text(document.path)
+          Text(path)
             .font(.caption.monospaced())
             .foregroundStyle(.secondary)
             .lineLimit(1)
@@ -406,7 +423,7 @@ private struct FileHistorySheet: View {
         Button("Close", action: onCancel)
       }
 
-      List(document.entries) { entry in
+      List(entries) { entry in
         FileHistoryRow(entry: entry, onSelectCommit: onSelectCommit)
       }
       .listStyle(.inset)

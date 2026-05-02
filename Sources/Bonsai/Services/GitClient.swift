@@ -522,6 +522,19 @@ struct GitClient {
     return GitParsers.parseFileHistoryEntries(output.stdout)
   }
 
+  func lineHistoryEntries(path: String, startLine: Int, endLine: Int, in repository: GitRepository) async throws -> [GitFileHistoryEntry] {
+    let format = "%x1e%H%x1f%h%x1f%an%x1f%ae%x1f%aI%x1f%s"
+    let range = "\(max(startLine, 1)),\(max(endLine, startLine)):\(path)"
+    let output = try await git([
+      "log",
+      "-L",
+      range,
+      "--date=iso-strict",
+      "--pretty=format:\(format)"
+    ], in: repository.url)
+    return GitParsers.parseLineHistoryEntries(output.stdout)
+  }
+
   func git(_ arguments: [String], in directory: URL?, standardInput: String? = nil, environment: [String: String]? = nil) async throws -> ProcessOutput {
     try await runner.run(gitExecutable, arguments: ["git"] + arguments, currentDirectory: directory, standardInput: standardInput, environment: environment)
   }

@@ -37,6 +37,7 @@ final class RepositoryStore {
   var commandResult: CommandResult?
   var blameDocument: GitBlameDocument?
   var fileHistoryDocument: GitFileHistoryDocument?
+  var lineHistoryDocument: GitLineHistoryDocument?
   var gitHubNotifications: [GitHubNotification] = []
   var operationRequest: GitOperationRequest?
   var operationInput = ""
@@ -327,6 +328,7 @@ final class RepositoryStore {
       treeBlobText = ""
       blameDocument = nil
       fileHistoryDocument = nil
+      lineHistoryDocument = nil
       mainMode = .history
       await refreshCommitFilesAndDiff()
       errorMessage = nil
@@ -868,6 +870,25 @@ final class RepositoryStore {
     }
   }
 
+  func showLineHistory(_ change: DiffLineChange) async {
+    guard let path = selectedChangedFile?.path ?? selectedStatusEntry?.path else { return }
+    let startLine = change.historyStartLine
+    let endLine = change.historyEndLine
+
+    do {
+      let entries = try await gitClient.lineHistoryEntries(
+        path: path,
+        startLine: startLine,
+        endLine: endLine,
+        in: requiredRepository()
+      )
+      lineHistoryDocument = GitLineHistoryDocument(path: path, startLine: startLine, endLine: endLine, entries: entries)
+    } catch {
+      commandResult = CommandResult(title: "Line History \(path)", output: error.localizedDescription, isError: true)
+      errorMessage = error.localizedDescription
+    }
+  }
+
   func fetchGitHubNotifications() async {
     guard let token = githubToken() else { return }
 
@@ -1169,6 +1190,7 @@ final class RepositoryStore {
     commandResult = nil
     blameDocument = nil
     fileHistoryDocument = nil
+    lineHistoryDocument = nil
   }
 
   private func saveRecents() {

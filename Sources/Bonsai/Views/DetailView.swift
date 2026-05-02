@@ -173,6 +173,9 @@ private struct DiffView: View {
                   await store.stageLineChange(change)
                 }
               }
+            },
+            onShowLineHistory: { change in
+              Task { await store.showLineHistory(change) }
             }
           )
           Divider()
@@ -301,6 +304,7 @@ private struct HunkActionStrip: View {
   var isStaged: Bool
   var onSelectHunk: (DiffHunk) -> Void
   var onSelectLine: (DiffLineChange) -> Void
+  var onShowLineHistory: (DiffLineChange) -> Void
 
   var body: some View {
     ScrollView(.horizontal) {
@@ -328,6 +332,18 @@ private struct HunkActionStrip: View {
             }
           } label: {
             Label(isStaged ? "Unstage Line" : "Stage Line", systemImage: "text.line.first.and.arrowtriangle.forward")
+          }
+          .menuStyle(.borderedButton)
+          .controlSize(.small)
+
+          Menu {
+            ForEach(lineChanges) { change in
+              Button(change.historyTitle) {
+                onShowLineHistory(change)
+              }
+            }
+          } label: {
+            Label("Line History", systemImage: "clock.arrow.circlepath")
           }
           .menuStyle(.borderedButton)
           .controlSize(.small)
