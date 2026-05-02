@@ -30,6 +30,7 @@ covered by tests and the app verifier can still launch the bundle.
 | Interactive rebase | Todo plan generation, action changes, row movement, validation, `GIT_SEQUENCE_EDITOR` execution, and update-refs option | Verified |
 | Reflog | Reflog sheet, checkout, reset confirmation, parser coverage, and integration recovery checks | Verified |
 | File history and blame | Structured file history, blame sheets, search, copy actions, and jump-to-commit from inspection rows | Verified |
+| Repository analytics | Opt-in repository benchmark sheet with scale metrics, command timing, command builders, and integration coverage | Partial |
 | Git-flow | Availability/init detection plus feature/release/hotfix start and finish actions | Verified |
 | Git LFS | Availability, file listing, pull, checkout, fetch, prune, selected-file lock/unlock, force unlock, and sidebar actions | Verified |
 | GPG | Signing config detection, repository signing toggle, per-commit sign state, and command-result feedback | Verified |
@@ -51,7 +52,8 @@ surfaces that are not all represented in the older homepage matrix.
 | External editor reveal/open-in integrations | Verified |
 | Claude branch review and generated commit messages | Open |
 | Conflict-resolved diffs after external merge tools | Verified |
-| Repository treemap and repository benchmark | Open |
+| Repository benchmark | Verified |
+| Repository treemap | Open |
 
 ## Remaining Completion Gates
 

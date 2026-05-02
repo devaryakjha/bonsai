@@ -39,7 +39,8 @@ implementation evidence.
 | External editor reveal/open-in additions | Covered by `Specs/0244-external-editor-open-in.md` |
 | Claude branch review and generated commit messages | Needs dedicated provider/local-AI design before v0 completion |
 | Conflict-resolved diffs after external merge tools | Covered by `Specs/0245-conflict-resolved-diff.md` |
-| Repository treemap and repository benchmark | Needs dedicated analytics/performance specs |
+| Repository benchmark | Covered by `Specs/0246-repository-benchmark.md` |
+| Repository treemap | Needs dedicated analytics spec |
 
 ## Acceptance
 

@@ -185,6 +185,10 @@ struct RepositoryToolbarActionsMenu: View {
             Task { await store.pruneWorktrees() }
           }
           .disabled(store.selectedRepository == nil)
+          Button("Repository Benchmark…") {
+            Task { await store.runRepositoryBenchmark() }
+          }
+          .disabled(store.selectedRepository == nil || store.isRunningRepositoryBenchmark)
           Divider()
           Button("Add Remote…") {
             store.presentAddRemote()

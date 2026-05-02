@@ -46,6 +46,27 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(patch.contains("+two"))
   }
 
+  func testRepositoryBenchmarkReportsRealRepositoryScaleAndTimings() async throws {
+    let repo = try await makeRepository()
+    try FileManager.default.createDirectory(at: repo.appending(path: "Sources"), withIntermediateDirectories: true)
+    try write("one\n", to: repo.appending(path: "README.md"))
+    try write("print(\"bonsai\")\n", to: repo.appending(path: "Sources/App.swift"))
+    try await commitAll(in: repo, message: "Initial project")
+    try write("one\ntwo\n", to: repo.appending(path: "README.md"))
+    try write("notes\n", to: repo.appending(path: "notes.txt"))
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let report = try await client.repositoryBenchmark(in: repository)
+    let metrics = Dictionary(uniqueKeysWithValues: report.metrics.map { ($0.title, $0.value) })
+
+    XCTAssertEqual(report.repository.path, repository.path)
+    XCTAssertEqual(metrics["Commits"], "1")
+    XCTAssertEqual(metrics["Tracked files"], "2")
+    XCTAssertEqual(metrics["Working tree changes"], "2")
+    XCTAssertEqual(report.timings.count, 5)
+    XCTAssertTrue(report.timings.allSatisfy { $0.milliseconds >= 0 })
+  }
+
   func testClearRecentRepositoriesKeepsSelectedRepository() async throws {
     let previousRecents = UserDefaults.standard.data(forKey: "bonsai.recentRepositories")
     defer {

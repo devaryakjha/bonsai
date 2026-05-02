@@ -16,6 +16,11 @@ final class GitClientCommandArgumentsTests: XCTestCase {
       GitClient.statusArguments(includeIgnoredFiles: true),
       ["status", "--porcelain=v1", "--untracked-files=all", "--ignored=matching"]
     )
+    XCTAssertEqual(GitClient.repositoryBenchmarkStatusArguments(), ["status", "--porcelain=v1", "--untracked-files=all"])
+    XCTAssertEqual(GitClient.repositoryBenchmarkCommitCountArguments(), ["rev-list", "--count", "--all"])
+    XCTAssertEqual(GitClient.repositoryBenchmarkRefsArguments(), ["for-each-ref", "--format=%(refname)"])
+    XCTAssertEqual(GitClient.repositoryBenchmarkTrackedFilesArguments(), ["ls-files", "-z"])
+    XCTAssertEqual(GitClient.repositoryBenchmarkObjectStatsArguments(), ["count-objects", "-vH"])
     XCTAssertEqual(GitClient.headVerificationArguments(), ["rev-parse", "--verify", "HEAD"])
     XCTAssertEqual(
       GitClient.commitListArguments(limit: 300),
@@ -73,6 +78,25 @@ final class GitClientCommandArgumentsTests: XCTestCase {
     XCTAssertEqual(GitClient.headRevisionArguments(short: false), ["rev-parse", "HEAD"])
     XCTAssertEqual(GitClient.headRevisionArguments(short: true), ["rev-parse", "--short", "HEAD"])
     XCTAssertEqual(GitClient.lfsFilesArguments(), ["lfs", "ls-files"])
+  }
+
+  func testRepositoryBenchmarkParsesObjectStatsAndNULTerminatedFiles() {
+    let stats = GitClient.parseRepositoryObjectStats(
+      """
+      count: 12
+      size: 48 KiB
+      in-pack: 345
+      packs: 2
+      size-pack: 1.43 MiB
+      prune-packable: 0
+      """
+    )
+
+    XCTAssertEqual(stats.looseObjects, 12)
+    XCTAssertEqual(stats.looseSize, "48 KiB")
+    XCTAssertEqual(stats.packedObjects, 345)
+    XCTAssertEqual(stats.packSize, "1.43 MiB")
+    XCTAssertEqual(GitClient.countNULTerminatedRecords("Sources/App.swift\0README.md\0"), 2)
   }
 
   func testInspectionReadArgumentsPreservePathsAndDiffModes() {

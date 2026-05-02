@@ -897,6 +897,58 @@ struct CommandResult: Identifiable, Hashable {
   static let noOutput = "No output"
 }
 
+struct RepositoryBenchmarkReport: Identifiable, Hashable {
+  var repository: GitRepository
+  var generatedAt: Date
+  var metrics: [RepositoryBenchmarkMetric]
+  var timings: [RepositoryBenchmarkTiming]
+
+  var id: String { "\(repository.path):\(generatedAt.timeIntervalSince1970)" }
+
+  var repositoryName: String {
+    repository.name
+  }
+
+  var totalMeasuredMilliseconds: Int {
+    timings.reduce(0) { $0 + $1.milliseconds }
+  }
+}
+
+struct RepositoryBenchmarkMetric: Identifiable, Hashable {
+  var title: String
+  var value: String
+  var detail: String?
+  var systemImage: String
+
+  var id: String { title }
+}
+
+struct RepositoryBenchmarkTiming: Identifiable, Hashable {
+  var title: String
+  var milliseconds: Int
+  var detail: String?
+
+  var id: String { title }
+
+  var value: String {
+    "\(milliseconds) ms"
+  }
+}
+
+struct RepositoryObjectStats: Hashable {
+  var looseObjects: Int
+  var looseSize: String
+  var packedObjects: Int
+  var packSize: String
+
+  static let empty = RepositoryObjectStats(
+    looseObjects: 0,
+    looseSize: "0 bytes",
+    packedObjects: 0,
+    packSize: "0 bytes"
+  )
+}
+
 struct DiffHunk: Identifiable, Hashable {
   var id: Int
   var fileHeader: [String]

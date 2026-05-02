@@ -118,6 +118,11 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.repositoryBenchmarkReport) { report in
+      RepositoryBenchmarkSheet(report: report) {
+        store.repositoryBenchmarkReport = nil
+      }
+    }
     .sheet(item: $store.conflictResolutionRequest) { request in
       ConflictResolutionSheet(
         request: request,

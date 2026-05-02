@@ -54,6 +54,8 @@ final class RepositoryStore {
   var stashChangedFiles: [GitChangedFile] = []
   var treeBlobText = ""
   var commandResult: CommandResult?
+  var repositoryBenchmarkReport: RepositoryBenchmarkReport?
+  var isRunningRepositoryBenchmark = false
   var blameDocument: GitBlameDocument?
   var fileHistoryDocument: GitFileHistoryDocument?
   var lineHistoryDocument: GitLineHistoryDocument?
@@ -256,6 +258,20 @@ final class RepositoryStore {
 
   func openRepositoryInTerminal(_ repository: GitRepository) {
     openDirectoryInTerminal(RepositoryFileLocator.repositoryURL(repository))
+  }
+
+  func runRepositoryBenchmark() async {
+    guard !isRunningRepositoryBenchmark else { return }
+
+    do {
+      let repository = try requiredRepository()
+      isRunningRepositoryBenchmark = true
+      defer { isRunningRepositoryBenchmark = false }
+      repositoryBenchmarkReport = try await gitClient.repositoryBenchmark(in: repository)
+    } catch {
+      commandResult = CommandResult(title: "Repository benchmark", output: error.localizedDescription, isError: true)
+      errorMessage = error.localizedDescription
+    }
   }
 
   func copyRepositoryPath() {

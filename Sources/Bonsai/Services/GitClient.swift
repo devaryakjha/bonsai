@@ -32,6 +32,134 @@ struct GitClient {
     ["init"]
   }
 
+  func repositoryBenchmark(in repository: GitRepository) async throws -> RepositoryBenchmarkReport {
+    let status = try await measuredGit(
+      Self.repositoryBenchmarkStatusArguments(),
+      title: "Status scan",
+      detail: "Working tree",
+      in: repository
+    )
+    let commits = try await measuredGit(
+      Self.repositoryBenchmarkCommitCountArguments(),
+      title: "Commit count",
+      detail: "All refs",
+      in: repository
+    )
+    let refs = try await measuredGit(
+      Self.repositoryBenchmarkRefsArguments(),
+      title: "Reference scan",
+      detail: "Branches and tags",
+      in: repository
+    )
+    let files = try await measuredGit(
+      Self.repositoryBenchmarkTrackedFilesArguments(),
+      title: "Tracked file scan",
+      detail: "Index",
+      in: repository
+    )
+    let objects = try await measuredGit(
+      Self.repositoryBenchmarkObjectStatsArguments(),
+      title: "Object database scan",
+      detail: "Loose and packed objects",
+      in: repository
+    )
+    let objectStats = Self.parseRepositoryObjectStats(objects.stdout)
+    let changedCount = status.stdout.split(separator: "\n", omittingEmptySubsequences: true).count
+    let commitCount = Int(commits.stdout.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
+    let refCount = refs.stdout.split(separator: "\n", omittingEmptySubsequences: true).count
+    let trackedFileCount = Self.countNULTerminatedRecords(files.stdout)
+
+    return RepositoryBenchmarkReport(
+      repository: repository,
+      generatedAt: Date(),
+      metrics: [
+        RepositoryBenchmarkMetric(
+          title: "Commits",
+          value: commitCount.formatted(),
+          detail: "Reachable from all refs",
+          systemImage: "point.3.connected.trianglepath.dotted"
+        ),
+        RepositoryBenchmarkMetric(
+          title: "References",
+          value: refCount.formatted(),
+          detail: "Branches and tags",
+          systemImage: "tag"
+        ),
+        RepositoryBenchmarkMetric(
+          title: "Tracked files",
+          value: trackedFileCount.formatted(),
+          detail: "Index entries",
+          systemImage: "doc.text"
+        ),
+        RepositoryBenchmarkMetric(
+          title: "Working tree changes",
+          value: changedCount.formatted(),
+          detail: "Porcelain status entries",
+          systemImage: "plusminus"
+        ),
+        RepositoryBenchmarkMetric(
+          title: "Loose objects",
+          value: objectStats.looseObjects.formatted(),
+          detail: objectStats.looseSize,
+          systemImage: "shippingbox"
+        ),
+        RepositoryBenchmarkMetric(
+          title: "Packed objects",
+          value: objectStats.packedObjects.formatted(),
+          detail: objectStats.packSize,
+          systemImage: "archivebox"
+        )
+      ],
+      timings: [
+        status.timing,
+        commits.timing,
+        refs.timing,
+        files.timing,
+        objects.timing
+      ]
+    )
+  }
+
+  static func repositoryBenchmarkStatusArguments() -> [String] {
+    statusArguments()
+  }
+
+  static func repositoryBenchmarkCommitCountArguments() -> [String] {
+    ["rev-list", "--count", "--all"]
+  }
+
+  static func repositoryBenchmarkRefsArguments() -> [String] {
+    ["for-each-ref", "--format=%(refname)"]
+  }
+
+  static func repositoryBenchmarkTrackedFilesArguments() -> [String] {
+    ["ls-files", "-z"]
+  }
+
+  static func repositoryBenchmarkObjectStatsArguments() -> [String] {
+    ["count-objects", "-vH"]
+  }
+
+  static func parseRepositoryObjectStats(_ output: String) -> RepositoryObjectStats {
+    var values: [String: String] = [:]
+    for line in output.split(separator: "\n", omittingEmptySubsequences: true) {
+      let parts = line.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: true)
+      guard parts.count == 2 else { continue }
+      values[String(parts[0])] = parts[1].trimmingCharacters(in: .whitespaces)
+    }
+
+    return RepositoryObjectStats(
+      looseObjects: Int(values["count"] ?? "") ?? 0,
+      looseSize: values["size"] ?? RepositoryObjectStats.empty.looseSize,
+      packedObjects: Int(values["in-pack"] ?? "") ?? 0,
+      packSize: values["size-pack"] ?? RepositoryObjectStats.empty.packSize
+    )
+  }
+
+  static func countNULTerminatedRecords(_ output: String) -> Int {
+    output.split(separator: "\0", omittingEmptySubsequences: true).count
+  }
+
   func snapshot(
     for repository: GitRepository,
     selectedCommit: GitCommit?,
@@ -1428,6 +1556,21 @@ struct GitClient {
 
   func gitData(_ arguments: [String], in directory: URL?) async throws -> ProcessDataOutput {
     try await runner.runData(gitExecutable, arguments: ["git"] + arguments, currentDirectory: directory)
+  }
+
+  private func measuredGit(
+    _ arguments: [String],
+    title: String,
+    detail: String,
+    in repository: GitRepository
+  ) async throws -> (stdout: String, timing: RepositoryBenchmarkTiming) {
+    let startedAt = Date()
+    let output = try await git(arguments, in: repository.url)
+    let milliseconds = max(Int((Date().timeIntervalSince(startedAt) * 1000).rounded()), 0)
+    return (
+      output.stdout,
+      RepositoryBenchmarkTiming(title: title, milliseconds: milliseconds, detail: detail)
+    )
   }
 
   private static func diffArguments(_ suffix: [String], algorithm: DiffAlgorithm, whitespaceMode: DiffWhitespaceMode) -> [String] {

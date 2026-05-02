@@ -51,6 +51,11 @@ struct BonsaiCommands: Commands {
       }
       .disabled(store.selectedRepository == nil)
 
+      Button("Repository Benchmark…") {
+        Task { await store.runRepositoryBenchmark() }
+      }
+      .disabled(store.selectedRepository == nil || store.isRunningRepositoryBenchmark)
+
       Divider()
 
       Button("Fetch") {
