@@ -53,6 +53,10 @@ struct HistoryView: View {
           CommitRow(commit: commit, showsDetails: showCommitRowDetails)
             .tag(commit.id)
             .contextMenu {
+              Button("Checkout") {
+                store.selectCommit(commit)
+                Task { await store.checkoutSelectedCommit() }
+              }
               Button("Cherry-pick") {
                 store.selectCommit(commit)
                 Task { await store.runRevisionCommand("cherry-pick") }

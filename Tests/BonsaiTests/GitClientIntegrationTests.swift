@@ -116,6 +116,9 @@ final class GitClientIntegrationTests: XCTestCase {
     let mode = await store.mainMode
     XCTAssertEqual(focusedCommit?.hash, initialCommit.hash)
     XCTAssertEqual(mode, .history)
+    await store.checkoutSelectedCommit()
+    let checkedOutHash = try await client.git(["rev-parse", "HEAD"], in: repo).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+    XCTAssertEqual(checkedOutHash, initialCommit.hash)
   }
 
   func testStoreCommitRequiresStagedChangesUnlessAmending() async throws {
