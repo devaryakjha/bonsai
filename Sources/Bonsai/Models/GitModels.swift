@@ -467,6 +467,30 @@ enum GitFlowStartKind: String, CaseIterable, Identifiable {
 
   var id: String { rawValue }
   var title: String { rawValue.capitalized }
+
+  func operationKind(action: GitFlowAction) -> GitOperationKind {
+    switch (action, self) {
+    case (.start, .feature):
+      return .gitFlowFeatureStart
+    case (.start, .release):
+      return .gitFlowReleaseStart
+    case (.start, .hotfix):
+      return .gitFlowHotfixStart
+    case (.finish, .feature):
+      return .gitFlowFeatureFinish
+    case (.finish, .release):
+      return .gitFlowReleaseFinish
+    case (.finish, .hotfix):
+      return .gitFlowHotfixFinish
+    }
+  }
+}
+
+enum GitFlowAction: String {
+  case start
+  case finish
+
+  var title: String { rawValue.capitalized }
 }
 
 enum RepositoryAction: String {
@@ -483,6 +507,9 @@ enum GitOperationKind: String, Identifiable {
   case gitFlowFeatureStart
   case gitFlowReleaseStart
   case gitFlowHotfixStart
+  case gitFlowFeatureFinish
+  case gitFlowReleaseFinish
+  case gitFlowHotfixFinish
 
   var id: String { rawValue }
 }

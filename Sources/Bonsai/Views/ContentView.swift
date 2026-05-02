@@ -184,6 +184,12 @@ struct ContentView: View {
             }
             .disabled(!store.snapshot.integrations.gitFlowInitialized)
           }
+          ForEach(GitFlowStartKind.allCases) { kind in
+            Button("Finish Git-flow \(kind.title)...") {
+              store.presentGitFlowFinish(kind)
+            }
+            .disabled(!store.snapshot.integrations.gitFlowInitialized)
+          }
           Divider()
           Button("Fetch GitHub Notifications") {
             Task { await store.fetchGitHubNotifications() }

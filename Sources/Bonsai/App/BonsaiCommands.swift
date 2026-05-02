@@ -119,6 +119,13 @@ struct BonsaiCommands: Commands {
         .disabled(store.selectedRepository == nil || !store.snapshot.integrations.gitFlowInitialized)
       }
 
+      ForEach(GitFlowStartKind.allCases) { kind in
+        Button("Finish Git-flow \(kind.title)...") {
+          store.presentGitFlowFinish(kind)
+        }
+        .disabled(store.selectedRepository == nil || !store.snapshot.integrations.gitFlowInitialized)
+      }
+
       Divider()
 
       Button("Fetch GitHub Notifications") {

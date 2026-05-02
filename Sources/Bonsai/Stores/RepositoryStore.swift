@@ -562,23 +562,22 @@ final class RepositoryStore {
   }
 
   func presentGitFlowStart(_ kind: GitFlowStartKind) {
+    presentGitFlow(.start, kind: kind)
+  }
+
+  func presentGitFlowFinish(_ kind: GitFlowStartKind) {
+    presentGitFlow(.finish, kind: kind)
+  }
+
+  private func presentGitFlow(_ action: GitFlowAction, kind: GitFlowStartKind) {
     operationInput = ""
-    let operationKind: GitOperationKind
-    switch kind {
-    case .feature:
-      operationKind = .gitFlowFeatureStart
-    case .release:
-      operationKind = .gitFlowReleaseStart
-    case .hotfix:
-      operationKind = .gitFlowHotfixStart
-    }
     operationRequest = GitOperationRequest(
-      kind: operationKind,
-      title: "Start Git-flow \(kind.title)",
-      message: "Create a new \(kind.rawValue) branch using git-flow.",
+      kind: kind.operationKind(action: action),
+      title: "\(action.title) Git-flow \(kind.title)",
+      message: action == .start ? "Create a new \(kind.rawValue) branch using git-flow." : "Finish an existing \(kind.rawValue) branch using git-flow.",
       placeholder: kind == .release ? "0.1.0" : "name",
       defaultValue: "",
-      primaryActionTitle: "Start"
+      primaryActionTitle: action.title
     )
   }
 
@@ -616,6 +615,15 @@ final class RepositoryStore {
     case .gitFlowHotfixStart:
       guard !value.isEmpty else { return }
       await startGitFlow(kind: .hotfix, name: value)
+    case .gitFlowFeatureFinish:
+      guard !value.isEmpty else { return }
+      await finishGitFlow(kind: .feature, name: value)
+    case .gitFlowReleaseFinish:
+      guard !value.isEmpty else { return }
+      await finishGitFlow(kind: .release, name: value)
+    case .gitFlowHotfixFinish:
+      guard !value.isEmpty else { return }
+      await finishGitFlow(kind: .hotfix, name: value)
     }
   }
 
@@ -751,6 +759,12 @@ final class RepositoryStore {
   func startGitFlow(kind: GitFlowStartKind, name: String) async {
     await runMutation(title: "Start Git-flow \(kind.title)") {
       try await gitClient.startGitFlow(kind: kind, name: name, in: requiredRepository())
+    }
+  }
+
+  func finishGitFlow(kind: GitFlowStartKind, name: String) async {
+    await runMutation(title: "Finish Git-flow \(kind.title)") {
+      try await gitClient.finishGitFlow(kind: kind, name: name, in: requiredRepository())
     }
   }
 

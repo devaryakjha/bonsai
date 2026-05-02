@@ -378,6 +378,10 @@ struct GitClient {
     try await runRaw(["flow", kind.rawValue, "start", name], in: repository)
   }
 
+  func finishGitFlow(kind: GitFlowStartKind, name: String, in repository: GitRepository) async throws -> String {
+    try await runRaw(["flow", kind.rawValue, "finish", name], in: repository)
+  }
+
   func resolveConflict(_ entry: GitStatusEntry, choice: ConflictResolutionChoice, in repository: GitRepository) async throws -> String {
     switch choice {
     case .ours:
