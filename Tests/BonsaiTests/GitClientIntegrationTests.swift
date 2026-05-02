@@ -231,6 +231,11 @@ final class GitClientIntegrationTests: XCTestCase {
     try await commitAll(in: repo, message: "Seed")
     _ = try await client.git(["remote", "add", "origin", remote.path(percentEncoded: false)], in: repo)
     _ = try await client.git(["push", "-u", "origin", "main"], in: repo)
+    try write("local ahead\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Local ahead")
+    var refs = try await client.refs(in: repository)
+    let mainBranch = try XCTUnwrap(refs.first { $0.shortName == "main" && $0.kind == .localBranch })
+    XCTAssertEqual(mainBranch.ahead, 1)
 
     _ = try await client.runAction(.fetch, in: repository)
     _ = try await client.runAction(.pull, in: repository)
@@ -239,7 +244,7 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(remotes.first?.name, "origin")
 
     _ = try await client.createBranch(named: "feature/test", startPoint: nil, in: repository)
-    var refs = try await client.refs(in: repository)
+    refs = try await client.refs(in: repository)
     XCTAssertTrue(refs.contains { $0.shortName == "feature/test" })
     _ = try await client.checkout("feature/test", in: repository)
     _ = try await client.checkout("main", in: repository)

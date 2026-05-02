@@ -94,11 +94,15 @@ enum GitParsers {
           return nil
         }
 
+        let tracking = parseTracking(parts.count > 4 ? parts[4] : nil)
         return GitRef(
           name: refname,
           shortName: shortName,
           objectName: parts[1],
           upstream: parts[2].isEmpty ? nil : parts[2],
+          ahead: tracking.ahead,
+          behind: tracking.behind,
+          upstreamGone: tracking.gone,
           isHead: parts[3] == "*",
           kind: kind
         )
@@ -427,6 +431,27 @@ enum GitParsers {
     guard index != " ", workTree != " " else { return false }
     guard index != "?", workTree != "?", index != "!", workTree != "!" else { return false }
     return !["DD", "AU", "UD", "UA", "DU", "AA", "UU"].contains("\(index)\(workTree)")
+  }
+
+  private static func parseTracking(_ value: String?) -> (ahead: Int, behind: Int, gone: Bool) {
+    guard let value, !value.isEmpty else { return (0, 0, false) }
+    if value.contains("gone") { return (0, 0, true) }
+
+    var ahead = 0
+    var behind = 0
+    let cleaned = value
+      .replacingOccurrences(of: "[", with: "")
+      .replacingOccurrences(of: "]", with: "")
+      .replacingOccurrences(of: ",", with: "")
+    let tokens = cleaned.split(separator: " ").map(String.init)
+    for index in tokens.indices {
+      if tokens[index] == "ahead", tokens.indices.contains(index + 1) {
+        ahead = Int(tokens[index + 1]) ?? 0
+      } else if tokens[index] == "behind", tokens.indices.contains(index + 1) {
+        behind = Int(tokens[index + 1]) ?? 0
+      }
+    }
+    return (ahead, behind, false)
   }
 
   private static func parseHunkRanges(_ header: String) -> (oldStart: Int, newStart: Int)? {

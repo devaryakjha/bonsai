@@ -132,7 +132,15 @@ struct SidebarView: View {
                   .font(.caption)
                   .foregroundStyle(.secondary)
                   .lineLimit(1)
-                }
+              }
+              if let tracking = branch.trackingSummary {
+                Text(tracking)
+                  .font(.caption2)
+                  .foregroundStyle(branch.upstreamGone ? .orange : .secondary)
+                  .padding(.horizontal, 5)
+                  .padding(.vertical, 2)
+                  .background(.quaternary, in: Capsule())
+              }
             }
             .contextMenu {
               Button("Checkout") {

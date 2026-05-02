@@ -67,7 +67,7 @@ struct GitClient {
   }
 
   func refs(in repository: GitRepository) async throws -> [GitRef] {
-    let format = "%(refname)%1f%(objectname:short)%1f%(upstream:short)%1f%(HEAD)"
+    let format = "%(refname)%1f%(objectname:short)%1f%(upstream:short)%1f%(HEAD)%1f%(upstream:track)"
     let output = try await git([
       "for-each-ref",
       "refs/heads",

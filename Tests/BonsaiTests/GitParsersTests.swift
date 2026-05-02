@@ -29,17 +29,23 @@ final class GitParsersTests: XCTestCase {
 
   func testParseRefsClassifiesLocalRemoteAndTagRefs() {
     let refs = GitParsers.parseRefs("""
-    refs/heads/main\u{1f}abc123\u{1f}origin/main\u{1f}*
-    refs/remotes/origin/main\u{1f}abc123\u{1f}\u{1f}
-    refs/tags/v0.1.0\u{1f}def456\u{1f}\u{1f}
+    refs/heads/main\u{1f}abc123\u{1f}origin/main\u{1f}*\u{1f}[ahead 2, behind 1]
+    refs/heads/old\u{1f}bbb222\u{1f}origin/old\u{1f}\u{1f}[gone]
+    refs/remotes/origin/main\u{1f}abc123\u{1f}\u{1f}\u{1f}
+    refs/tags/v0.1.0\u{1f}def456\u{1f}\u{1f}\u{1f}
     """)
 
-    XCTAssertEqual(refs.count, 3)
+    XCTAssertEqual(refs.count, 4)
     XCTAssertEqual(refs[0].kind, .localBranch)
     XCTAssertTrue(refs[0].isHead)
     XCTAssertEqual(refs[0].upstream, "origin/main")
-    XCTAssertEqual(refs[1].kind, .remoteBranch)
-    XCTAssertEqual(refs[2].kind, .tag)
+    XCTAssertEqual(refs[0].ahead, 2)
+    XCTAssertEqual(refs[0].behind, 1)
+    XCTAssertEqual(refs[0].trackingSummary, "up 2 down 1")
+    XCTAssertTrue(refs[1].upstreamGone)
+    XCTAssertEqual(refs[1].trackingSummary, "Gone")
+    XCTAssertEqual(refs[2].kind, .remoteBranch)
+    XCTAssertEqual(refs[3].kind, .tag)
   }
 
   func testParseCommitsKeepsGraphLaneAndSkipsContinuationRows() {

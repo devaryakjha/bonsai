@@ -91,10 +91,25 @@ struct GitRef: Identifiable, Hashable {
   var shortName: String
   var objectName: String
   var upstream: String?
+  var ahead: Int = 0
+  var behind: Int = 0
+  var upstreamGone: Bool = false
   var isHead: Bool
   var kind: RefKind
 
   var id: String { "\(kind.rawValue):\(name)" }
+  var trackingSummary: String? {
+    if upstreamGone {
+      return "Gone"
+    }
+    if ahead == 0 && behind == 0 {
+      return nil
+    }
+    var parts: [String] = []
+    if ahead > 0 { parts.append("up \(ahead)") }
+    if behind > 0 { parts.append("down \(behind)") }
+    return parts.joined(separator: " ")
+  }
 }
 
 struct GitRemote: Identifiable, Hashable {
