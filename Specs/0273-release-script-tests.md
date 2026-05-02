@@ -15,6 +15,8 @@ checks.
 - Add XCTest coverage that the script help and implementation keep
   `--verify-artifacts`, manifest hash checks, and `BONSAI_NOTARY_KEYCHAIN`
   support wired.
+- Add XCTest coverage that regular CI runs `--verify-artifacts` after
+  `--verify-archive`.
 - Add XCTest coverage that the manual GitHub release workflow verifies artifacts
   before upload, uploads both the zip and manifest, and cleans up the temporary
   keychain.

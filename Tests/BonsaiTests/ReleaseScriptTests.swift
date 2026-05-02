@@ -51,6 +51,20 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(script.contains("plutil -extract archiveSHA256 raw"))
   }
 
+  func testCIWorkflowRunsArtifactVerifierAfterArchiveVerifier() throws {
+    let root = try packageRoot()
+    let workflow = try String(
+      contentsOf: root.appending(path: ".github/workflows/ci.yml"),
+      encoding: .utf8
+    )
+    let archiveRange = workflow.range(of: "./script/package_release.sh --verify-archive")
+    let artifactRange = workflow.range(of: "./script/package_release.sh --verify-artifacts")
+
+    XCTAssertNotNil(archiveRange)
+    XCTAssertNotNil(artifactRange)
+    XCTAssertLessThan(archiveRange?.lowerBound ?? workflow.endIndex, artifactRange?.lowerBound ?? workflow.startIndex)
+  }
+
   func testReleaseWorkflowVerifiesArtifactsBeforeUploadAndCleansTemporaryKeychain() throws {
     let root = try packageRoot()
     let workflow = try String(
