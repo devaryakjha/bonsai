@@ -1395,6 +1395,61 @@ enum GitRevisionCommand: String, CaseIterable, Identifiable {
   func resultTitle(shortHash: String) -> String {
     "\(historyTitle) \(shortHash)"
   }
+
+  var supportsConflictPreflight: Bool {
+    switch self {
+    case .cherryPick, .revert:
+      return true
+    case .merge, .rebase:
+      return false
+    }
+  }
+}
+
+enum RevisionCommandConflictReadiness: Hashable {
+  case checking
+  case clean
+  case conflicts
+  case unavailable(String)
+
+  var title: String {
+    switch self {
+    case .checking:
+      return "Checking conflicts"
+    case .clean:
+      return "No conflicts expected"
+    case .conflicts:
+      return "Conflicts expected"
+    case .unavailable:
+      return "Preflight unavailable"
+    }
+  }
+
+  var detail: String {
+    switch self {
+    case .checking:
+      return "Running Git preflight"
+    case .clean:
+      return "Git can apply this cleanly"
+    case .conflicts:
+      return "This action may stop for conflict resolution"
+    case .unavailable(let reason):
+      return reason
+    }
+  }
+
+  var systemImage: String {
+    switch self {
+    case .checking:
+      return "clock"
+    case .clean:
+      return "checkmark.circle"
+    case .conflicts:
+      return "exclamationmark.triangle"
+    case .unavailable:
+      return "questionmark.circle"
+    }
+  }
 }
 
 struct RevisionCommandRequest: Identifiable, Hashable {

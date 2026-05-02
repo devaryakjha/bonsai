@@ -391,16 +391,19 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(GitRevisionCommand.cherryPick.historyTitle, "Cherry-pick")
     XCTAssertEqual(GitRevisionCommand.cherryPick.selectedCommitTitle, "Cherry-pick selected commit")
     XCTAssertEqual(GitRevisionCommand.cherryPick.resultTitle(shortHash: "abc1234"), "Cherry-pick abc1234")
+    XCTAssertTrue(GitRevisionCommand.cherryPick.supportsConflictPreflight)
 
     XCTAssertEqual(GitRevisionCommand.revert.gitSubcommand, "revert")
     XCTAssertEqual(GitRevisionCommand.revert.arguments(commitHash: "abc1234"), ["revert", "--no-edit", "abc1234"])
     XCTAssertEqual(GitRevisionCommand.revert.historyTitle, "Revert")
     XCTAssertEqual(GitRevisionCommand.revert.selectedCommitTitle, "Revert selected commit")
+    XCTAssertTrue(GitRevisionCommand.revert.supportsConflictPreflight)
 
     XCTAssertEqual(GitRevisionCommand.merge.gitSubcommand, "merge")
     XCTAssertEqual(GitRevisionCommand.merge.arguments(commitHash: "abc1234"), ["merge", "--no-edit", "abc1234"])
     XCTAssertEqual(GitRevisionCommand.merge.historyTitle, "Merge")
     XCTAssertEqual(GitRevisionCommand.merge.selectedCommitTitle, "Merge selected commit")
+    XCTAssertFalse(GitRevisionCommand.merge.supportsConflictPreflight)
 
     XCTAssertEqual(GitRevisionCommand.rebase.gitSubcommand, "rebase")
     XCTAssertEqual(GitRevisionCommand.rebase.arguments(commitHash: "abc1234"), ["rebase", "abc1234"])
@@ -408,6 +411,7 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(GitRevisionCommand.merge.arguments(commitHash: "abc1234", updateRefs: true), ["merge", "--no-edit", "abc1234"])
     XCTAssertEqual(GitRevisionCommand.rebase.historyTitle, "Rebase onto")
     XCTAssertEqual(GitRevisionCommand.rebase.selectedCommitTitle, "Rebase onto selected commit")
+    XCTAssertFalse(GitRevisionCommand.rebase.supportsConflictPreflight)
   }
 
   func testRevisionCommandRequestCopyNamesCommandAndCommit() {
@@ -430,6 +434,13 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(RevisionCommandRequest(command: .revert, commit: commit).title, "Revert selected commit")
     XCTAssertEqual(RevisionCommandRequest(command: .merge, commit: commit).primaryActionTitle, "Merge")
     XCTAssertEqual(RevisionCommandRequest(command: .rebase, commit: commit).message, "Rebase onto abcdef1.")
+  }
+
+  func testRevisionCommandConflictReadinessCopyIsConcise() {
+    XCTAssertEqual(RevisionCommandConflictReadiness.checking.title, "Checking conflicts")
+    XCTAssertEqual(RevisionCommandConflictReadiness.clean.title, "No conflicts expected")
+    XCTAssertEqual(RevisionCommandConflictReadiness.conflicts.detail, "This action may stop for conflict resolution")
+    XCTAssertEqual(RevisionCommandConflictReadiness.unavailable("No parent").detail, "No parent")
   }
 
   func testRepositoryFileLocatorBuildsRepositoryRelativeURLs() {

@@ -1752,6 +1752,51 @@ final class GitClientIntegrationTests: XCTestCase {
     }
   }
 
+  func testRevisionCommandConflictReadinessUsesGitPreflight() async throws {
+    let repo = try await makeRepository()
+    try write("base\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Initial")
+
+    _ = try await client.git(["checkout", "-b", "side"], in: repo)
+    try write("side\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Conflicting side change")
+    let conflictingHash = try await client.git(["rev-parse", "HEAD"], in: repo).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    try write("notes\n", to: repo.appending(path: "notes.txt"))
+    try await commitAll(in: repo, message: "Clean side change")
+    let cleanHash = try await client.git(["rev-parse", "HEAD"], in: repo).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    _ = try await client.git(["checkout", "main"], in: repo)
+    try write("main\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Main change")
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let conflictingCommit = GitCommit(
+      hash: conflictingHash,
+      shortHash: String(conflictingHash.prefix(7)),
+      authorName: "Bonsai Tests",
+      authorEmail: "bonsai@example.test",
+      date: nil,
+      subject: "Conflicting side change",
+      decorations: []
+    )
+    let cleanCommit = GitCommit(
+      hash: cleanHash,
+      shortHash: String(cleanHash.prefix(7)),
+      authorName: "Bonsai Tests",
+      authorEmail: "bonsai@example.test",
+      date: nil,
+      subject: "Clean side change",
+      decorations: []
+    )
+
+    let conflicting = await client.revisionCommandConflictReadiness(.cherryPick, commit: conflictingCommit, in: repository)
+    let clean = await client.revisionCommandConflictReadiness(.cherryPick, commit: cleanCommit, in: repository)
+
+    XCTAssertEqual(conflicting, .conflicts)
+    XCTAssertEqual(clean, .clean)
+  }
+
   func testBisectWorkflowTracksActiveStateAndMarksRevisions() async throws {
     let repo = try await makeRepository()
     let file = repo.appending(path: "file.txt")

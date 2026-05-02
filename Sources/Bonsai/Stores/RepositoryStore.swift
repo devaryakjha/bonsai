@@ -85,6 +85,7 @@ final class RepositoryStore {
   var dropStashRequest: DropStashRequest?
   var interactiveRebasePlan: InteractiveRebasePlan?
   var revisionCommandRequest: RevisionCommandRequest?
+  var revisionCommandConflictReadiness: RevisionCommandConflictReadiness?
   var revisionCommandUpdateRefs = false
   var resetRequest: ResetRequest?
   var deleteRefRequest: DeleteRefRequest?
@@ -1833,13 +1834,24 @@ final class RepositoryStore {
   func presentRevisionCommand(_ command: GitRevisionCommand) {
     guard let selectedCommit else { return }
     revisionCommandUpdateRefs = false
-    revisionCommandRequest = RevisionCommandRequest(command: command, commit: selectedCommit)
+    let request = RevisionCommandRequest(command: command, commit: selectedCommit)
+    revisionCommandRequest = request
+    revisionCommandConflictReadiness = command.supportsConflictPreflight ? .checking : nil
+
+    guard command.supportsConflictPreflight, let selectedRepository else { return }
+    Task {
+      let readiness = await gitClient.revisionCommandConflictReadiness(command, commit: selectedCommit, in: selectedRepository)
+      if revisionCommandRequest?.id == request.id {
+        revisionCommandConflictReadiness = readiness
+      }
+    }
   }
 
   func runRequestedRevisionCommand() async {
     guard let request = revisionCommandRequest else { return }
     let updateRefs = revisionCommandUpdateRefs
     revisionCommandRequest = nil
+    revisionCommandConflictReadiness = nil
     revisionCommandUpdateRefs = false
     await runMutation(title: request.command.resultTitle(shortHash: request.commit.shortHash)) {
       try await gitClient.runRevisionCommand(
@@ -2503,6 +2515,8 @@ final class RepositoryStore {
     fileHistoryDocument = nil
     lineHistoryDocument = nil
     codeAgentBranchReviewDocument = nil
+    revisionCommandRequest = nil
+    revisionCommandConflictReadiness = nil
     createWorktreeRequest = nil
     createWorktreeDestinationPath = ""
     createWorktreeBranchName = ""

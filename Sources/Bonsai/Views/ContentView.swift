@@ -231,9 +231,11 @@ struct ContentView: View {
     .sheet(item: $store.revisionCommandRequest) { request in
       RevisionCommandSheet(
         request: request,
+        readiness: store.revisionCommandConflictReadiness,
         updateRefs: $store.revisionCommandUpdateRefs,
         onCancel: {
           store.revisionCommandRequest = nil
+          store.revisionCommandConflictReadiness = nil
           store.revisionCommandUpdateRefs = false
         },
         onConfirm: {
@@ -1113,6 +1115,7 @@ private struct DropStashSheet: View {
 
 private struct RevisionCommandSheet: View {
   var request: RevisionCommandRequest
+  var readiness: RevisionCommandConflictReadiness?
   @Binding var updateRefs: Bool
   var onCancel: () -> Void
   var onConfirm: () -> Void
@@ -1131,6 +1134,10 @@ private struct RevisionCommandSheet: View {
         .foregroundStyle(.secondary)
         .lineLimit(3)
 
+      if let readiness {
+        RevisionCommandReadinessRow(readiness: readiness)
+      }
+
       if request.command == .rebase {
         Toggle("Update refs", isOn: $updateRefs)
           .help("Move branch refs that point into the rewritten range")
@@ -1145,6 +1152,43 @@ private struct RevisionCommandSheet: View {
     }
     .padding(20)
     .frame(width: 460)
+  }
+}
+
+private struct RevisionCommandReadinessRow: View {
+  var readiness: RevisionCommandConflictReadiness
+
+  var body: some View {
+    HStack(alignment: .firstTextBaseline, spacing: 8) {
+      Image(systemName: readiness.systemImage)
+        .foregroundStyle(statusColor)
+        .frame(width: 18)
+
+      VStack(alignment: .leading, spacing: 2) {
+        Text(readiness.title)
+          .font(.callout)
+          .fontWeight(.medium)
+          .lineLimit(1)
+        Text(readiness.detail)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .lineLimit(2)
+      }
+    }
+    .padding(.vertical, 8)
+    .padding(.horizontal, 10)
+    .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 8))
+  }
+
+  private var statusColor: Color {
+    switch readiness {
+    case .checking, .unavailable:
+      return .secondary
+    case .clean:
+      return .green
+    case .conflicts:
+      return .orange
+    }
   }
 }
 

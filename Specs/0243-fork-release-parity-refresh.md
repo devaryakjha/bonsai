@@ -43,6 +43,7 @@ implementation evidence.
 | Codex AI commit messages and code review | Covered by `Specs/0254-code-agent-provider-parity.md` |
 | Cmd+V to apply patch from clipboard | Covered by `Specs/0253-apply-patch-clipboard-shortcut.md` |
 | Collapsible commit details | Covered by `Specs/0222-commit-details-shortcut.md` |
+| Cherry-pick/revert conflict-readiness indicators | Covered by `Specs/0255-revision-conflict-preflight.md` |
 | Copy repository path from sidebar repository menu | Covered by `Specs/0095-calm-repository-header-actions.md` |
 | .gitignore template picker | Covered by `Specs/0223-gitignore-template-picker.md` |
 | Conflict-resolved diffs after external merge tools | Covered by `Specs/0245-conflict-resolved-diff.md` |

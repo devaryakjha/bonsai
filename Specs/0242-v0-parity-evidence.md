@@ -55,6 +55,7 @@ surfaces that are not all represented in the older homepage matrix.
 | Codex AI commit messages and code review | Verified through `Specs/0254-code-agent-provider-parity.md` |
 | Cmd+V to apply patch from clipboard | Verified through `Specs/0253-apply-patch-clipboard-shortcut.md` |
 | Collapsible commit details | Verified |
+| Cherry-pick/revert conflict-readiness indicators | Verified through `Specs/0255-revision-conflict-preflight.md` |
 | Copy repository path from sidebar repository menu | Verified |
 | .gitignore template picker | Verified |
 | Conflict-resolved diffs after external merge tools | Verified |

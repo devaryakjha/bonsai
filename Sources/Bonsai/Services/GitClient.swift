@@ -1043,6 +1043,64 @@ struct GitClient {
     try await runRaw(command.arguments(commitHash: commit.hash, updateRefs: updateRefs), in: repository)
   }
 
+  func revisionCommandConflictReadiness(
+    _ command: GitRevisionCommand,
+    commit: GitCommit,
+    in repository: GitRepository
+  ) async -> RevisionCommandConflictReadiness {
+    guard command.supportsConflictPreflight else {
+      return .unavailable("Conflict preflight is not available for \(command.historyTitle.lowercased()).")
+    }
+
+    do {
+      let parentOutput = try await git(Self.revisionCommandParentArguments(commitHash: commit.hash), in: repository.url)
+      let parentHash = parentOutput.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+      guard !parentHash.isEmpty else {
+        return .unavailable("Could not resolve the commit parent.")
+      }
+
+      let preflightArguments = Self.revisionCommandConflictPreflightArguments(
+        command,
+        commitHash: commit.hash,
+        parentHash: parentHash
+      )
+      _ = try await git(preflightArguments, in: repository.url)
+      return .clean
+    } catch let error as ProcessRunnerError {
+      if case .failed(_, _, 1) = error {
+        return .conflicts
+      }
+      return .unavailable(error.localizedDescription)
+    } catch {
+      return .unavailable(error.localizedDescription)
+    }
+  }
+
+  static func revisionCommandParentArguments(commitHash: String) -> [String] {
+    ["rev-parse", "\(commitHash)^1"]
+  }
+
+  static func revisionCommandConflictPreflightArguments(
+    _ command: GitRevisionCommand,
+    commitHash: String,
+    parentHash: String
+  ) -> [String] {
+    let baseHash: String
+    let theirsHash: String
+    switch command {
+    case .cherryPick:
+      baseHash = parentHash
+      theirsHash = commitHash
+    case .revert:
+      baseHash = commitHash
+      theirsHash = parentHash
+    case .merge, .rebase:
+      baseHash = parentHash
+      theirsHash = commitHash
+    }
+    return ["merge-tree", "--write-tree", "--quiet", "--merge-base", baseHash, "HEAD", theirsHash]
+  }
+
   func createBranch(named name: String, startPoint: String?, in repository: GitRepository) async throws -> String {
     try await runRaw(Self.createBranchArguments(named: name, startPoint: startPoint), in: repository)
   }

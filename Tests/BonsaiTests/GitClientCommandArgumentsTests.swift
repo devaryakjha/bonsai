@@ -173,6 +173,15 @@ final class GitClientCommandArgumentsTests: XCTestCase {
         "Sources/App View.swift"
       ]
     )
+    XCTAssertEqual(GitClient.revisionCommandParentArguments(commitHash: "abc123456789"), ["rev-parse", "abc123456789^1"])
+    XCTAssertEqual(
+      GitClient.revisionCommandConflictPreflightArguments(.cherryPick, commitHash: "commit", parentHash: "parent"),
+      ["merge-tree", "--write-tree", "--quiet", "--merge-base", "parent", "HEAD", "commit"]
+    )
+    XCTAssertEqual(
+      GitClient.revisionCommandConflictPreflightArguments(.revert, commitHash: "commit", parentHash: "parent"),
+      ["merge-tree", "--write-tree", "--quiet", "--merge-base", "commit", "HEAD", "parent"]
+    )
     XCTAssertEqual(
       GitClient.diffForCommitFileArguments(file, commit: commit, algorithm: .patience, whitespaceMode: .ignoreChanges),
       [
