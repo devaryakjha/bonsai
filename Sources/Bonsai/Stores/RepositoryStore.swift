@@ -172,6 +172,20 @@ final class RepositoryStore {
     currentBranch?.upstream == nil && publishRemote != nil
   }
 
+  var pushReadinessIssue: String? {
+    guard let currentBranch else {
+      return selectedRepository == nil ? nil : "Checkout a branch before pushing."
+    }
+    if currentBranch.upstream == nil && publishRemote == nil {
+      return "Add a remote before publishing."
+    }
+    return nil
+  }
+
+  var canPush: Bool {
+    pushReadinessIssue == nil
+  }
+
   var pushActionTitle: String {
     shouldPublishCurrentBranch ? "Publish" : (currentBranch?.pushTitle ?? "Push")
   }
@@ -573,6 +587,11 @@ final class RepositoryStore {
   func runRepositoryAction(_ action: RepositoryAction) async {
     if action == .pull, let pullReadinessIssue {
       errorMessage = pullReadinessIssue
+      return
+    }
+
+    if action == .push, let pushReadinessIssue {
+      errorMessage = pushReadinessIssue
       return
     }
 

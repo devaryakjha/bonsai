@@ -37,7 +37,7 @@ struct BonsaiCommands: Commands {
         Task { await store.runRepositoryAction(.push) }
       }
       .keyboardShortcut("p", modifiers: [.command, .shift])
-      .disabled(store.selectedRepository == nil)
+      .disabled(store.selectedRepository == nil || !store.canPush)
 
       Divider()
 

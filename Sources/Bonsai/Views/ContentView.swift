@@ -63,7 +63,8 @@ struct ContentView: View {
         } label: {
           ToolbarLabel(store.pushActionTitle, systemImage: "arrow.up.to.line.circle", showTitle: showToolbarLabels)
         }
-        .disabled(store.selectedRepository == nil)
+        .disabled(store.selectedRepository == nil || !store.canPush)
+        .help(store.pushReadinessIssue ?? store.pushActionTitle)
       }
 
       ToolbarItemGroup {
