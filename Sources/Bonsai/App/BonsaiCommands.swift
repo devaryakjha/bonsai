@@ -72,6 +72,16 @@ struct BonsaiCommands: Commands {
       .keyboardShortcut(.return, modifiers: [.command])
       .disabled(store.selectedRepository == nil || !store.canCommit)
 
+      Button("Stage Selected File") {
+        Task { await store.stageSelectedStatusEntry() }
+      }
+      .disabled(store.selectedRepository == nil || !store.canStageSelectedStatusEntry)
+
+      Button("Unstage Selected File") {
+        Task { await store.unstageSelectedStatusEntry() }
+      }
+      .disabled(store.selectedRepository == nil || !store.canUnstageSelectedStatusEntry)
+
       Divider()
 
       Button("Create Branch...") {

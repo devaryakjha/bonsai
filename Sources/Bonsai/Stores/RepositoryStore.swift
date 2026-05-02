@@ -169,6 +169,15 @@ final class RepositoryStore {
     commitReadinessIssue == nil
   }
 
+  var canStageSelectedStatusEntry: Bool {
+    guard let selectedStatusEntry else { return false }
+    return !selectedStatusEntry.isStaged && !selectedStatusEntry.isConflicted
+  }
+
+  var canUnstageSelectedStatusEntry: Bool {
+    selectedStatusEntry?.isStaged == true
+  }
+
   var stagedChanges: [GitStatusEntry] {
     snapshot.status.filter(\.isStaged)
   }
@@ -383,6 +392,7 @@ final class RepositoryStore {
 
     do {
       snapshot = try await gitClient.snapshot(for: repository, selectedCommit: selectedCommit)
+      reconcileSelectedStatusEntry()
       if let selectedStash,
          !snapshot.stashes.contains(where: { $0.id == selectedStash.id }) {
         self.selectedStash = nil
@@ -559,10 +569,20 @@ final class RepositoryStore {
     }
   }
 
+  func stageSelectedStatusEntry() async {
+    guard canStageSelectedStatusEntry, let selectedStatusEntry else { return }
+    await stage(selectedStatusEntry)
+  }
+
   func unstage(_ entry: GitStatusEntry) async {
     await runMutation(title: "Unstage \(entry.path)") {
       try await gitClient.unstage(entry, in: requiredRepository())
     }
+  }
+
+  func unstageSelectedStatusEntry() async {
+    guard canUnstageSelectedStatusEntry, let selectedStatusEntry else { return }
+    await unstage(selectedStatusEntry)
   }
 
   func presentDiscardChange(_ entry: GitStatusEntry) {
@@ -1443,6 +1463,13 @@ final class RepositoryStore {
       if selectedStatusEntry == nil {
         selectedStatusEntry = snapshot.status.first
       }
+    }
+  }
+
+  private func reconcileSelectedStatusEntry() {
+    guard let current = selectedStatusEntry else { return }
+    selectedStatusEntry = snapshot.status.first {
+      $0.path == current.path && $0.originalPath == current.originalPath
     }
   }
 

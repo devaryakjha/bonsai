@@ -100,6 +100,56 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(staleUnstagedChanges.first?.path, "tracked.txt")
   }
 
+  func testSelectedStatusEntryStageCommandsReconcileSelection() async throws {
+    let hadAutoRefreshPreference = UserDefaults.standard.object(forKey: "bonsai.autoRefresh") != nil
+    let previousAutoRefreshPreference = UserDefaults.standard.bool(forKey: "bonsai.autoRefresh")
+    UserDefaults.standard.set(true, forKey: "bonsai.autoRefresh")
+    defer {
+      if hadAutoRefreshPreference {
+        UserDefaults.standard.set(previousAutoRefreshPreference, forKey: "bonsai.autoRefresh")
+      } else {
+        UserDefaults.standard.removeObject(forKey: "bonsai.autoRefresh")
+      }
+    }
+
+    let repo = try await makeRepository()
+    let file = repo.appending(path: "tracked.txt")
+    try write("before\n", to: file)
+    try await commitAll(in: repo, message: "Initial")
+    try write("after\n", to: file)
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    let unstagedChanges = await store.unstagedChanges
+    let entry = try XCTUnwrap(unstagedChanges.first)
+
+    await store.selectStatusEntry(entry)
+    let canStageBefore = await store.canStageSelectedStatusEntry
+    let canUnstageBefore = await store.canUnstageSelectedStatusEntry
+    XCTAssertTrue(canStageBefore)
+    XCTAssertFalse(canUnstageBefore)
+
+    await store.stageSelectedStatusEntry()
+
+    let stagedSelection = await store.selectedStatusEntry
+    let canStageAfterStage = await store.canStageSelectedStatusEntry
+    let canUnstageAfterStage = await store.canUnstageSelectedStatusEntry
+    XCTAssertEqual(stagedSelection?.path, "tracked.txt")
+    XCTAssertTrue(stagedSelection?.isStaged == true)
+    XCTAssertFalse(canStageAfterStage)
+    XCTAssertTrue(canUnstageAfterStage)
+
+    await store.unstageSelectedStatusEntry()
+
+    let unstagedSelection = await store.selectedStatusEntry
+    let canStageAfterUnstage = await store.canStageSelectedStatusEntry
+    let canUnstageAfterUnstage = await store.canUnstageSelectedStatusEntry
+    XCTAssertEqual(unstagedSelection?.path, "tracked.txt")
+    XCTAssertTrue(unstagedSelection?.isStaged == false)
+    XCTAssertTrue(canStageAfterUnstage)
+    XCTAssertFalse(canUnstageAfterUnstage)
+  }
+
   func testWorkingTreeHunkCommitAndReadOnlyActions() async throws {
     let repo = try await makeRepository()
     let file = repo.appending(path: "file.txt")
