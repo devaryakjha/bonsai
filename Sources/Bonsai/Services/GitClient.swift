@@ -447,52 +447,80 @@ struct GitClient {
   }
 
   func publishBranch(_ branch: String, remote: String, in repository: GitRepository) async throws -> String {
-    try await runRaw(["push", "-u", remote, branch], in: repository)
+    try await runRaw(Self.publishBranchArguments(branch, remote: remote), in: repository)
+  }
+
+  static func publishBranchArguments(_ branch: String, remote: String) -> [String] {
+    ["push", "-u", remote, branch]
   }
 
   func forcePushWithLease(_ branch: GitRef, in repository: GitRepository) async throws -> String {
+    try await runRaw(Self.forcePushWithLeaseArguments(branch), in: repository)
+  }
+
+  static func forcePushWithLeaseArguments(_ branch: GitRef) throws -> [String] {
     guard let remoteName = branch.upstreamRemoteName,
           let upstreamBranchName = branch.upstreamBranchName else {
       throw GitClientError.invalidBranchUpstream(branch.shortName)
     }
-    return try await runRaw([
+    return [
       "push",
       "--force-with-lease",
       remoteName,
       "\(branch.shortName):\(upstreamBranchName)"
-    ], in: repository)
+    ]
   }
 
   func pullBranch(_ branch: GitRef, in repository: GitRepository) async throws -> String {
+    try await runRaw(Self.pullBranchArguments(branch), in: repository)
+  }
+
+  static func pullBranchArguments(_ branch: GitRef) throws -> [String] {
     if branch.isHead {
-      return try await runRaw(["pull", "--ff-only"], in: repository)
+      return ["pull", "--ff-only"]
     }
     guard let remoteName = branch.upstreamRemoteName,
           let upstreamBranchName = branch.upstreamBranchName else {
       throw GitClientError.invalidBranchUpstream(branch.shortName)
     }
-    return try await runRaw([
+    return [
       "fetch",
       remoteName,
       "\(upstreamBranchName):refs/remotes/\(remoteName)/\(upstreamBranchName)",
       "\(upstreamBranchName):refs/heads/\(branch.shortName)"
-    ], in: repository)
+    ]
   }
 
   func mergeReference(_ ref: GitRef, in repository: GitRepository) async throws -> String {
-    try await runRaw(["merge", "--no-edit", ref.shortName], in: repository)
+    try await runRaw(Self.mergeReferenceArguments(ref), in: repository)
+  }
+
+  static func mergeReferenceArguments(_ ref: GitRef) -> [String] {
+    ["merge", "--no-edit", ref.shortName]
   }
 
   func rebaseOntoReference(_ ref: GitRef, in repository: GitRepository) async throws -> String {
-    try await runRaw(["rebase", ref.shortName], in: repository)
+    try await runRaw(Self.rebaseOntoReferenceArguments(ref), in: repository)
+  }
+
+  static func rebaseOntoReferenceArguments(_ ref: GitRef) -> [String] {
+    ["rebase", ref.shortName]
   }
 
   func pushTag(_ tag: String, remote: String, in repository: GitRepository) async throws -> String {
-    try await runRaw(["push", remote, tag], in: repository)
+    try await runRaw(Self.pushTagArguments(tag, remote: remote), in: repository)
+  }
+
+  static func pushTagArguments(_ tag: String, remote: String) -> [String] {
+    ["push", remote, tag]
   }
 
   func deleteRemoteTag(_ tag: String, remote: String, in repository: GitRepository) async throws -> String {
-    try await runRaw(["push", remote, ":refs/tags/\(tag)"], in: repository)
+    try await runRaw(Self.deleteRemoteTagArguments(tag, remote: remote), in: repository)
+  }
+
+  static func deleteRemoteTagArguments(_ tag: String, remote: String) -> [String] {
+    ["push", remote, ":refs/tags/\(tag)"]
   }
 
   func runRaw(_ arguments: [String], in repository: GitRepository) async throws -> String {

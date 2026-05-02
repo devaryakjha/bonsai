@@ -2,6 +2,113 @@ import XCTest
 @testable import Bonsai
 
 final class GitClientCommandArgumentsTests: XCTestCase {
+  func testBranchPublishAndForcePushArgumentsPreserveRefs() throws {
+    let branch = GitRef(
+      name: "refs/heads/feature/local branch",
+      shortName: "feature/local branch",
+      objectName: "abc123",
+      upstream: "origin/feature/remote branch",
+      ahead: 1,
+      isHead: true,
+      kind: .localBranch
+    )
+
+    XCTAssertEqual(
+      GitClient.publishBranchArguments("feature/local branch", remote: "team origin"),
+      ["push", "-u", "team origin", "feature/local branch"]
+    )
+    XCTAssertEqual(
+      try GitClient.forcePushWithLeaseArguments(branch),
+      ["push", "--force-with-lease", "origin", "feature/local branch:feature/remote branch"]
+    )
+  }
+
+  func testForcePushArgumentsRejectMissingUpstream() {
+    let branch = GitRef(
+      name: "refs/heads/feature/local",
+      shortName: "feature/local",
+      objectName: "abc123",
+      isHead: true,
+      kind: .localBranch
+    )
+
+    XCTAssertThrowsError(try GitClient.forcePushWithLeaseArguments(branch))
+  }
+
+  func testPullBranchArgumentsDistinguishCurrentAndNonCurrentBranches() throws {
+    let current = GitRef(
+      name: "refs/heads/main",
+      shortName: "main",
+      objectName: "abc123",
+      upstream: "origin/main",
+      behind: 2,
+      isHead: true,
+      kind: .localBranch
+    )
+    let other = GitRef(
+      name: "refs/heads/feature/local branch",
+      shortName: "feature/local branch",
+      objectName: "def456",
+      upstream: "origin/feature/remote branch",
+      behind: 1,
+      isHead: false,
+      kind: .localBranch
+    )
+
+    XCTAssertEqual(
+      try GitClient.pullBranchArguments(current),
+      ["pull", "--ff-only"]
+    )
+    XCTAssertEqual(
+      try GitClient.pullBranchArguments(other),
+      [
+        "fetch",
+        "origin",
+        "feature/remote branch:refs/remotes/origin/feature/remote branch",
+        "feature/remote branch:refs/heads/feature/local branch"
+      ]
+    )
+  }
+
+  func testPullBranchArgumentsRejectMissingUpstreamForNonCurrentBranch() {
+    let branch = GitRef(
+      name: "refs/heads/feature/local",
+      shortName: "feature/local",
+      objectName: "abc123",
+      isHead: false,
+      kind: .localBranch
+    )
+
+    XCTAssertThrowsError(try GitClient.pullBranchArguments(branch))
+  }
+
+  func testReferenceMergeRebaseAndTagTransferArguments() {
+    let ref = GitRef(
+      name: "refs/remotes/origin/feature/sidebar",
+      shortName: "origin/feature/sidebar",
+      objectName: "abc123",
+      isHead: false,
+      kind: .remoteBranch
+    )
+
+    XCTAssertEqual(
+      GitClient.mergeReferenceArguments(ref),
+      ["merge", "--no-edit", "origin/feature/sidebar"]
+    )
+    XCTAssertEqual(
+      GitClient.rebaseOntoReferenceArguments(ref),
+      ["rebase", "origin/feature/sidebar"]
+    )
+    XCTAssertEqual(
+      GitClient.pushTagArguments("v1.0 candidate", remote: "team origin"),
+      ["push", "team origin", "v1.0 candidate"]
+    )
+    XCTAssertEqual(
+      GitClient.deleteRemoteTagArguments("v1.0 candidate", remote: "team origin"),
+      ["push", "team origin", ":refs/tags/v1.0 candidate"]
+    )
+  }
+
   func testBranchArgumentsPreserveNamesAndStartPoints() {
     XCTAssertEqual(
       GitClient.createBranchArguments(named: "feature/local branch", startPoint: nil),
