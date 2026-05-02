@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 
+@MainActor
 struct DetailView: View {
   let store: RepositoryStore
   @State private var diffSearchText = ""
@@ -54,6 +55,7 @@ struct DetailView: View {
   }
 }
 
+@MainActor
 private struct DetailHeaderView: View {
   let store: RepositoryStore
   @Binding var diffSearchText: String
@@ -213,6 +215,7 @@ private struct DetailHeaderView: View {
   }
 }
 
+@MainActor
 private struct DiffHeaderControls: View {
   let store: RepositoryStore
   @Binding var searchText: String
@@ -395,6 +398,7 @@ private struct DiffHeaderControls: View {
   }
 }
 
+@MainActor
 private struct DiffView: View {
   let store: RepositoryStore
   var searchText: String

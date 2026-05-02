@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct WorkingTreeView: View {
   @Bindable var store: RepositoryStore
 
@@ -143,6 +144,7 @@ private struct WorkingTreeSectionHeader: View {
   }
 }
 
+@MainActor
 private struct StatusRow: View {
   var entry: GitStatusEntry
   let store: RepositoryStore
@@ -397,6 +399,7 @@ private struct StatusRow: View {
   }
 }
 
+@MainActor
 private struct IgnoredStatusRow: View {
   var entry: GitStatusEntry
   let store: RepositoryStore
@@ -446,6 +449,7 @@ private struct PlaceholderRow: View {
   }
 }
 
+@MainActor
 private struct CommitComposerView: View {
   @Bindable var store: RepositoryStore
 

@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct SidebarView: View {
   let store: RepositoryStore
   let navigationFocus: FocusState<NavigationFocusTarget?>.Binding

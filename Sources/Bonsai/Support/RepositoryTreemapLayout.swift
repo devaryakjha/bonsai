@@ -1,7 +1,7 @@
 import CoreGraphics
 
 struct RepositoryTreemapLayout {
-  struct PositionedTile: Hashable {
+  struct PositionedTile {
     var tile: RepositoryTreemapTile
     var rect: CGRect
   }

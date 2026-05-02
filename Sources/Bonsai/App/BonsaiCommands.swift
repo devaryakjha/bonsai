@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct BonsaiCommands: Commands {
   let store: RepositoryStore
   @AppStorage("bonsai.showCommitRowDetails") private var showCommitRowDetails = false
