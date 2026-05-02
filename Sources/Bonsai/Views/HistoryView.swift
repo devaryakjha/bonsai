@@ -26,20 +26,12 @@ struct HistoryView: View {
 
       Divider()
 
-      List(selection: Binding(
-        get: { store.selectedCommit?.id },
-        set: { id in
-          store.selectCommit(store.snapshot.commits.first(where: { $0.id == id }))
-        }
-      )) {
+      List(selection: historySelection) {
         if !store.snapshot.stashes.isEmpty {
           Section("Stashes") {
             ForEach(store.snapshot.stashes) { stash in
-              StashRow(stash: stash, isSelected: store.selectedStash?.id == stash.id)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                  store.selectStash(stash)
-                }
+              StashRow(stash: stash)
+                .tag(HistorySelectionKey.stash(stash.id))
                 .contextMenu {
                   Button("Apply") {
                     Task { await store.applyStash(stash, pop: false) }
@@ -63,7 +55,7 @@ struct HistoryView: View {
 
         ForEach(store.filteredCommits) { commit in
           CommitRow(commit: commit, showsDetails: showCommitRowDetails)
-            .tag(commit.id)
+            .tag(HistorySelectionKey.commit(commit.id))
             .contextMenu {
               Button("Checkout") {
                 store.selectCommit(commit)
@@ -110,6 +102,47 @@ struct HistoryView: View {
         .frame(minHeight: 180, idealHeight: 220, maxHeight: 280)
     }
   }
+
+  private var historySelection: Binding<String?> {
+    Binding(
+      get: {
+        if let stash = store.selectedStash {
+          return HistorySelectionKey.stash(stash.id)
+        }
+        return store.selectedCommit.map { HistorySelectionKey.commit($0.id) }
+      },
+      set: { id in
+        guard let id else {
+          store.selectCommit(nil)
+          return
+        }
+
+        if let stashID = HistorySelectionKey.stashID(from: id) {
+          store.selectStash(store.snapshot.stashes.first { $0.id == stashID })
+        } else if let commitID = HistorySelectionKey.commitID(from: id) {
+          store.selectCommit(store.snapshot.commits.first { $0.id == commitID })
+        }
+      }
+    )
+  }
+}
+
+private enum HistorySelectionKey {
+  static func commit(_ id: String) -> String { "commit:\(id)" }
+  static func stash(_ id: String) -> String { "stash:\(id)" }
+
+  static func commitID(from key: String) -> String? {
+    id(from: key, prefix: "commit:")
+  }
+
+  static func stashID(from key: String) -> String? {
+    id(from: key, prefix: "stash:")
+  }
+
+  private static func id(from key: String, prefix: String) -> String? {
+    guard key.hasPrefix(prefix) else { return nil }
+    return String(key.dropFirst(prefix.count))
+  }
 }
 
 private struct CommitCopyMenu: View {
@@ -138,7 +171,6 @@ private struct CommitCopyMenu: View {
 
 private struct StashRow: View {
   var stash: GitStash
-  var isSelected: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
@@ -157,8 +189,6 @@ private struct StashRow: View {
         .lineLimit(1)
     }
     .padding(.vertical, 4)
-    .padding(.horizontal, isSelected ? 6 : 0)
-    .background(isSelected ? Color.accentColor.opacity(0.12) : Color.clear, in: RoundedRectangle(cornerRadius: 6))
   }
 }
 
