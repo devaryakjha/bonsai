@@ -15,7 +15,8 @@
 </p>
 
 <p align="center">
-  <img src="Docs/Images/bonsai-social-preview.png" alt="Bonsai product screenshot showing history, split diff, and repository sidebar">
+  <img src="Docs/Images/bonsai-preview-light.jpg#gh-light-mode-only" alt="Bonsai product screenshot showing history, split diff, and repository sidebar">
+  <img src="Docs/Images/bonsai-preview-dark.jpg#gh-dark-mode-only" alt="Bonsai product screenshot showing history, split diff, and repository sidebar">
 </p>
 
 ## Status
