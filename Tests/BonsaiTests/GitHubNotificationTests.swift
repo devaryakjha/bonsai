@@ -30,6 +30,34 @@ final class GitHubNotificationTests: XCTestCase {
     XCTAssertEqual(notifications[0].reason, "mention")
   }
 
+  func testGitHubNotificationSummaryIsEmptyWhenNoUnreadThreadsExist() {
+    XCTAssertEqual(GitHubNotificationSummary.output(for: []), "No unread notifications.")
+  }
+
+  func testGitHubNotificationSummaryIsCappedAndTruncated() {
+    let notifications = (1...10).map { index in
+      GitHubNotification(
+        id: "\(index)",
+        unread: true,
+        reason: "mention",
+        updatedAt: "2026-05-02T00:00:00Z",
+        subject: GitHubNotification.Subject(
+          title: index == 1 ? String(repeating: "A", count: 160) : "Thread \(index)",
+          type: "PullRequest",
+          url: nil
+        ),
+        repository: GitHubNotification.Repository(fullName: "example/bonsai")
+      )
+    }
+
+    let lines = GitHubNotificationSummary.output(for: notifications).split(separator: "\n").map(String.init)
+
+    XCTAssertEqual(lines.count, 8)
+    XCTAssertTrue(lines[0].hasSuffix("..."))
+    XCTAssertLessThanOrEqual(lines[0].count, GitHubNotificationSummary.maxLineLength)
+    XCTAssertEqual(lines[7], "example/bonsai: Thread 8")
+  }
+
   func testDecodeGitHubRepository() throws {
     let data = """
     {

@@ -1294,12 +1294,9 @@ final class RepositoryStore {
 
     do {
       gitHubNotifications = try await gitHubClient.notifications(token: token)
-      let summary = gitHubNotifications.prefix(8)
-        .map { "\($0.repository.fullName): \($0.subject.title)" }
-        .joined(separator: "\n")
       commandResult = CommandResult(
         title: "GitHub notifications",
-        output: summary.isEmpty ? "No unread notifications." : summary,
+        output: GitHubNotificationSummary.output(for: gitHubNotifications),
         isError: false
       )
     } catch {
