@@ -542,6 +542,7 @@ private struct TreeBlobPreview: View {
   }
 }
 
+@MainActor
 private struct BinaryPreviewView: View {
   let store: RepositoryStore
 
@@ -589,6 +590,7 @@ private struct BinaryPreviewView: View {
   }
 }
 
+@MainActor
 private struct BinaryPreviewHeader: View {
   let store: RepositoryStore
 

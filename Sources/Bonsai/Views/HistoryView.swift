@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct HistoryView: View {
   @Bindable var store: RepositoryStore
   let navigationFocus: FocusState<NavigationFocusTarget?>.Binding
@@ -285,6 +286,7 @@ private struct CommitRow: View {
   }
 }
 
+@MainActor
 private struct ChangedFilesView: View {
   let store: RepositoryStore
   @State private var mode: CommitFilePanelMode = .changed
