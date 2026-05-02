@@ -27,6 +27,12 @@ For `devaryakjha/bonsai`, the `release` environment has already been created
 with `devaryakjha` as a required reviewer. The remaining setup is to add the
 environment secrets below; repository-level release secrets should stay empty.
 
+Check the GitHub-side release setup without printing secret values:
+
+```sh
+./script/package_release.sh --github-doctor
+```
+
 The workflow consumes these secrets:
 
 - `BONSAI_CODESIGN_IDENTITY`

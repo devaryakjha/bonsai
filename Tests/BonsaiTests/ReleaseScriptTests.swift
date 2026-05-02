@@ -45,10 +45,42 @@ final class ReleaseScriptTests: XCTestCase {
     let help = try runPackageRelease(arguments: ["--help"]).output
 
     XCTAssertTrue(help.contains("--verify-artifacts"), help)
+    XCTAssertTrue(help.contains("--github-doctor"), help)
     XCTAssertTrue(help.contains("BONSAI_NOTARY_KEYCHAIN"), help)
     XCTAssertTrue(script.contains("verify_release_artifacts()"))
+    XCTAssertTrue(script.contains("github_release_doctor()"))
     XCTAssertTrue(script.contains("manifest archiveSHA256 mismatch"))
     XCTAssertTrue(script.contains("plutil -extract archiveSHA256 raw"))
+  }
+
+  func testGitHubDoctorReportsMissingEnvironmentSecretsWithMockedGh() throws {
+    let fakeBin = try makeFakeGitHubCLI(
+      environmentSecrets: [
+        "BONSAI_CODESIGN_IDENTITY",
+        "BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64"
+      ],
+      repositorySecrets: []
+    )
+    let path = [
+      fakeBin.path(percentEncoded: false),
+      ProcessInfo.processInfo.environment["PATH"] ?? ""
+    ].joined(separator: ":")
+    let result = try runPackageRelease(
+      arguments: ["--github-doctor"],
+      environment: ["PATH": path]
+    )
+
+    XCTAssertNotEqual(result.status, 0)
+    XCTAssertTrue(result.output.contains("Bonsai GitHub release doctor"), result.output)
+    XCTAssertTrue(result.output.contains("release environment: available"), result.output)
+    XCTAssertTrue(result.output.contains("required reviewers: devaryakjha"), result.output)
+    XCTAssertTrue(result.output.contains("release runner: jarvis-bonsai online"), result.output)
+    XCTAssertTrue(result.output.contains("runner label jarvis: available"), result.output)
+    XCTAssertTrue(result.output.contains("BONSAI_CODESIGN_IDENTITY: configured"), result.output)
+    XCTAssertTrue(result.output.contains("BONSAI_NOTARY_TEAM_ID: missing"), result.output)
+    XCTAssertTrue(result.output.contains("repository-level release secrets: none"), result.output)
+    XCTAssertTrue(result.output.contains("GitHub release configuration: not ready"), result.output)
+    XCTAssertFalse(result.output.contains("Packaged "), result.output)
   }
 
   func testCIWorkflowRunsArtifactVerifierAfterArchiveVerifier() throws {
@@ -126,6 +158,58 @@ final class ReleaseScriptTests: XCTestCase {
       url.deleteLastPathComponent()
     }
     throw XCTSkip("Package root not found")
+  }
+
+  private func makeFakeGitHubCLI(
+    environmentSecrets: [String],
+    repositorySecrets: [String]
+  ) throws -> URL {
+    let directory = FileManager.default.temporaryDirectory
+      .appending(path: "bonsai-gh-\(UUID().uuidString)", directoryHint: .isDirectory)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    let executable = directory.appending(path: "gh")
+    let environmentSecretOutput = environmentSecrets.joined(separator: "\\n")
+    let repositorySecretOutput = repositorySecrets.joined(separator: "\\n")
+    let script = """
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ "$1" == "api" ]]; then
+      endpoint="$2"
+      joined="$*"
+      if [[ "$endpoint" == "repos/devaryakjha/bonsai/environments/release" ]]; then
+        if [[ "$joined" == *required_reviewers* ]]; then
+          printf '%s\\n' devaryakjha
+        else
+          printf '%s\\n' release
+        fi
+        exit 0
+      fi
+      if [[ "$endpoint" == "repos/devaryakjha/bonsai/actions/runners" ]]; then
+        printf '%s\\n' 'jarvis-bonsai\tonline\tself-hosted,macOS,ARM64,jarvis'
+        exit 0
+      fi
+    fi
+
+    if [[ "$1" == "secret" && "$2" == "list" ]]; then
+      joined="$*"
+      if [[ "$joined" == *"--env release"* ]]; then
+        printf '%b' "\(environmentSecretOutput)"
+      else
+        printf '%b' "\(repositorySecretOutput)"
+      fi
+      exit 0
+    fi
+
+    printf 'unexpected gh invocation: %s\\n' "$*" >&2
+    exit 2
+    """
+    try script.write(to: executable, atomically: true, encoding: .utf8)
+    try FileManager.default.setAttributes(
+      [.posixPermissions: 0o755],
+      ofItemAtPath: executable.path(percentEncoded: false)
+    )
+    return directory
   }
 }
 

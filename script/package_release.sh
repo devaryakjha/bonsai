@@ -5,6 +5,9 @@ MODE="${1:---verify}"
 APP_NAME="Bonsai"
 BUNDLE_ID="dev.bonsai.Bonsai"
 MIN_SYSTEM_VERSION="14.0"
+GITHUB_RELEASE_REPOSITORY="${BONSAI_GITHUB_REPOSITORY:-devaryakjha/bonsai}"
+GITHUB_RELEASE_ENVIRONMENT="${BONSAI_GITHUB_RELEASE_ENVIRONMENT:-release}"
+GITHUB_RELEASE_RUNNER="${BONSAI_GITHUB_RELEASE_RUNNER:-jarvis-bonsai}"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION_FILE="$ROOT_DIR/VERSION"
@@ -22,7 +25,7 @@ APP_MARK_SOURCE="$ROOT_DIR/Assets/AppIcon/bonsai-worktree-topology.svg"
 
 usage() {
   cat >&2 <<USAGE
-usage: script/package_release.sh [--verify|--verify-archive|--archive|--notarize|--verify-artifacts|--check-credentials|--doctor]
+usage: script/package_release.sh [--verify|--verify-archive|--archive|--notarize|--verify-artifacts|--check-credentials|--doctor|--github-doctor]
 
   --verify             Build, stage, ad-hoc sign, and validate the release app bundle.
   --verify-archive     Build, ad-hoc sign, validate, and write a local test archive.
@@ -31,6 +34,7 @@ usage: script/package_release.sh [--verify|--verify-archive|--archive|--notarize
   --verify-artifacts   Validate dist/release/Bonsai.zip against Bonsai.release.plist.
   --check-credentials  Validate Developer ID and notarytool credentials without packaging.
   --doctor             Report local release credential readiness without changing artifacts.
+  --github-doctor      Report GitHub release environment readiness without showing secrets.
 
 Environment:
   BONSAI_CODESIGN_IDENTITY  Required for --archive and --notarize.
@@ -38,6 +42,7 @@ Environment:
   BONSAI_NOTARY_KEYCHAIN    Optional keychain path for CI-stored notarytool credentials.
   BONSAI_VERSION            Optional CFBundleShortVersionString override.
   BONSAI_BUILD_NUMBER       Optional CFBundleVersion override.
+  BONSAI_GITHUB_REPOSITORY  Optional owner/repo override for --github-doctor.
 USAGE
 }
 
@@ -443,6 +448,148 @@ release_doctor() {
   return 1
 }
 
+github_release_doctor() {
+  local failures=0
+  local repo="$GITHUB_RELEASE_REPOSITORY"
+  local environment="$GITHUB_RELEASE_ENVIRONMENT"
+  local runner="$GITHUB_RELEASE_RUNNER"
+  local required_secrets=(
+    BONSAI_CODESIGN_IDENTITY
+    BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64
+    BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD
+    BONSAI_NOTARY_APPLE_ID
+    BONSAI_NOTARY_APP_PASSWORD
+    BONSAI_NOTARY_TEAM_ID
+  )
+  local required_labels=(self-hosted macOS ARM64 jarvis)
+
+  echo "Bonsai GitHub release doctor"
+  echo "Repository: $repo"
+  echo "Environment: $environment"
+  echo "Runner: $runner"
+
+  if ! command -v gh >/dev/null; then
+    echo "GitHub CLI: missing"
+    echo "GitHub release configuration: not ready"
+    return 1
+  fi
+  echo "GitHub CLI: available"
+
+  local environment_name
+  if environment_name="$(gh api "repos/$repo/environments/$environment" --jq '.name' 2>/dev/null)"; then
+    if [[ "$environment_name" == "$environment" ]]; then
+      echo "release environment: available"
+    else
+      echo "release environment: unexpected response"
+      failures=1
+    fi
+  else
+    echo "release environment: missing"
+    failures=1
+  fi
+
+  local reviewers reviewers_display
+  reviewers="$(
+    gh api "repos/$repo/environments/$environment" \
+      --jq '.protection_rules[]? | select(.type == "required_reviewers") | .reviewers[]?.reviewer.login' \
+      2>/dev/null \
+      || true
+  )"
+  if [[ -n "$reviewers" ]]; then
+    reviewers_display="$(printf '%s\n' "$reviewers" | awk 'BEGIN { first = 1 } NF { if (!first) { printf ", " } printf "%s", $0; first = 0 }')"
+    echo "required reviewers: $reviewers_display"
+  else
+    echo "required reviewers: missing"
+    failures=1
+  fi
+
+  local runner_rows runner_status runner_labels
+  runner_rows="$(
+    gh api "repos/$repo/actions/runners" \
+      --jq '.runners[]? | [.name,.status,([.labels[].name] | join(","))] | @tsv' \
+      2>/dev/null \
+      || true
+  )"
+  runner_status=""
+  runner_labels=""
+  while IFS=$'\t' read -r name status labels; do
+    if [[ "$name" == "$runner" ]]; then
+      runner_status="$status"
+      runner_labels="$labels"
+    fi
+  done <<<"$runner_rows"
+
+  if [[ -z "$runner_status" ]]; then
+    echo "release runner: missing"
+    failures=1
+  else
+    echo "release runner: $runner $runner_status"
+    if [[ "$runner_status" != "online" ]]; then
+      failures=1
+    fi
+    for label in "${required_labels[@]}"; do
+      if [[ ",$runner_labels," == *",$label,"* ]]; then
+        echo "runner label $label: available"
+      else
+        echo "runner label $label: missing"
+        failures=1
+      fi
+    done
+  fi
+
+  local environment_secret_names
+  if environment_secret_names="$(
+    gh secret list \
+      --repo "$repo" \
+      --env "$environment" \
+      --json name \
+      --jq '.[].name' \
+      2>/dev/null
+  )"; then
+    for secret in "${required_secrets[@]}"; do
+      if printf '%s\n' "$environment_secret_names" | grep -Fx -- "$secret" >/dev/null; then
+        echo "$secret: configured"
+      else
+        echo "$secret: missing"
+        failures=1
+      fi
+    done
+  else
+    echo "environment secrets: unavailable"
+    failures=1
+  fi
+
+  local repository_secret_names scoped_repo_secret_count
+  repository_secret_names="$(
+    gh secret list \
+      --repo "$repo" \
+      --json name \
+      --jq '.[].name' \
+      2>/dev/null \
+      || true
+  )"
+  scoped_repo_secret_count=0
+  for secret in "${required_secrets[@]}"; do
+    if printf '%s\n' "$repository_secret_names" | grep -Fx -- "$secret" >/dev/null; then
+      scoped_repo_secret_count=$((scoped_repo_secret_count + 1))
+    fi
+  done
+  if [[ "$scoped_repo_secret_count" == "0" ]]; then
+    echo "repository-level release secrets: none"
+  else
+    echo "repository-level release secrets: $scoped_repo_secret_count should move to environment"
+    failures=1
+  fi
+
+  if [[ "$failures" == "0" ]]; then
+    echo "GitHub release configuration: ready"
+    return 0
+  fi
+
+  echo "GitHub release configuration: not ready"
+  return 1
+}
+
 package_with_identity() {
   local identity="$1"
   build_release_binary
@@ -490,6 +637,9 @@ case "$MODE" in
     ;;
   --doctor|doctor)
     release_doctor
+    ;;
+  --github-doctor|github-doctor)
+    github_release_doctor
     ;;
   --help|-h|help)
     usage

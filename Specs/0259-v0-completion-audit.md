@@ -36,6 +36,7 @@ development, regular checkpoint commits, and OSS-ready project structure.
 | Notarized archive contents | `script/package_release.sh --notarize` recreates `Bonsai.zip` after stapling so the published archive contains the stapled app | Covered |
 | Release archive validation | `script/package_release.sh` extracts each release zip and validates archived bundle metadata after creation | Covered |
 | Release credential diagnosis | `script/package_release.sh --doctor` reports Developer ID identity, configured signing identity, and notary profile readiness without mutating artifacts | Covered |
+| GitHub release setup diagnosis | `script/package_release.sh --github-doctor` reports the protected environment, reviewer rule, Jarvis runner labels, required environment secret names, and repository-level secret leakage without printing secret values | Covered |
 | Release artifact evidence | `script/package_release.sh` writes `dist/release/Bonsai.release.plist` for archive-producing modes with version, build, commit, zip hash, signature kind, team, and notarization state | Covered |
 | Release artifact verification | `script/package_release.sh --verify-artifacts` validates the zip, manifest shape, archive name, byte size, and SHA-256 after packaging or download | Covered |
 | Release guardrail tests | `Tests/BonsaiTests/ReleaseScriptTests.swift` covers credential rejection, doctor output, artifact verifier wiring, manifest upload, and temporary keychain cleanup wiring without running release builds or notarization | Covered |
@@ -49,6 +50,9 @@ development, regular checkpoint commits, and OSS-ready project structure.
   environment secrets.
 - `gh secret list --repo devaryakjha/bonsai` returns no configured repository
   secrets.
+- `./script/package_release.sh --github-doctor` verifies the `release`
+  environment, required reviewer, and Jarvis runner labels, then reports the six
+  missing environment secret names and exits non-zero.
 - `BONSAI_CODESIGN_IDENTITY` is not set in the current environment.
 - `BONSAI_NOTARY_PROFILE` is not set in the current environment.
 - `security find-identity -p codesigning -v` did not show a `Developer ID
@@ -70,6 +74,8 @@ development, regular checkpoint commits, and OSS-ready project structure.
   `script/package_release.sh --check-credentials`.
 - A read-only credential diagnostic exists:
   `script/package_release.sh --doctor`.
+- A read-only GitHub release setup diagnostic exists:
+  `script/package_release.sh --github-doctor`.
 - A post-build artifact verifier exists:
   `script/package_release.sh --verify-artifacts`.
 - Release guardrails are covered by `ReleaseScriptTests`.

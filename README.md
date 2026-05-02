@@ -86,6 +86,7 @@ Check local distribution credential readiness:
 ```sh
 ./script/package_release.sh --doctor
 ./script/package_release.sh --check-credentials
+./script/package_release.sh --github-doctor
 ```
 
 The credential checks are expected to fail on machines without a Developer ID

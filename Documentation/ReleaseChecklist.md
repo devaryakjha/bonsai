@@ -83,6 +83,11 @@ that final zip.
 
 - Follow `Documentation/GitHubReleaseSetup.md` when configuring GitHub Actions
   release credentials for the first time.
+- Confirm the protected environment, Jarvis runner, and required environment
+  secret names:
+  ```sh
+  ./script/package_release.sh --github-doctor
+  ```
 - Configure the protected `release` environment with these secrets:
   `BONSAI_CODESIGN_IDENTITY`,
   `BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64`,
