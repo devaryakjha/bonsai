@@ -89,9 +89,7 @@ struct HistoryView: View {
                 store.presentCreateTag()
               }
               Divider()
-              Button("Copy Hash") {
-                PasteboardWriter.copy(commit.hash)
-              }
+              CommitCopyMenu(commit: commit)
             }
         }
       }
@@ -101,6 +99,30 @@ struct HistoryView: View {
 
       ChangedFilesView(store: store)
         .frame(minHeight: 180, idealHeight: 220, maxHeight: 280)
+    }
+  }
+}
+
+private struct CommitCopyMenu: View {
+  var commit: GitCommit
+
+  var body: some View {
+    Button("Copy Full Hash") {
+      PasteboardWriter.copy(commit.hash)
+    }
+    Button("Copy Short Hash") {
+      PasteboardWriter.copy(commit.shortHash)
+    }
+    Button("Copy Subject") {
+      PasteboardWriter.copy(commit.subject)
+    }
+    Button("Copy Author Name") {
+      PasteboardWriter.copy(commit.authorName)
+    }
+    if !commit.authorEmail.isEmpty {
+      Button("Copy Author Email") {
+        PasteboardWriter.copy(commit.authorEmail)
+      }
     }
   }
 }
