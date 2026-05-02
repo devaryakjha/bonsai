@@ -138,6 +138,12 @@ struct GitClient {
     return GitParsers.parseChangedFiles(output.stdout)
   }
 
+  func changedFiles(in repository: GitRepository, stash: GitStash?) async throws -> [GitChangedFile] {
+    guard let stash else { return [] }
+    let output = try await git(["stash", "show", "--name-status", stash.index], in: repository.url)
+    return GitParsers.parseChangedFiles(output.stdout)
+  }
+
   func treeEntries(in repository: GitRepository, commit: GitCommit?, path: String = "") async throws -> [GitTreeEntry] {
     guard let commit else { return [] }
     let target = path.isEmpty ? commit.hash : "\(commit.hash):\(path)"
@@ -175,6 +181,11 @@ struct GitClient {
       "--",
       file.path
     ], in: repository.url)
+    return output.stdout
+  }
+
+  func diffForStashFile(_ file: GitChangedFile, stash: GitStash, algorithm: DiffAlgorithm, in repository: GitRepository) async throws -> String {
+    let output = try await git(diffArguments(["\(stash.index)^1", stash.index, "--", file.path], algorithm: algorithm), in: repository.url)
     return output.stdout
   }
 

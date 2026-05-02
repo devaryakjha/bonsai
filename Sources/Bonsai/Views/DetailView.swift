@@ -67,7 +67,15 @@ private struct DetailHeaderView: View {
 
   @ViewBuilder
   private var titleView: some View {
-    if let entry = store.selectedTreeEntry, let commit = store.selectedCommit, store.mainMode == .history {
+    if let stash = store.selectedStash, store.mainMode == .history {
+      Text(stash.index)
+        .font(.headline)
+        .lineLimit(1)
+      Text(stash.message)
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .lineLimit(2)
+    } else if let entry = store.selectedTreeEntry, let commit = store.selectedCommit, store.mainMode == .history {
       Text(entry.path)
         .font(.headline)
         .lineLimit(2)

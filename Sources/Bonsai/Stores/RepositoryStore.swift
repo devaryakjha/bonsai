@@ -16,6 +16,7 @@ final class RepositoryStore {
   var projectWorkspaceGroups: [WorkspaceGroup] = []
   var snapshot = RepositorySnapshot()
   var selectedCommit: GitCommit?
+  var selectedStash: GitStash?
   var selectedStatusEntry: GitStatusEntry?
   var selectedChangedFile: GitChangedFile?
   var selectedTreeEntry: GitTreeEntry?
@@ -31,6 +32,7 @@ final class RepositoryStore {
   var imageDiffSnapshot: ImageDiffSnapshot?
   var commitTreeEntries: [GitTreeEntry] = []
   var commitTreePath = ""
+  var stashChangedFiles: [GitChangedFile] = []
   var treeBlobText = ""
   var commandResult: CommandResult?
   var gitHubNotifications: [GitHubNotification] = []
@@ -121,6 +123,10 @@ final class RepositoryStore {
 
   var filteredCommits: [GitCommit] {
     CommitFilter.filter(snapshot.commits, query: historySearchText)
+  }
+
+  var displayedChangedFiles: [GitChangedFile] {
+    selectedStash == nil ? snapshot.changedFiles : stashChangedFiles
   }
 
   init() {
@@ -248,14 +254,25 @@ final class RepositoryStore {
 
     do {
       snapshot = try await gitClient.snapshot(for: repository, selectedCommit: selectedCommit)
-      if selectedCommit == nil {
+      if let selectedStash,
+         !snapshot.stashes.contains(where: { $0.id == selectedStash.id }) {
+        self.selectedStash = nil
+        stashChangedFiles = []
+        selectedChangedFile = nil
+      }
+      if selectedStash != nil {
+        selectedCommit = nil
+      } else if selectedCommit == nil {
         selectedCommit = snapshot.commits.first
       } else if let current = selectedCommit,
                 !snapshot.commits.contains(where: { $0.hash == current.hash }) {
         selectedCommit = snapshot.commits.first
       }
-      if selectedChangedFile == nil {
+      if selectedChangedFile == nil && selectedStash == nil {
         selectedChangedFile = snapshot.changedFiles.first
+      }
+      if let selectedStash {
+        stashChangedFiles = try await gitClient.changedFiles(in: repository, stash: selectedStash)
       }
       if mainMode == .history {
         try await refreshCommitTreeEntries(resetPath: commitTreeEntries.isEmpty)
@@ -269,8 +286,10 @@ final class RepositoryStore {
 
   func selectCommit(_ commit: GitCommit?) {
     selectedCommit = commit
+    selectedStash = nil
     selectedChangedFile = nil
     selectedTreeEntry = nil
+    stashChangedFiles = []
     commitTreePath = ""
     treeBlobText = ""
     Task {
@@ -288,9 +307,26 @@ final class RepositoryStore {
     }
   }
 
+  func selectStash(_ stash: GitStash?) {
+    selectedStash = stash
+    selectedCommit = nil
+    selectedChangedFile = nil
+    selectedStatusEntry = nil
+    selectedTreeEntry = nil
+    commitTreeEntries = []
+    commitTreePath = ""
+    treeBlobText = ""
+
+    Task {
+      await refreshStashFilesAndDiff()
+    }
+  }
+
   func selectStatusEntry(_ entry: GitStatusEntry?) {
     selectedStatusEntry = entry
     selectedChangedFile = nil
+    selectedStash = nil
+    stashChangedFiles = []
     selectedTreeEntry = nil
     treeBlobText = ""
     Task {
@@ -328,6 +364,8 @@ final class RepositoryStore {
     selectedTreeEntry = entry
     selectedChangedFile = nil
     selectedStatusEntry = nil
+    selectedStash = nil
+    stashChangedFiles = []
     diffText = ""
     imageDiffSnapshot = nil
 
@@ -839,6 +877,17 @@ final class RepositoryStore {
     }
   }
 
+  private func refreshStashFilesAndDiff() async {
+    guard let repository = selectedRepository else { return }
+    do {
+      stashChangedFiles = try await gitClient.changedFiles(in: repository, stash: selectedStash)
+      selectedChangedFile = stashChangedFiles.first
+      await refreshDiff()
+    } catch {
+      errorMessage = error.localizedDescription
+    }
+  }
+
   private func refreshCommitTree() async {
     do {
       try await refreshCommitTreeEntries(resetPath: false)
@@ -910,6 +959,8 @@ final class RepositoryStore {
         if FilePreviewSupport.isImagePath(entry.path) {
           imageDiffSnapshot = await gitClient.imageDiffForWorkingTreeFile(entry, in: repository)
         }
+      } else if let stash = selectedStash, let file = selectedChangedFile {
+        diffText = try await gitClient.diffForStashFile(file, stash: stash, algorithm: diffAlgorithm, in: repository)
       } else if let file = selectedChangedFile, let commit = selectedCommit {
         diffText = try await gitClient.diffForCommitFile(file, commit: commit, algorithm: diffAlgorithm, in: repository)
         if FilePreviewSupport.isImagePath(file.path) {
@@ -992,6 +1043,8 @@ final class RepositoryStore {
     selectedCommit = nil
     selectedStatusEntry = nil
     selectedChangedFile = nil
+    selectedStash = nil
+    stashChangedFiles = []
     diffText = ""
     commandResult = nil
   }

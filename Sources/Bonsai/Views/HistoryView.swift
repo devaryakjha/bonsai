@@ -22,6 +22,29 @@ struct HistoryView: View {
           store.selectCommit(store.snapshot.commits.first(where: { $0.id == id }))
         }
       )) {
+        if !store.snapshot.stashes.isEmpty {
+          Section("Stashes") {
+            ForEach(store.snapshot.stashes) { stash in
+              StashRow(stash: stash, isSelected: store.selectedStash?.id == stash.id)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                  store.selectStash(stash)
+                }
+                .contextMenu {
+                  Button("Apply") {
+                    Task { await store.applyStash(stash, pop: false) }
+                  }
+                  Button("Pop") {
+                    Task { await store.applyStash(stash, pop: true) }
+                  }
+                  Button("Drop", role: .destructive) {
+                    Task { await store.dropStash(stash) }
+                  }
+                }
+            }
+          }
+        }
+
         ForEach(store.filteredCommits) { commit in
           CommitRow(commit: commit)
             .tag(commit.id)
@@ -65,6 +88,32 @@ struct HistoryView: View {
       ChangedFilesView(store: store)
         .frame(minHeight: 180, idealHeight: 220, maxHeight: 280)
     }
+  }
+}
+
+private struct StashRow: View {
+  var stash: GitStash
+  var isSelected: Bool
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack(spacing: 8) {
+        Label(stash.index, systemImage: "tray.full")
+          .fontWeight(.medium)
+        Spacer()
+        Text("Stash")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
+
+      Text(stash.message)
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+    }
+    .padding(.vertical, 4)
+    .padding(.horizontal, isSelected ? 6 : 0)
+    .background(isSelected ? Color.accentColor.opacity(0.12) : Color.clear, in: RoundedRectangle(cornerRadius: 6))
   }
 }
 
@@ -132,10 +181,10 @@ private struct ChangedFilesView: View {
         List(selection: Binding(
           get: { store.selectedChangedFile?.id },
           set: { id in
-            store.selectChangedFile(store.snapshot.changedFiles.first(where: { $0.id == id }))
+            store.selectChangedFile(store.displayedChangedFiles.first(where: { $0.id == id }))
           }
         )) {
-          ForEach(store.snapshot.changedFiles) { file in
+          ForEach(store.displayedChangedFiles) { file in
             HStack {
               Text(file.status)
                 .font(.caption)
@@ -210,7 +259,7 @@ private struct ChangedFilesView: View {
   private var countText: String {
     switch mode {
     case .changed:
-      return store.snapshot.changedFiles.count.formatted()
+      return store.displayedChangedFiles.count.formatted()
     case .tree:
       return store.commitTreeEntries.count.formatted()
     }
