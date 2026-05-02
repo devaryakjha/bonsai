@@ -23,6 +23,10 @@ Create a GitHub Actions environment named `release` and put the release secrets
 there. Require reviewer approval for the environment before the workflow can
 access secrets.
 
+For `devaryakjha/bonsai`, the `release` environment has already been created
+with `devaryakjha` as a required reviewer. The remaining setup is to add the
+environment secrets below; repository-level release secrets should stay empty.
+
 The workflow consumes these secrets:
 
 - `BONSAI_CODESIGN_IDENTITY`

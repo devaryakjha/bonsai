@@ -39,10 +39,16 @@ development, regular checkpoint commits, and OSS-ready project structure.
 | Release artifact evidence | `script/package_release.sh` writes `dist/release/Bonsai.release.plist` for archive-producing modes with version, build, commit, zip hash, signature kind, team, and notarization state | Covered |
 | Release artifact verification | `script/package_release.sh --verify-artifacts` validates the zip, manifest shape, archive name, byte size, and SHA-256 after packaging or download | Covered |
 | Release guardrail tests | `Tests/BonsaiTests/ReleaseScriptTests.swift` covers credential rejection, doctor output, artifact verifier wiring, manifest upload, and temporary keychain cleanup wiring without running release builds or notarization | Covered |
-| Credentialed GitHub release path | `.github/workflows/release.yml` is manual-only, targets the Jarvis self-hosted macOS ARM64 runner, uses the protected `release` environment, imports the Developer ID certificate, stores notarytool credentials in a temporary keychain, runs `--notarize`, uploads zip plus manifest, and cleans up the temporary keychain | Covered pending configured secrets |
+| Credentialed GitHub release path | `.github/workflows/release.yml` is manual-only, targets the Jarvis self-hosted macOS ARM64 runner, uses the protected `release` environment, imports the Developer ID certificate, stores notarytool credentials in a temporary keychain, runs `--notarize`, uploads zip plus manifest, and cleans up the temporary keychain | Covered pending environment secrets |
 
 ## Current Blocking Evidence
 
+- The GitHub `release` environment exists and has `devaryakjha` configured as a
+  required reviewer.
+- `gh secret list --repo devaryakjha/bonsai --env release` returns no configured
+  environment secrets.
+- `gh secret list --repo devaryakjha/bonsai` returns no configured repository
+  secrets.
 - `BONSAI_CODESIGN_IDENTITY` is not set in the current environment.
 - `BONSAI_NOTARY_PROFILE` is not set in the current environment.
 - `security find-identity -p codesigning -v` did not show a `Developer ID
@@ -67,7 +73,7 @@ development, regular checkpoint commits, and OSS-ready project structure.
 - A post-build artifact verifier exists:
   `script/package_release.sh --verify-artifacts`.
 - Release guardrails are covered by `ReleaseScriptTests`.
-- A manual GitHub release workflow exists for maintainers after protected
-  release secrets are configured.
+- A manual GitHub release workflow and protected `release` environment exist for
+  maintainers after the release secrets are configured.
 - The audit does not mark the goal complete while Developer ID notarization is
   unverified.
