@@ -2,6 +2,18 @@ import AppKit
 import Foundation
 import Observation
 
+private struct DiffParseCache {
+  var hunks: [DiffHunk]
+  var lineChanges: [DiffLineChange]
+  var splitDiff: SplitDiff
+
+  static let empty = DiffParseCache(
+    hunks: [],
+    lineChanges: [],
+    splitDiff: SplitDiff(oldLines: [], newLines: [])
+  )
+}
+
 @MainActor
 @Observable
 final class RepositoryStore {
@@ -29,7 +41,12 @@ final class RepositoryStore {
     }
   }
   var historySearchText = ""
-  var diffText = ""
+  var diffText = "" {
+    didSet {
+      guard oldValue != diffText else { return }
+      updateDiffParseCache()
+    }
+  }
   var imageDiffSnapshot: ImageDiffSnapshot?
   var commitTreeEntries: [GitTreeEntry] = []
   var commitTreePath = ""
@@ -103,17 +120,18 @@ final class RepositoryStore {
       UserDefaults.standard.set(diffDisplayMode.rawValue, forKey: "bonsai.diffDisplayMode")
     }
   }
+  private var diffParseCache = DiffParseCache.empty
 
   var diffHunks: [DiffHunk] {
-    GitParsers.parseDiffHunks(diffText)
+    diffParseCache.hunks
   }
 
   var diffLineChanges: [DiffLineChange] {
-    diffHunks.flatMap(GitParsers.parseDiffLineChanges)
+    diffParseCache.lineChanges
   }
 
   var splitDiff: SplitDiff {
-    GitParsers.parseSplitDiff(diffText)
+    diffParseCache.splitDiff
   }
 
   var selectedPreviewPath: String? {
@@ -2106,6 +2124,19 @@ final class RepositoryStore {
       diffText = ""
       errorMessage = error.localizedDescription
     }
+  }
+
+  private func updateDiffParseCache() {
+    guard !diffText.isEmpty else {
+      diffParseCache = .empty
+      return
+    }
+    let hunks = GitParsers.parseDiffHunks(diffText)
+    diffParseCache = DiffParseCache(
+      hunks: hunks,
+      lineChanges: hunks.flatMap(GitParsers.parseDiffLineChanges),
+      splitDiff: GitParsers.parseSplitDiff(diffText)
+    )
   }
 
   @discardableResult
