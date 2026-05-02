@@ -141,8 +141,13 @@ private struct DetailHeaderView: View {
         .help(entry.path)
       HStack(spacing: 8) {
         ChangeStatusBadge(statusEntry: entry)
-        if entry.isStaged {
+        if entry.isStaged && !entry.isConflicted {
           Text("Staged")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+        if entry.isConflicted {
+          Text("Compared with \(store.conflictDiffBase.title.lowercased())")
             .font(.caption)
             .foregroundStyle(.secondary)
         }
@@ -264,6 +269,21 @@ private struct DiffHeaderControls: View {
             Label("\(summary.hunkCount.formatted()) hunks", systemImage: "text.alignleft")
             if summary.isMetadataOnly {
               Label("Metadata-only change", systemImage: "info.circle")
+            }
+          }
+        }
+        if store.selectedStatusEntry?.isConflicted == true {
+          Section("Conflict comparison") {
+            ForEach(ConflictDiffBase.allCases) { base in
+              Button {
+                store.conflictDiffBase = base
+              } label: {
+                if store.conflictDiffBase == base {
+                  Label(base.title, systemImage: "checkmark")
+                } else {
+                  Text(base.title)
+                }
+              }
             }
           }
         }
@@ -424,11 +444,15 @@ private struct DiffView: View {
   }
 
   private var shouldShowHunks: Bool {
-    store.selectedStatusEntry != nil && !store.diffHunks.isEmpty
+    guard let entry = store.selectedStatusEntry else { return false }
+    return !entry.isConflicted && !store.diffHunks.isEmpty
   }
 
   private var splitPaneContext: SplitDiffPaneContext {
     if let entry = store.selectedStatusEntry {
+      if entry.isConflicted {
+        return .conflictResolution(entry: entry, base: store.conflictDiffBase)
+      }
       return .workingTree(entry: entry)
     }
     if let file = store.selectedChangedFile {

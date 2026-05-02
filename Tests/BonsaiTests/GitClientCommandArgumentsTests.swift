@@ -111,6 +111,23 @@ final class GitClientCommandArgumentsTests: XCTestCase {
       ]
     )
     XCTAssertEqual(
+      GitClient.conflictResolvedDiffArguments(entry, base: .theirs, algorithm: .patience, whitespaceMode: .ignoreAll),
+      [
+        "diff",
+        "--no-ext-diff",
+        "--no-color",
+        "--find-renames",
+        "--find-copies",
+        "--submodule=diff",
+        "--indent-heuristic",
+        "--diff-algorithm=patience",
+        "--ignore-all-space",
+        "--theirs",
+        "--",
+        "Sources/App View.swift"
+      ]
+    )
+    XCTAssertEqual(
       GitClient.diffForCommitFileArguments(file, commit: commit, algorithm: .patience, whitespaceMode: .ignoreChanges),
       [
         "show",

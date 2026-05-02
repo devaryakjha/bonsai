@@ -13,6 +13,8 @@ dead-end status rows.
 - Conflicted files are grouped in the working tree.
 - A conflicted file can open a resolver sheet from the row action or context menu.
 - The resolver previews the current working-tree file content.
+- The diff viewer can compare an externally edited conflict resolution against
+  base, ours, or theirs while the file is still conflicted.
 - User can accept ours, accept theirs, or mark the file resolved.
 - Git operations refresh repository state and report command output.
 

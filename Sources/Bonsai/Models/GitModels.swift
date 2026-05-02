@@ -1023,6 +1023,36 @@ enum ConflictPreviewSide: String, CaseIterable, Identifiable {
   }
 }
 
+enum ConflictDiffBase: String, CaseIterable, Identifiable {
+  case base
+  case ours
+  case theirs
+
+  var id: String { rawValue }
+
+  var title: String {
+    switch self {
+    case .base:
+      "Base"
+    case .ours:
+      "Ours"
+    case .theirs:
+      "Theirs"
+    }
+  }
+
+  var gitArgument: String {
+    switch self {
+    case .base:
+      "--base"
+    case .ours:
+      "--ours"
+    case .theirs:
+      "--theirs"
+    }
+  }
+}
+
 struct ConflictPreview: Identifiable, Hashable {
   var side: ConflictPreviewSide
   var text: String

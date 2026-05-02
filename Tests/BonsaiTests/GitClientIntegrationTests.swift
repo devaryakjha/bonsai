@@ -2238,7 +2238,35 @@ final class GitClientIntegrationTests: XCTestCase {
       XCTAssertEqual(previews.first { $0.side == .base }?.text, "base\nsecond\nthird\n")
       XCTAssertEqual(previews.first { $0.side == .ours }?.text, "main\n")
       XCTAssertEqual(previews.first { $0.side == .theirs }?.text, "side\n")
-      _ = try await client.resolveConflict(entry, choice: .ours, in: repository)
+
+      try write("resolved\n", to: clone.appending(path: "story.txt"))
+      let baseDiff = try await client.conflictResolvedDiff(
+        entry,
+        base: .base,
+        algorithm: .histogram,
+        whitespaceMode: .show,
+        in: repository
+      )
+      let oursDiff = try await client.conflictResolvedDiff(
+        entry,
+        base: .ours,
+        algorithm: .histogram,
+        whitespaceMode: .show,
+        in: repository
+      )
+      let theirsDiff = try await client.conflictResolvedDiff(
+        entry,
+        base: .theirs,
+        algorithm: .histogram,
+        whitespaceMode: .show,
+        in: repository
+      )
+      XCTAssertTrue(baseDiff.contains("+resolved"))
+      XCTAssertTrue(baseDiff.contains("-base"))
+      XCTAssertTrue(oursDiff.contains("-main"))
+      XCTAssertTrue(theirsDiff.contains("-side"))
+
+      _ = try await client.resolveConflict(entry, choice: .markResolved, in: repository)
       let status = try await client.status(in: repository)
       XCTAssertFalse(status.contains { $0.isConflicted })
     }

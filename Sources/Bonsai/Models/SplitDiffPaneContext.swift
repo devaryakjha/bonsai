@@ -14,6 +14,10 @@ struct SplitDiffPaneContext: Hashable {
   )
 
   static func workingTree(entry: GitStatusEntry) -> SplitDiffPaneContext {
+    if entry.isConflicted {
+      return conflictResolution(entry: entry, base: .base)
+    }
+
     let oldHasFile = entry.kind != .added && !entry.isUntracked
     let newHasFile = entry.kind != .deleted
 
@@ -48,6 +52,21 @@ struct SplitDiffPaneContext: Hashable {
       new: SplitDiffPaneDescriptor(
         title: newHasFile ? "Working tree" : "No file",
         detail: newHasFile ? entry.path : nil,
+        systemImage: "plus.line.diagonal"
+      )
+    )
+  }
+
+  static func conflictResolution(entry: GitStatusEntry, base: ConflictDiffBase) -> SplitDiffPaneContext {
+    SplitDiffPaneContext(
+      old: SplitDiffPaneDescriptor(
+        title: base.title,
+        detail: entry.originalPath ?? entry.path,
+        systemImage: "minus.line.diagonal"
+      ),
+      new: SplitDiffPaneDescriptor(
+        title: "Working tree",
+        detail: entry.path,
         systemImage: "plus.line.diagonal"
       )
     )

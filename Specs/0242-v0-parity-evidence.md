@@ -26,7 +26,7 @@ covered by tests and the app verifier can still launch the bundle.
 | Revision actions | Checkout revision, cherry-pick, revert, merge, rebase, reset, bisect, patch copy, and grouped context/toolbar command surfaces | Verified |
 | Stashes | Create, include untracked, apply, pop, drop, branch from stash, copy patch, and stash diff/image inspection | Verified |
 | Submodules | Recursive listing, state parsing, sidebar presentation, global update, single update, open, reveal, and terminal actions | Verified |
-| Conflict resolution | Conflicted grouping, preview sheet, ours/theirs/mark-resolved routing, command builders, and integration conflict coverage | Verified |
+| Conflict resolution | Conflicted grouping, preview sheet, base/ours/theirs resolved diffs, ours/theirs/mark-resolved routing, command builders, and integration conflict coverage | Verified |
 | Interactive rebase | Todo plan generation, action changes, row movement, validation, `GIT_SEQUENCE_EDITOR` execution, and update-refs option | Verified |
 | Reflog | Reflog sheet, checkout, reset confirmation, parser coverage, and integration recovery checks | Verified |
 | File history and blame | Structured file history, blame sheets, search, copy actions, and jump-to-commit from inspection rows | Verified |
@@ -50,7 +50,7 @@ surfaces that are not all represented in the older homepage matrix.
 | SVG and TGA image support | Verified |
 | External editor reveal/open-in integrations | Verified |
 | Claude branch review and generated commit messages | Open |
-| Conflict-resolved diffs after external merge tools | Open |
+| Conflict-resolved diffs after external merge tools | Verified |
 | Repository treemap and repository benchmark | Open |
 
 ## Remaining Completion Gates

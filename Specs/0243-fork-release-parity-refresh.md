@@ -38,7 +38,7 @@ implementation evidence.
 | SVG and TGA image diffs | Covered by this spec |
 | External editor reveal/open-in additions | Covered by `Specs/0244-external-editor-open-in.md` |
 | Claude branch review and generated commit messages | Needs dedicated provider/local-AI design before v0 completion |
-| Conflict-resolved diffs after external merge tools | Needs dedicated conflict-diff spec |
+| Conflict-resolved diffs after external merge tools | Covered by `Specs/0245-conflict-resolved-diff.md` |
 | Repository treemap and repository benchmark | Needs dedicated analytics/performance specs |
 
 ## Acceptance

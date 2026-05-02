@@ -340,6 +340,34 @@ struct GitClient {
     return diffArguments(suffix, algorithm: algorithm, whitespaceMode: whitespaceMode)
   }
 
+  func conflictResolvedDiff(
+    _ entry: GitStatusEntry,
+    base: ConflictDiffBase,
+    algorithm: DiffAlgorithm,
+    whitespaceMode: DiffWhitespaceMode,
+    in repository: GitRepository
+  ) async throws -> String {
+    let output = try await git(
+      Self.conflictResolvedDiffArguments(
+        entry,
+        base: base,
+        algorithm: algorithm,
+        whitespaceMode: whitespaceMode
+      ),
+      in: repository.url
+    )
+    return output.stdout
+  }
+
+  static func conflictResolvedDiffArguments(
+    _ entry: GitStatusEntry,
+    base: ConflictDiffBase,
+    algorithm: DiffAlgorithm,
+    whitespaceMode: DiffWhitespaceMode
+  ) -> [String] {
+    diffArguments([base.gitArgument, "--", entry.path], algorithm: algorithm, whitespaceMode: whitespaceMode)
+  }
+
   func diffForCommitFile(
     _ file: GitChangedFile,
     commit: GitCommit,

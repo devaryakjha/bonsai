@@ -95,6 +95,23 @@ final class SplitDiffPaneContextTests: XCTestCase {
     XCTAssertNil(context.new.detail)
   }
 
+  func testConflictResolutionContextNamesComparedStageAndWorkingTree() {
+    let entry = GitStatusEntry(
+      path: "Sources/App.swift",
+      originalPath: nil,
+      indexStatus: "U",
+      workTreeStatus: "U",
+      kind: .conflicted
+    )
+
+    let context = SplitDiffPaneContext.conflictResolution(entry: entry, base: .theirs)
+
+    XCTAssertEqual(context.old.title, "Theirs")
+    XCTAssertEqual(context.old.detail, "Sources/App.swift")
+    XCTAssertEqual(context.new.title, "Working tree")
+    XCTAssertEqual(context.new.detail, "Sources/App.swift")
+  }
+
   func testChangedFileContextKeepsRenamePathContext() {
     let renamed = GitChangedFile(status: "R100", path: "New.swift", oldPath: "Old.swift")
 

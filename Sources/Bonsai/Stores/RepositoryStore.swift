@@ -126,6 +126,14 @@ final class RepositoryStore {
       Task { await refreshDiff() }
     }
   }
+  var conflictDiffBase: ConflictDiffBase = ConflictDiffBase(
+    rawValue: UserDefaults.standard.string(forKey: "bonsai.conflictDiffBase") ?? ""
+  ) ?? .base {
+    didSet {
+      UserDefaults.standard.set(conflictDiffBase.rawValue, forKey: "bonsai.conflictDiffBase")
+      Task { await refreshDiff() }
+    }
+  }
   var diffDisplayMode: DiffDisplayMode = DiffDisplayMode(
     rawValue: UserDefaults.standard.string(forKey: "bonsai.diffDisplayMode") ?? ""
   ) ?? .unified {
@@ -2240,13 +2248,23 @@ final class RepositoryStore {
 
     do {
       if let entry = selectedStatusEntry {
-        diffText = try await gitClient.diffForWorkingTreeFile(
-          entry,
-          staged: entry.isStaged,
-          algorithm: diffAlgorithm,
-          whitespaceMode: diffWhitespaceMode,
-          in: repository
-        )
+        if entry.isConflicted {
+          diffText = try await gitClient.conflictResolvedDiff(
+            entry,
+            base: conflictDiffBase,
+            algorithm: diffAlgorithm,
+            whitespaceMode: diffWhitespaceMode,
+            in: repository
+          )
+        } else {
+          diffText = try await gitClient.diffForWorkingTreeFile(
+            entry,
+            staged: entry.isStaged,
+            algorithm: diffAlgorithm,
+            whitespaceMode: diffWhitespaceMode,
+            in: repository
+          )
+        }
         if FilePreviewSupport.isImagePath(entry.path) {
           imageDiffSnapshot = await gitClient.imageDiffForWorkingTreeFile(entry, in: repository)
         }
