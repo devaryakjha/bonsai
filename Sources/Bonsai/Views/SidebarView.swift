@@ -443,6 +443,14 @@ struct SidebarView: View {
           Button("Rename...") {
             store.presentRenameTag(tag)
           }
+          Button("Merge into Current Branch") {
+            Task { await store.mergeBranch(tag) }
+          }
+          .disabled(store.currentBranch == nil)
+          Button("Rebase Current onto Tag") {
+            Task { await store.rebaseOntoBranch(tag) }
+          }
+          .disabled(store.currentBranch == nil)
           if !store.tagPushRemotes.isEmpty {
             Menu("Push to Remote") {
               ForEach(store.tagPushRemotes) { remote in

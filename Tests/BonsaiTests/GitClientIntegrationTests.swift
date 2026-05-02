@@ -935,6 +935,69 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(commandResult?.isError, false)
   }
 
+  func testStoreMergesTagIntoCurrentBranch() async throws {
+    let repo = try await makeRepository()
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    try write("base\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Base")
+    _ = try await client.git(["checkout", "-b", "feature/tag-merge"], in: repo)
+    try write("tagged\n", to: repo.appending(path: "tagged.txt"))
+    try await commitAll(in: repo, message: "Tagged work")
+    _ = try await client.createTag(named: "v-tag-merge", target: nil, in: repository)
+    _ = try await client.checkout("main", in: repository)
+    try write("main\n", to: repo.appending(path: "main.txt"))
+    try await commitAll(in: repo, message: "Main work")
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    let tags = await store.tags
+    let tag = try XCTUnwrap(tags.first { $0.shortName == "v-tag-merge" })
+
+    await store.mergeBranch(tag)
+
+    let currentBranch = try await client.git(["branch", "--show-current"], in: repo).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let taggedFile = try String(contentsOf: repo.appending(path: "tagged.txt"), encoding: .utf8)
+    let commandResult = await store.commandResult
+    XCTAssertEqual(currentBranch, "main")
+    XCTAssertEqual(taggedFile, "tagged\n")
+    XCTAssertEqual(commandResult?.title, "Merge v-tag-merge")
+    XCTAssertEqual(commandResult?.isError, false)
+  }
+
+  func testStoreRebasesCurrentBranchOntoTag() async throws {
+    let repo = try await makeRepository()
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    try write("base\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Base")
+    _ = try await client.git(["checkout", "-b", "feature/tag-rebase"], in: repo)
+    try write("tagged\n", to: repo.appending(path: "tagged.txt"))
+    try await commitAll(in: repo, message: "Tagged work")
+    _ = try await client.createTag(named: "v-tag-rebase", target: nil, in: repository)
+    _ = try await client.checkout("main", in: repository)
+    try write("main\n", to: repo.appending(path: "main.txt"))
+    try await commitAll(in: repo, message: "Main work")
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    let tags = await store.tags
+    let tag = try XCTUnwrap(tags.first { $0.shortName == "v-tag-rebase" })
+
+    await store.rebaseOntoBranch(tag)
+
+    let currentBranch = try await client.git(["branch", "--show-current"], in: repo).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let mergeBase = try await client.git(["merge-base", "main", "v-tag-rebase"], in: repo).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let tagHash = try await client.git(["rev-parse", "v-tag-rebase"], in: repo).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let commandResult = await store.commandResult
+    XCTAssertEqual(currentBranch, "main")
+    XCTAssertEqual(mergeBase, tagHash)
+    XCTAssertEqual(commandResult?.title, "Rebase onto v-tag-rebase")
+    XCTAssertEqual(commandResult?.isError, false)
+  }
+
   func testStoreFetchesSelectedRemoteBranch() async throws {
     let remote = try await makeBareRepository()
     let source = try await makeRepository()
