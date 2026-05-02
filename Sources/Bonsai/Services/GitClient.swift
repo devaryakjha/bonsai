@@ -441,6 +441,10 @@ struct GitClient {
     try await runRaw(["push", remote, tag], in: repository)
   }
 
+  func deleteRemoteTag(_ tag: String, remote: String, in repository: GitRepository) async throws -> String {
+    try await runRaw(["push", remote, ":refs/tags/\(tag)"], in: repository)
+  }
+
   func runRaw(_ arguments: [String], in repository: GitRepository) async throws -> String {
     let output = try await git(arguments, in: repository.url)
     return output.combinedOutput

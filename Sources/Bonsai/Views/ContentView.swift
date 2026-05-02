@@ -309,6 +309,17 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.remoteTagDeleteRequest) { request in
+      DeleteRemoteTagSheet(
+        request: request,
+        onCancel: {
+          store.remoteTagDeleteRequest = nil
+        },
+        onDelete: {
+          Task { await store.deleteRequestedRemoteTag() }
+        }
+      )
+    }
     .sheet(item: $store.removeWorktreeRequest) { request in
       RemoveWorktreeSheet(
         request: request,
@@ -998,6 +1009,36 @@ private struct RemoveRemoteSheet: View {
     }
     .padding(20)
     .frame(width: 520)
+  }
+}
+
+private struct DeleteRemoteTagSheet: View {
+  var request: RemoteTagDeleteRequest
+  var onCancel: () -> Void
+  var onDelete: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text(request.title)
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      Text(request.message)
+        .font(.body.monospaced())
+        .lineLimit(2)
+
+      Text(request.detail)
+        .foregroundStyle(.secondary)
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button("Delete", role: .destructive, action: onDelete)
+          .buttonStyle(.borderedProminent)
+      }
+    }
+    .padding(20)
+    .frame(width: 460)
   }
 }
 

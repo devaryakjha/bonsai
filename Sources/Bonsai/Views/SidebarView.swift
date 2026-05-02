@@ -494,6 +494,13 @@ struct SidebarView: View {
                 }
               }
             }
+            Menu("Delete from Remote") {
+              ForEach(store.tagPushRemotes) { remote in
+                Button(remote.name, role: .destructive) {
+                  store.presentDeleteRemoteTag(tag, from: remote)
+                }
+              }
+            }
           }
           if let webURL = store.githubWebURL(forTag: tag) {
             Button("Open in Browser") {

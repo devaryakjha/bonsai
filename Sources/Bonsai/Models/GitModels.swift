@@ -1152,6 +1152,16 @@ struct RemoveRemoteRequest: Identifiable, Hashable {
   }
 }
 
+struct RemoteTagDeleteRequest: Identifiable, Hashable {
+  var tag: GitRef
+  var remote: GitRemote
+
+  var id: String { "\(remote.id):\(tag.id)" }
+  var title: String { "Delete remote tag" }
+  var message: String { "Delete tag \(tag.shortName) from \(remote.name)." }
+  var detail: String { "The local tag will remain in this repository." }
+}
+
 struct RemoveWorktreeRequest: Identifiable, Hashable {
   var worktree: GitWorktree
 

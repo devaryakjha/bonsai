@@ -64,6 +64,7 @@ final class RepositoryStore {
   var reflogResetRequest: ReflogResetRequest?
   var remoteEditorRequest: RemoteEditorRequest?
   var removeRemoteRequest: RemoveRemoteRequest?
+  var remoteTagDeleteRequest: RemoteTagDeleteRequest?
   var removeWorktreeRequest: RemoveWorktreeRequest?
   var createWorktreeRequest: CreateWorktreeRequest?
   var createWorktreeDestinationPath = ""
@@ -1430,6 +1431,19 @@ final class RepositoryStore {
   func pushTag(_ tag: GitRef, to remote: GitRemote) async {
     await runMutation(title: "Push tag \(tag.shortName)") {
       try await gitClient.pushTag(tag.shortName, remote: remote.name, in: requiredRepository())
+    }
+  }
+
+  func presentDeleteRemoteTag(_ tag: GitRef, from remote: GitRemote) {
+    guard tag.kind == .tag else { return }
+    remoteTagDeleteRequest = RemoteTagDeleteRequest(tag: tag, remote: remote)
+  }
+
+  func deleteRequestedRemoteTag() async {
+    guard let request = remoteTagDeleteRequest else { return }
+    remoteTagDeleteRequest = nil
+    await runMutation(title: "Delete tag \(request.tag.shortName) from \(request.remote.name)") {
+      try await gitClient.deleteRemoteTag(request.tag.shortName, remote: request.remote.name, in: requiredRepository())
     }
   }
 

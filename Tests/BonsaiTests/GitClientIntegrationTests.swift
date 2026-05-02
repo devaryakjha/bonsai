@@ -745,6 +745,22 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(remoteTags.contains("refs/tags/v1.0.0"))
     XCTAssertEqual(commandResult?.title, "Push tag v1.0.0")
     XCTAssertEqual(commandResult?.isError, false)
+
+    await MainActor.run {
+      store.presentDeleteRemoteTag(tag, from: remote)
+    }
+    let deleteRequest = await store.remoteTagDeleteRequest
+    XCTAssertNotNil(deleteRequest)
+    await store.deleteRequestedRemoteTag()
+
+    let remainingRemoteTags = try await client.git(["ls-remote", "--tags", bare.path(percentEncoded: false)], in: repo).stdout
+    let localTag = try await client.git(["rev-parse", "--verify", "refs/tags/v1.0.0"], in: repo).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let deleteResult = await store.commandResult
+    XCTAssertFalse(remainingRemoteTags.contains("refs/tags/v1.0.0"))
+    XCTAssertFalse(localTag.isEmpty)
+    XCTAssertEqual(deleteResult?.title, "Delete tag v1.0.0 from origin")
+    XCTAssertEqual(deleteResult?.isError, false)
   }
 
   func testStorePushesNonCurrentBranchToRemote() async throws {
