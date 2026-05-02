@@ -21,6 +21,11 @@ struct BonsaiCommands: Commands {
 
       Divider()
 
+      Button("Copy Repository Path") {
+        store.copyRepositoryPath()
+      }
+      .disabled(store.selectedRepository == nil)
+
       Button("Reveal in Finder") {
         store.revealRepositoryInFinder()
       }

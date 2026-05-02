@@ -13,17 +13,19 @@ struct SidebarView: View {
     List {
       Section("Repository") {
         if let repository = store.selectedRepository {
-          Label(repository.name, systemImage: "externaldrive")
-            .fontWeight(.semibold)
+          RepositoryHeaderRow(
+            repository: repository,
+            detail: repositoryHeaderDetail,
+            path: repository.path
+          )
             .contextMenu {
+              Button("Copy Path") {
+                store.copyRepositoryPath()
+              }
               Button("Reveal in Finder") {
                 store.revealRepositoryInFinder()
               }
             }
-          Text(repository.path)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .lineLimit(2)
         } else {
           Button {
             store.presentOpenRepositoryPanel()
@@ -432,6 +434,41 @@ struct SidebarView: View {
         .joined(separator: " / ")
     }
     return "Not initialized"
+  }
+
+  private var repositoryHeaderDetail: String {
+    let changeCount = store.snapshot.status.count
+    let changeLabel = changeCount == 1 ? "change" : "changes"
+    let state = changeCount == 0 ? "clean" : "\(changeCount.formatted()) \(changeLabel)"
+    guard let branchName = store.currentBranch?.shortName else {
+      return "No branch, \(state)"
+    }
+    return "\(branchName), \(state)"
+  }
+}
+
+private struct RepositoryHeaderRow: View {
+  var repository: GitRepository
+  var detail: String
+  var path: String
+
+  var body: some View {
+    HStack(alignment: .top, spacing: 10) {
+      Image(systemName: "externaldrive")
+        .foregroundStyle(.secondary)
+        .frame(width: 16)
+
+      VStack(alignment: .leading, spacing: 2) {
+        Text(repository.name)
+          .fontWeight(.semibold)
+          .lineLimit(1)
+        Text(detail)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .lineLimit(1)
+      }
+    }
+    .help(path)
   }
 }
 

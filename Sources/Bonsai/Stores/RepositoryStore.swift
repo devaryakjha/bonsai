@@ -131,6 +131,11 @@ final class RepositoryStore {
     ])
   }
 
+  func copyRepositoryPath() {
+    guard let selectedRepository else { return }
+    PasteboardWriter.copy(selectedRepository.path)
+  }
+
   var commitReadinessIssue: String? {
     if commitMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
       return "Commit message is required."
