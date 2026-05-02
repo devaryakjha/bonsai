@@ -63,6 +63,7 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertNotNil(archiveRange)
     XCTAssertNotNil(artifactRange)
     XCTAssertLessThan(archiveRange?.lowerBound ?? workflow.endIndex, artifactRange?.lowerBound ?? workflow.startIndex)
+    XCTAssertTrue(workflow.contains("uses: actions/checkout@v6"))
   }
 
   func testReleaseWorkflowVerifiesArtifactsBeforeUploadAndCleansTemporaryKeychain() throws {
@@ -72,9 +73,10 @@ final class ReleaseScriptTests: XCTestCase {
       encoding: .utf8
     )
     let verifyRange = workflow.range(of: "name: Verify release artifacts")
-    let uploadRange = workflow.range(of: "uses: actions/upload-artifact@v4")
+    let uploadRange = workflow.range(of: "uses: actions/upload-artifact@v7")
 
     XCTAssertTrue(workflow.contains("environment: release"))
+    XCTAssertTrue(workflow.contains("uses: actions/checkout@v6"))
     XCTAssertTrue(workflow.contains("- self-hosted"))
     XCTAssertTrue(workflow.contains("- macOS"))
     XCTAssertTrue(workflow.contains("- ARM64"))
