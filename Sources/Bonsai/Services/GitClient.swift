@@ -107,35 +107,63 @@ struct GitClient {
   }
 
   func addRemote(name: String, url: String, in repository: GitRepository) async throws -> String {
-    try await runRaw(["remote", "add", name, url], in: repository)
+    try await runRaw(Self.addRemoteArguments(name: name, url: url), in: repository)
+  }
+
+  static func addRemoteArguments(name: String, url: String) -> [String] {
+    ["remote", "add", name, url]
   }
 
   func setRemoteURL(name: String, url: String, in repository: GitRepository) async throws -> String {
-    try await runRaw(["remote", "set-url", name, url], in: repository)
+    try await runRaw(Self.setRemoteURLArguments(name: name, url: url), in: repository)
+  }
+
+  static func setRemoteURLArguments(name: String, url: String) -> [String] {
+    ["remote", "set-url", name, url]
   }
 
   func renameRemote(from oldName: String, to newName: String, in repository: GitRepository) async throws -> String {
-    try await runRaw(["remote", "rename", oldName, newName], in: repository)
+    try await runRaw(Self.renameRemoteArguments(from: oldName, to: newName), in: repository)
+  }
+
+  static func renameRemoteArguments(from oldName: String, to newName: String) -> [String] {
+    ["remote", "rename", oldName, newName]
   }
 
   func removeRemote(name: String, in repository: GitRepository) async throws -> String {
-    try await runRaw(["remote", "remove", name], in: repository)
+    try await runRaw(Self.removeRemoteArguments(name: name), in: repository)
+  }
+
+  static func removeRemoteArguments(name: String) -> [String] {
+    ["remote", "remove", name]
   }
 
   func fetchRemote(_ remote: GitRemote, in repository: GitRepository) async throws -> String {
-    try await runRaw(["fetch", "--prune", remote.name], in: repository)
+    try await runRaw(Self.fetchRemoteArguments(remote), in: repository)
+  }
+
+  static func fetchRemoteArguments(_ remote: GitRemote) -> [String] {
+    ["fetch", "--prune", remote.name]
   }
 
   func pruneRemote(_ remote: GitRemote, in repository: GitRepository) async throws -> String {
-    try await runRaw(["remote", "prune", remote.name], in: repository)
+    try await runRaw(Self.pruneRemoteArguments(remote), in: repository)
+  }
+
+  static func pruneRemoteArguments(_ remote: GitRemote) -> [String] {
+    ["remote", "prune", remote.name]
   }
 
   func fetchRemoteBranch(_ branch: GitRef, in repository: GitRepository) async throws -> String {
+    try await runRaw(Self.fetchRemoteBranchArguments(branch), in: repository)
+  }
+
+  static func fetchRemoteBranchArguments(_ branch: GitRef) throws -> [String] {
     guard let remoteName = branch.remoteName,
           let branchName = branch.remoteBranchName else {
       throw GitClientError.invalidRemoteBranch(branch.shortName)
     }
-    return try await runRaw(["fetch", remoteName, "\(branchName):refs/remotes/\(remoteName)/\(branchName)"], in: repository)
+    return ["fetch", remoteName, "\(branchName):refs/remotes/\(remoteName)/\(branchName)"]
   }
 
   func stashes(in repository: GitRepository) async throws -> [GitStash] {

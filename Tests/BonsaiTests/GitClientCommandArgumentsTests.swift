@@ -2,6 +2,75 @@ import XCTest
 @testable import Bonsai
 
 final class GitClientCommandArgumentsTests: XCTestCase {
+  func testRemoteManagementArgumentsPreserveNamesAndURLs() {
+    XCTAssertEqual(
+      GitClient.addRemoteArguments(
+        name: "team origin",
+        url: "git@example.com:mobile apps/bonsai.git"
+      ),
+      ["remote", "add", "team origin", "git@example.com:mobile apps/bonsai.git"]
+    )
+    XCTAssertEqual(
+      GitClient.setRemoteURLArguments(
+        name: "team origin",
+        url: "https://example.com/mobile apps/bonsai.git"
+      ),
+      ["remote", "set-url", "team origin", "https://example.com/mobile apps/bonsai.git"]
+    )
+    XCTAssertEqual(
+      GitClient.renameRemoteArguments(from: "team origin", to: "upstream mirror"),
+      ["remote", "rename", "team origin", "upstream mirror"]
+    )
+    XCTAssertEqual(
+      GitClient.removeRemoteArguments(name: "upstream mirror"),
+      ["remote", "remove", "upstream mirror"]
+    )
+  }
+
+  func testRemoteFetchArgumentsUsePruneByDefault() {
+    let remote = GitRemote(
+      name: "team origin",
+      fetchURL: "git@example.com:mobile apps/bonsai.git",
+      pushURL: nil
+    )
+
+    XCTAssertEqual(
+      GitClient.fetchRemoteArguments(remote),
+      ["fetch", "--prune", "team origin"]
+    )
+    XCTAssertEqual(
+      GitClient.pruneRemoteArguments(remote),
+      ["remote", "prune", "team origin"]
+    )
+  }
+
+  func testFetchRemoteBranchArgumentsBuildRefspec() throws {
+    let branch = GitRef(
+      name: "refs/remotes/origin/feature/sidebar",
+      shortName: "origin/feature/sidebar",
+      objectName: "abc123",
+      isHead: false,
+      kind: .remoteBranch
+    )
+
+    XCTAssertEqual(
+      try GitClient.fetchRemoteBranchArguments(branch),
+      ["fetch", "origin", "feature/sidebar:refs/remotes/origin/feature/sidebar"]
+    )
+  }
+
+  func testFetchRemoteBranchArgumentsRejectPseudoRefs() {
+    let branch = GitRef(
+      name: "refs/remotes/origin/HEAD",
+      shortName: "origin/HEAD",
+      objectName: "abc123",
+      isHead: false,
+      kind: .remoteBranch
+    )
+
+    XCTAssertThrowsError(try GitClient.fetchRemoteBranchArguments(branch))
+  }
+
   func testDeleteRemoteBranchArgumentsUseRemoteAndBranchName() throws {
     let branch = GitRef(
       name: "refs/remotes/origin/feature/sidebar",
