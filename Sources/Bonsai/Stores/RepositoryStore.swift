@@ -88,6 +88,14 @@ final class RepositoryStore {
       Task { await refreshDiff() }
     }
   }
+  var diffWhitespaceMode: DiffWhitespaceMode = DiffWhitespaceMode(
+    rawValue: UserDefaults.standard.string(forKey: "bonsai.diffWhitespaceMode") ?? ""
+  ) ?? .show {
+    didSet {
+      UserDefaults.standard.set(diffWhitespaceMode.rawValue, forKey: "bonsai.diffWhitespaceMode")
+      Task { await refreshDiff() }
+    }
+  }
   var diffDisplayMode: DiffDisplayMode = DiffDisplayMode(
     rawValue: UserDefaults.standard.string(forKey: "bonsai.diffDisplayMode") ?? ""
   ) ?? .unified {
@@ -1552,7 +1560,12 @@ final class RepositoryStore {
 
   func copyStashPatch(_ stash: GitStash) async {
     do {
-      let patch = try await gitClient.stashPatch(stash, algorithm: diffAlgorithm, in: requiredRepository())
+      let patch = try await gitClient.stashPatch(
+        stash,
+        algorithm: diffAlgorithm,
+        whitespaceMode: diffWhitespaceMode,
+        in: requiredRepository()
+      )
       guard !patch.isEmpty else {
         commandResult = CommandResult(title: "Copy stash patch", output: "The stash patch is empty.", isError: true)
         errorMessage = "The stash patch is empty."
@@ -1993,17 +2006,35 @@ final class RepositoryStore {
 
     do {
       if let entry = selectedStatusEntry {
-        diffText = try await gitClient.diffForWorkingTreeFile(entry, staged: entry.isStaged, algorithm: diffAlgorithm, in: repository)
+        diffText = try await gitClient.diffForWorkingTreeFile(
+          entry,
+          staged: entry.isStaged,
+          algorithm: diffAlgorithm,
+          whitespaceMode: diffWhitespaceMode,
+          in: repository
+        )
         if FilePreviewSupport.isImagePath(entry.path) {
           imageDiffSnapshot = await gitClient.imageDiffForWorkingTreeFile(entry, in: repository)
         }
       } else if let stash = selectedStash, let file = selectedChangedFile {
-        diffText = try await gitClient.diffForStashFile(file, stash: stash, algorithm: diffAlgorithm, in: repository)
+        diffText = try await gitClient.diffForStashFile(
+          file,
+          stash: stash,
+          algorithm: diffAlgorithm,
+          whitespaceMode: diffWhitespaceMode,
+          in: repository
+        )
         if FilePreviewSupport.isImagePath(file.path) {
           imageDiffSnapshot = await gitClient.imageDiffForStashFile(file, stash: stash, in: repository)
         }
       } else if let file = selectedChangedFile, let commit = selectedCommit {
-        diffText = try await gitClient.diffForCommitFile(file, commit: commit, algorithm: diffAlgorithm, in: repository)
+        diffText = try await gitClient.diffForCommitFile(
+          file,
+          commit: commit,
+          algorithm: diffAlgorithm,
+          whitespaceMode: diffWhitespaceMode,
+          in: repository
+        )
         if FilePreviewSupport.isImagePath(file.path) {
           imageDiffSnapshot = await gitClient.imageDiffForCommitFile(file, commit: commit, in: repository)
         }

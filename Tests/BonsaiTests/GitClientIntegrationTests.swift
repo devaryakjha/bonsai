@@ -418,7 +418,7 @@ final class GitClientIntegrationTests: XCTestCase {
       return XCTFail("Expected a modified file")
     }
 
-    let diff = try await client.diffForWorkingTreeFile(entry, staged: false, algorithm: .histogram, in: repository)
+    let diff = try await client.diffForWorkingTreeFile(entry, staged: false, algorithm: .histogram, whitespaceMode: .show, in: repository)
     let hunks = GitParsers.parseDiffHunks(diff)
     XCTAssertEqual(hunks.count, 2)
 
@@ -427,7 +427,7 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(status.contains { $0.isStaged })
 
     let stagedEntry = try XCTUnwrap(status.first { $0.isStaged })
-    let stagedDiff = try await client.diffForWorkingTreeFile(stagedEntry, staged: true, algorithm: .histogram, in: repository)
+    let stagedDiff = try await client.diffForWorkingTreeFile(stagedEntry, staged: true, algorithm: .histogram, whitespaceMode: .show, in: repository)
     let stagedHunk = try XCTUnwrap(GitParsers.parseDiffHunks(stagedDiff).first)
     _ = try await client.unstageHunk(stagedHunk, in: repository)
     status = try await client.status(in: repository)
@@ -441,7 +441,7 @@ final class GitClientIntegrationTests: XCTestCase {
     let changedFiles = try await client.changedFiles(in: repository, commit: commit)
     let changedFile = try XCTUnwrap(changedFiles.first)
     XCTAssertEqual(changedFile.path, "file.txt")
-    let commitDiff = try await client.diffForCommitFile(changedFile, commit: commit, algorithm: .histogram, in: repository)
+    let commitDiff = try await client.diffForCommitFile(changedFile, commit: commit, algorithm: .histogram, whitespaceMode: .show, in: repository)
     let reflog = try await client.reflogEntries(in: repository)
     let blame = try await client.blameLines(path: "file.txt", in: repository)
     let fileHistory = try await client.fileHistoryEntries(path: "file.txt", in: repository)
@@ -468,6 +468,36 @@ final class GitClientIntegrationTests: XCTestCase {
     await store.checkoutSelectedCommit()
     let checkedOutHash = try await client.git(["rev-parse", "HEAD"], in: repo).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
     XCTAssertEqual(checkedOutHash, initialCommit.hash)
+  }
+
+  func testDiffWhitespaceModeCanHideWhitespaceOnlyChanges() async throws {
+    let repo = try await makeRepository()
+    let file = repo.appending(path: "file.swift")
+    try write("let value = 1\n", to: file)
+    try await commitAll(in: repo, message: "Initial file")
+    try write("let   value = 1\n", to: file)
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let status = try await client.status(in: repository)
+    let entry = try XCTUnwrap(status.first)
+    let defaultDiff = try await client.diffForWorkingTreeFile(
+      entry,
+      staged: false,
+      algorithm: .histogram,
+      whitespaceMode: .show,
+      in: repository
+    )
+    let ignoredDiff = try await client.diffForWorkingTreeFile(
+      entry,
+      staged: false,
+      algorithm: .histogram,
+      whitespaceMode: .ignoreAll,
+      in: repository
+    )
+
+    XCTAssertTrue(defaultDiff.contains("-let value = 1"))
+    XCTAssertTrue(defaultDiff.contains("+let   value = 1"))
+    XCTAssertTrue(ignoredDiff.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
   }
 
   func testStoreCommitRequiresStagedChangesUnlessAmending() async throws {
@@ -1101,7 +1131,7 @@ final class GitClientIntegrationTests: XCTestCase {
     let repository = GitRepository(path: repo.path(percentEncoded: false))
     let initialStatus = try await client.status(in: repository)
     let entry = try XCTUnwrap(initialStatus.first)
-    let diff = try await client.diffForWorkingTreeFile(entry, staged: false, algorithm: .histogram, in: repository)
+    let diff = try await client.diffForWorkingTreeFile(entry, staged: false, algorithm: .histogram, whitespaceMode: .show, in: repository)
     let firstHunk = try XCTUnwrap(GitParsers.parseDiffHunks(diff).first)
     let firstLineChange = try XCTUnwrap(GitParsers.parseDiffLineChanges(firstHunk).first)
 
@@ -1110,8 +1140,8 @@ final class GitClientIntegrationTests: XCTestCase {
     let status = try await client.status(in: repository)
     let stagedEntry = try XCTUnwrap(status.first { $0.isStaged })
     let unstagedEntry = try XCTUnwrap(status.first { !$0.isStaged })
-    let stagedDiff = try await client.diffForWorkingTreeFile(stagedEntry, staged: true, algorithm: .histogram, in: repository)
-    let unstagedDiff = try await client.diffForWorkingTreeFile(unstagedEntry, staged: false, algorithm: .histogram, in: repository)
+    let stagedDiff = try await client.diffForWorkingTreeFile(stagedEntry, staged: true, algorithm: .histogram, whitespaceMode: .show, in: repository)
+    let unstagedDiff = try await client.diffForWorkingTreeFile(unstagedEntry, staged: false, algorithm: .histogram, whitespaceMode: .show, in: repository)
 
     XCTAssertTrue(stagedDiff.contains("line two changed"))
     XCTAssertFalse(stagedDiff.contains("line eighteen changed"))
@@ -1121,7 +1151,7 @@ final class GitClientIntegrationTests: XCTestCase {
     let finalStatus = try await client.status(in: repository)
     XCTAssertFalse(finalStatus.contains { $0.isStaged })
     let finalEntry = try XCTUnwrap(finalStatus.first)
-    let finalDiff = try await client.diffForWorkingTreeFile(finalEntry, staged: false, algorithm: .histogram, in: repository)
+    let finalDiff = try await client.diffForWorkingTreeFile(finalEntry, staged: false, algorithm: .histogram, whitespaceMode: .show, in: repository)
     XCTAssertTrue(finalDiff.contains("line two changed"))
     XCTAssertTrue(finalDiff.contains("line eighteen changed"))
   }
@@ -1141,7 +1171,7 @@ final class GitClientIntegrationTests: XCTestCase {
     let repository = GitRepository(path: repo.path(percentEncoded: false))
     let status = try await client.status(in: repository)
     let entry = try XCTUnwrap(status.first)
-    let diff = try await client.diffForWorkingTreeFile(entry, staged: false, algorithm: .histogram, in: repository)
+    let diff = try await client.diffForWorkingTreeFile(entry, staged: false, algorithm: .histogram, whitespaceMode: .show, in: repository)
     let hunks = GitParsers.parseDiffHunks(diff)
     XCTAssertGreaterThanOrEqual(hunks.count, 2)
 
@@ -1154,7 +1184,7 @@ final class GitClientIntegrationTests: XCTestCase {
 
     let remainingStatus = try await client.status(in: repository)
     let remainingEntry = try XCTUnwrap(remainingStatus.first)
-    let remainingDiff = try await client.diffForWorkingTreeFile(remainingEntry, staged: false, algorithm: .histogram, in: repository)
+    let remainingDiff = try await client.diffForWorkingTreeFile(remainingEntry, staged: false, algorithm: .histogram, whitespaceMode: .show, in: repository)
     XCTAssertFalse(remainingDiff.contains("line two changed"))
     XCTAssertTrue(remainingDiff.contains("line twenty changed"))
   }
@@ -1174,7 +1204,7 @@ final class GitClientIntegrationTests: XCTestCase {
     let repository = GitRepository(path: repo.path(percentEncoded: false))
     let status = try await client.status(in: repository)
     let entry = try XCTUnwrap(status.first)
-    let diff = try await client.diffForWorkingTreeFile(entry, staged: false, algorithm: .histogram, in: repository)
+    let diff = try await client.diffForWorkingTreeFile(entry, staged: false, algorithm: .histogram, whitespaceMode: .show, in: repository)
     let firstHunk = try XCTUnwrap(GitParsers.parseDiffHunks(diff).first)
     let firstLineChange = try XCTUnwrap(GitParsers.parseDiffLineChanges(firstHunk).first)
 
@@ -1187,7 +1217,7 @@ final class GitClientIntegrationTests: XCTestCase {
 
     let remainingStatus = try await client.status(in: repository)
     let remainingEntry = try XCTUnwrap(remainingStatus.first)
-    let remainingDiff = try await client.diffForWorkingTreeFile(remainingEntry, staged: false, algorithm: .histogram, in: repository)
+    let remainingDiff = try await client.diffForWorkingTreeFile(remainingEntry, staged: false, algorithm: .histogram, whitespaceMode: .show, in: repository)
     XCTAssertFalse(remainingDiff.contains("line two changed"))
     XCTAssertTrue(remainingDiff.contains("line eighteen changed"))
   }
@@ -1659,8 +1689,8 @@ final class GitClientIntegrationTests: XCTestCase {
     let stash = try XCTUnwrap(stashes.first)
     let stashFiles = try await client.changedFiles(in: repository, stash: stash)
     let stashFile = try XCTUnwrap(stashFiles.first)
-    let stashDiff = try await client.diffForStashFile(stashFile, stash: stash, algorithm: .histogram, in: repository)
-    let stashPatch = try await client.stashPatch(stash, algorithm: .histogram, in: repository)
+    let stashDiff = try await client.diffForStashFile(stashFile, stash: stash, algorithm: .histogram, whitespaceMode: .show, in: repository)
+    let stashPatch = try await client.stashPatch(stash, algorithm: .histogram, whitespaceMode: .show, in: repository)
     XCTAssertEqual(stashFile.path, "README.md")
     XCTAssertTrue(stashDiff.contains("+dirty"))
     XCTAssertTrue(stashPatch.contains("diff --git a/README.md b/README.md"))

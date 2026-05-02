@@ -5,6 +5,7 @@ struct SettingsView: View {
   @AppStorage("bonsai.autoRefresh") private var autoRefresh = true
   @AppStorage("bonsai.showCommitRowDetails") private var showCommitRowDetails = false
   @AppStorage("bonsai.diffAlgorithm") private var diffAlgorithm = DiffAlgorithm.histogram.rawValue
+  @AppStorage("bonsai.diffWhitespaceMode") private var diffWhitespaceMode = DiffWhitespaceMode.show.rawValue
   @AppStorage("bonsai.diffDisplayMode") private var diffDisplayMode = DiffDisplayMode.unified.rawValue
   @AppStorage("bonsai.githubToken") private var githubToken = ""
 
@@ -20,6 +21,11 @@ struct SettingsView: View {
         Picker("Diff algorithm", selection: $diffAlgorithm) {
           ForEach(DiffAlgorithm.allCases) { algorithm in
             Text(algorithm.title).tag(algorithm.rawValue)
+          }
+        }
+        Picker("Whitespace", selection: $diffWhitespaceMode) {
+          ForEach(DiffWhitespaceMode.allCases) { mode in
+            Text(mode.title).tag(mode.rawValue)
           }
         }
         Picker("Diff view", selection: $diffDisplayMode) {

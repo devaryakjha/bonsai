@@ -222,6 +222,19 @@ private struct DiffHeaderControls: View {
             }
           }
         }
+        Section("Whitespace") {
+          ForEach(DiffWhitespaceMode.allCases) { mode in
+            Button {
+              store.diffWhitespaceMode = mode
+            } label: {
+              if store.diffWhitespaceMode == mode {
+                Label(mode.title, systemImage: "checkmark")
+              } else {
+                Text(mode.title)
+              }
+            }
+          }
+        }
       } label: {
         Label("Diff options", systemImage: "slider.horizontal.3")
       }

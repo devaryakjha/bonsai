@@ -827,6 +827,36 @@ enum DiffAlgorithm: String, CaseIterable, Identifiable {
   var title: String { rawValue.capitalized }
 }
 
+enum DiffWhitespaceMode: String, CaseIterable, Identifiable {
+  case show
+  case ignoreChanges
+  case ignoreAll
+
+  var id: String { rawValue }
+
+  var title: String {
+    switch self {
+    case .show:
+      "Show whitespace"
+    case .ignoreChanges:
+      "Ignore whitespace changes"
+    case .ignoreAll:
+      "Ignore all whitespace"
+    }
+  }
+
+  var gitArguments: [String] {
+    switch self {
+    case .show:
+      []
+    case .ignoreChanges:
+      ["--ignore-space-change"]
+    case .ignoreAll:
+      ["--ignore-all-space"]
+    }
+  }
+}
+
 enum DiffDisplayMode: String, CaseIterable, Identifiable {
   case unified
   case split

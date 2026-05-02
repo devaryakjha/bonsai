@@ -205,15 +205,27 @@ struct GitClient {
     return "Binary file preview is not available for \(path)."
   }
 
-  func diffForWorkingTreeFile(_ entry: GitStatusEntry, staged: Bool, algorithm: DiffAlgorithm, in repository: GitRepository) async throws -> String {
+  func diffForWorkingTreeFile(
+    _ entry: GitStatusEntry,
+    staged: Bool,
+    algorithm: DiffAlgorithm,
+    whitespaceMode: DiffWhitespaceMode,
+    in repository: GitRepository
+  ) async throws -> String {
     let args = staged
-      ? diffArguments(["--cached", "--", entry.path], algorithm: algorithm)
-      : diffArguments(["--", entry.path], algorithm: algorithm)
+      ? diffArguments(["--cached", "--", entry.path], algorithm: algorithm, whitespaceMode: whitespaceMode)
+      : diffArguments(["--", entry.path], algorithm: algorithm, whitespaceMode: whitespaceMode)
     let output = try await git(args, in: repository.url)
     return output.stdout
   }
 
-  func diffForCommitFile(_ file: GitChangedFile, commit: GitCommit, algorithm: DiffAlgorithm, in repository: GitRepository) async throws -> String {
+  func diffForCommitFile(
+    _ file: GitChangedFile,
+    commit: GitCommit,
+    algorithm: DiffAlgorithm,
+    whitespaceMode: DiffWhitespaceMode,
+    in repository: GitRepository
+  ) async throws -> String {
     let output = try await git([
       "show",
       "--format=",
@@ -223,15 +235,25 @@ struct GitClient {
       "--find-copies",
       "--diff-algorithm=\(algorithm.rawValue)",
       "--indent-heuristic",
-      "\(commit.hash)",
+    ] + whitespaceMode.gitArguments + [
+      commit.hash,
       "--",
       file.path
     ], in: repository.url)
     return output.stdout
   }
 
-  func diffForStashFile(_ file: GitChangedFile, stash: GitStash, algorithm: DiffAlgorithm, in repository: GitRepository) async throws -> String {
-    let output = try await git(diffArguments(["\(stash.index)^1", stash.index, "--", file.path], algorithm: algorithm), in: repository.url)
+  func diffForStashFile(
+    _ file: GitChangedFile,
+    stash: GitStash,
+    algorithm: DiffAlgorithm,
+    whitespaceMode: DiffWhitespaceMode,
+    in repository: GitRepository
+  ) async throws -> String {
+    let output = try await git(
+      diffArguments(["\(stash.index)^1", stash.index, "--", file.path], algorithm: algorithm, whitespaceMode: whitespaceMode),
+      in: repository.url
+    )
     return output.stdout
   }
 
@@ -561,7 +583,12 @@ struct GitClient {
     try await runRaw(["stash", pop ? "pop" : "apply", stash.index], in: repository)
   }
 
-  func stashPatch(_ stash: GitStash, algorithm: DiffAlgorithm, in repository: GitRepository) async throws -> String {
+  func stashPatch(
+    _ stash: GitStash,
+    algorithm: DiffAlgorithm,
+    whitespaceMode: DiffWhitespaceMode,
+    in repository: GitRepository
+  ) async throws -> String {
     let output = try await git([
       "stash",
       "show",
@@ -571,6 +598,7 @@ struct GitClient {
       "--find-copies",
       "--include-untracked",
       "--diff-algorithm=\(algorithm.rawValue)",
+    ] + whitespaceMode.gitArguments + [
       stash.index
     ], in: repository.url)
     return output.stdout
@@ -780,7 +808,7 @@ struct GitClient {
     try await runner.runData(gitExecutable, arguments: ["git"] + arguments, currentDirectory: directory)
   }
 
-  private func diffArguments(_ suffix: [String], algorithm: DiffAlgorithm) -> [String] {
+  private func diffArguments(_ suffix: [String], algorithm: DiffAlgorithm, whitespaceMode: DiffWhitespaceMode) -> [String] {
     [
       "diff",
       "--no-ext-diff",
@@ -790,7 +818,7 @@ struct GitClient {
       "--submodule=diff",
       "--indent-heuristic",
       "--diff-algorithm=\(algorithm.rawValue)"
-    ] + suffix
+    ] + whitespaceMode.gitArguments + suffix
   }
 
   private func commandSucceeds(_ arguments: [String], in repository: GitRepository) async -> Bool {
