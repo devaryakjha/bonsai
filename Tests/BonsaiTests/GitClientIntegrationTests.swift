@@ -1403,6 +1403,37 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(commandResult?.isError, false)
   }
 
+  func testStoreAppliesGitIgnoreTemplateAndSkipsExistingPatterns() async throws {
+    let repo = try await makeRepository()
+    try write("tracked\n", to: repo.appending(path: "tracked.txt"))
+    try await commitAll(in: repo, message: "Initial")
+    try write("# Local notes\nnode_modules/\n", to: repo.appending(path: ".gitignore"))
+    try write("cache\n", to: repo.appending(path: "node_modules/pkg/index.js"))
+    try write("secret\n", to: repo.appending(path: ".env.local"))
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    await MainActor.run {
+      store.selectedGitIgnoreTemplateID = "node"
+      store.presentGitIgnoreTemplatePicker()
+    }
+
+    await store.applySelectedGitIgnoreTemplate()
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let ignoreText = try String(contentsOf: repo.appending(path: ".gitignore"), encoding: .utf8)
+    let status = try await client.status(in: repository)
+    let commandResult = await store.commandResult
+    XCTAssertEqual(ignoreText.components(separatedBy: "node_modules/").count - 1, 1)
+    XCTAssertTrue(ignoreText.contains("# Local notes\nnode_modules/\n"))
+    XCTAssertTrue(ignoreText.contains("# Node\n"))
+    XCTAssertTrue(ignoreText.contains(".env.local\n"))
+    XCTAssertFalse(status.contains { $0.path.hasPrefix("node_modules/") })
+    XCTAssertFalse(status.contains { $0.path == ".env.local" })
+    XCTAssertEqual(commandResult?.title, "Add Node .gitignore")
+    XCTAssertEqual(commandResult?.isError, false)
+  }
+
   func testReflogEntryCanResetHeadToPreviousCommit() async throws {
     let repo = try await makeRepository()
     try write("one\n", to: repo.appending(path: "file.txt"))

@@ -522,6 +522,34 @@ struct GitClient {
     return try ignorePattern(pattern, label: pattern, in: repository)
   }
 
+  func applyGitIgnoreTemplate(_ template: GitIgnoreTemplate, in repository: GitRepository) throws -> String {
+    let ignoreURL = repository.url.appending(path: ".gitignore")
+    let existing = (try? String(contentsOf: ignoreURL, encoding: .utf8)) ?? ""
+    let existingPatterns = Set(
+      existing
+        .split(separator: "\n")
+        .map { $0.trimmingCharacters(in: .whitespaces) }
+        .filter { !$0.isEmpty && !$0.hasPrefix("#") }
+    )
+    let missingPatterns = template.patterns.filter { !existingPatterns.contains($0) }
+    if missingPatterns.isEmpty {
+      return "Already contains \(template.name) .gitignore template."
+    }
+
+    var updated = existing
+    if !updated.isEmpty && !updated.hasSuffix("\n") {
+      updated.append("\n")
+    }
+    if !updated.isEmpty {
+      updated.append("\n")
+    }
+    updated.append("# \(template.name)\n")
+    updated.append(missingPatterns.joined(separator: "\n"))
+    updated.append("\n")
+    try updated.write(to: ignoreURL, atomically: true, encoding: .utf8)
+    return "Added \(template.name) .gitignore template."
+  }
+
   private func ignorePattern(_ pattern: String, label: String, in repository: GitRepository) throws -> String {
     let ignoreURL = repository.url.appending(path: ".gitignore")
     let existing = (try? String(contentsOf: ignoreURL, encoding: .utf8)) ?? ""

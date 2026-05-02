@@ -140,6 +140,18 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.gitIgnoreTemplateRequest) { request in
+      GitIgnoreTemplateSheet(
+        request: request,
+        selectedTemplateID: $store.selectedGitIgnoreTemplateID,
+        onCancel: {
+          store.gitIgnoreTemplateRequest = nil
+        },
+        onApply: {
+          Task { await store.applySelectedGitIgnoreTemplate() }
+        }
+      )
+    }
     .sheet(item: $store.discardPatchRequest) { request in
       DiscardPatchSheet(
         request: request,
@@ -722,6 +734,95 @@ private struct DiscardChangeSheet: View {
     }
     .padding(20)
     .frame(width: 460)
+  }
+}
+
+private struct GitIgnoreTemplateSheet: View {
+  var request: GitIgnoreTemplateRequest
+  @Binding var selectedTemplateID: String
+  var onCancel: () -> Void
+  var onApply: () -> Void
+
+  @State private var searchText = ""
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      HStack {
+        VStack(alignment: .leading, spacing: 3) {
+          Text(request.title)
+            .font(.title3)
+            .fontWeight(.semibold)
+          Text(request.repositoryName)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+        }
+        Spacer()
+        InspectionSearchField(text: $searchText, accessibilityLabel: "Search gitignore templates")
+      }
+
+      if filteredTemplates.isEmpty {
+        ContentUnavailableView(emptyTitle, systemImage: "magnifyingglass")
+          .frame(minHeight: 300)
+      } else {
+        List(filteredTemplates, selection: selectionBinding) { template in
+          VStack(alignment: .leading, spacing: 3) {
+            Text(template.name)
+              .lineLimit(1)
+            Text(template.summary)
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .lineLimit(1)
+          }
+          .padding(.vertical, 4)
+          .tag(template.id)
+        }
+        .listStyle(.inset)
+        .frame(minHeight: 300)
+      }
+
+      HStack {
+        Text(selectedTemplate?.summary ?? "Choose a template to apply.")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .lineLimit(2)
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button("Apply", action: onApply)
+          .buttonStyle(.borderedProminent)
+          .disabled(selectedTemplate == nil)
+      }
+    }
+    .padding(20)
+    .frame(width: 520, height: 460)
+  }
+
+  private var filteredTemplates: [GitIgnoreTemplate] {
+    let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !query.isEmpty else { return request.templates }
+    return request.templates.filter { template in
+      template.name.localizedCaseInsensitiveContains(query)
+        || template.summary.localizedCaseInsensitiveContains(query)
+    }
+  }
+
+  private var selectedTemplate: GitIgnoreTemplate? {
+    request.templates.first { $0.id == selectedTemplateID }
+  }
+
+  private var emptyTitle: String {
+    searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "No templates" : "No matches"
+  }
+
+  private var selectionBinding: Binding<String?> {
+    Binding<String?>(
+      get: { selectedTemplateID },
+      set: { newValue in
+        if let newValue {
+          selectedTemplateID = newValue
+        }
+      }
+    )
   }
 }
 

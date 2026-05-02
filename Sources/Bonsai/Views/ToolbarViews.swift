@@ -145,6 +145,9 @@ struct RepositoryToolbarActionsMenu: View {
         Button("Update Submodules") {
           Task { await store.updateSubmodules() }
         }
+        Button("Add .gitignore Template…") {
+          store.presentGitIgnoreTemplatePicker()
+        }
         Button("Create Worktree…") {
           store.presentCreateWorktree()
         }

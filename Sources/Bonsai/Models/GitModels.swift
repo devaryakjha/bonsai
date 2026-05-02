@@ -1335,6 +1335,14 @@ struct DiscardChangeRequest: Identifiable, Hashable {
   var id: String { entry.id }
 }
 
+struct GitIgnoreTemplateRequest: Identifiable, Hashable {
+  var repositoryName: String
+  var templates: [GitIgnoreTemplate]
+
+  var id: String { repositoryName }
+  var title: String { "Add .gitignore template" }
+}
+
 enum DiscardPatchTarget: Hashable {
   case hunk(DiffHunk)
   case line(DiffLineChange)

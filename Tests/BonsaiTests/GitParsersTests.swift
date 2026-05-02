@@ -695,4 +695,16 @@ final class GitParsersTests: XCTestCase {
       "/Users/arya/projects/bonsai app/Assets/Large Image.png"
     )
   }
+
+  func testGitIgnoreTemplateCatalogHasUniqueUsefulTemplates() {
+    let templates = GitIgnoreTemplateCatalog.all
+    let ids = templates.map(\.id)
+
+    XCTAssertGreaterThanOrEqual(templates.count, 8)
+    XCTAssertEqual(Set(ids).count, ids.count)
+    XCTAssertNotNil(GitIgnoreTemplateCatalog.template(id: "macos"))
+    XCTAssertNotNil(GitIgnoreTemplateCatalog.template(id: "node"))
+    XCTAssertNotNil(GitIgnoreTemplateCatalog.template(id: "xcode"))
+    XCTAssertTrue(templates.allSatisfy { !$0.patterns.isEmpty })
+  }
 }

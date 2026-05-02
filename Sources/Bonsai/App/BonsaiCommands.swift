@@ -117,6 +117,11 @@ struct BonsaiCommands: Commands {
       }
       .disabled(store.selectedRepository == nil || !store.canIgnoreSelectedStatusEntryDirectory)
 
+      Button("Add .gitignore Template…") {
+        store.presentGitIgnoreTemplatePicker()
+      }
+      .disabled(store.selectedRepository == nil)
+
       Button("Stage All") {
         Task { await store.stageAll() }
       }

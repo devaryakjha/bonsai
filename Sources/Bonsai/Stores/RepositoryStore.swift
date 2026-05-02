@@ -69,6 +69,8 @@ final class RepositoryStore {
   var stashBranchSource: GitStash?
   var conflictResolutionRequest: ConflictResolutionRequest?
   var discardChangeRequest: DiscardChangeRequest?
+  var gitIgnoreTemplateRequest: GitIgnoreTemplateRequest?
+  var selectedGitIgnoreTemplateID = GitIgnoreTemplateCatalog.defaultTemplateID
   var discardPatchRequest: DiscardPatchRequest?
   var dropStashRequest: DropStashRequest?
   var interactiveRebasePlan: InteractiveRebasePlan?
@@ -822,6 +824,26 @@ final class RepositoryStore {
   func ignoreSelectedStatusEntryDirectory() async {
     guard canIgnoreSelectedStatusEntryDirectory, let selectedStatusEntry else { return }
     await ignoreDirectory(selectedStatusEntry)
+  }
+
+  func presentGitIgnoreTemplatePicker() {
+    guard let repository = selectedRepository else { return }
+    if GitIgnoreTemplateCatalog.template(id: selectedGitIgnoreTemplateID) == nil {
+      selectedGitIgnoreTemplateID = GitIgnoreTemplateCatalog.defaultTemplateID
+    }
+    gitIgnoreTemplateRequest = GitIgnoreTemplateRequest(
+      repositoryName: repository.name,
+      templates: GitIgnoreTemplateCatalog.all
+    )
+  }
+
+  func applySelectedGitIgnoreTemplate() async {
+    guard gitIgnoreTemplateRequest != nil,
+          let template = GitIgnoreTemplateCatalog.template(id: selectedGitIgnoreTemplateID) else { return }
+    gitIgnoreTemplateRequest = nil
+    await runMutation(title: "Add \(template.name) .gitignore") {
+      try gitClient.applyGitIgnoreTemplate(template, in: requiredRepository())
+    }
   }
 
   func presentDiscardHunk(_ hunk: DiffHunk) {
