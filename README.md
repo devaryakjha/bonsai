@@ -1,7 +1,8 @@
 # Bonsai
 
 <p align="center">
-  <img src="Assets/AppIcon/bonsai-worktree-topology.svg" width="96" alt="Bonsai worktree topology logo">
+  <img src="Assets/AppIcon/bonsai-worktree-topology.svg#gh-light-mode-only" width="96" alt="Bonsai worktree topology logo">
+  <img src="Assets/AppIcon/bonsai-worktree-topology-dark.svg#gh-dark-mode-only" width="96" alt="Bonsai worktree topology logo">
 </p>
 
 <p align="center">
