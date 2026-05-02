@@ -83,11 +83,14 @@ struct RichDiffTextView: NSViewRepresentable {
       }
 
       let lineString = NSMutableAttributedString(string: line + "\n", attributes: attributes)
-      if let inlineRange = inlineRange(for: line, at: index, in: lines, diffLineCount: lines.count) {
+      let inlineRanges = inlineRanges(for: line, at: index, in: lines, diffLineCount: lines.count)
+      if !inlineRanges.isEmpty {
         let highlightColor = line.hasPrefix("+")
           ? NSColor.systemGreen.withAlphaComponent(0.24)
           : NSColor.systemRed.withAlphaComponent(0.24)
-        lineString.addAttribute(.backgroundColor, value: highlightColor, range: inlineRange)
+        for inlineRange in inlineRanges {
+          lineString.addAttribute(.backgroundColor, value: highlightColor, range: inlineRange)
+        }
       }
       applySearchHighlights(to: lineString, line: line, searchText: searchText, lineCount: lines.count)
       result.append(lineString)
@@ -99,33 +102,34 @@ struct RichDiffTextView: NSViewRepresentable {
     DiffSearch.isHiddenPatchMetadata(line, inGitDiff: inGitDiff)
   }
 
-  private static func inlineRange(for line: String, at index: Int, in lines: [String], diffLineCount: Int) -> NSRange? {
+  private static func inlineRanges(for line: String, at index: Int, in lines: [String], diffLineCount: Int) -> [NSRange] {
     guard line.hasPrefix("+") || line.hasPrefix("-"),
           !line.hasPrefix("+++") && !line.hasPrefix("---") else {
-      return nil
+      return []
     }
 
     let oldLine: String
     let newLine: String
     let isAddition = line.hasPrefix("+")
     if isAddition {
-      guard index > 0, lines[index - 1].hasPrefix("-"), !lines[index - 1].hasPrefix("---") else { return nil }
+      guard index > 0, lines[index - 1].hasPrefix("-"), !lines[index - 1].hasPrefix("---") else { return [] }
       oldLine = String(lines[index - 1].dropFirst())
       newLine = String(line.dropFirst())
     } else {
-      guard lines.indices.contains(index + 1), lines[index + 1].hasPrefix("+"), !lines[index + 1].hasPrefix("+++") else { return nil }
+      guard lines.indices.contains(index + 1), lines[index + 1].hasPrefix("+"), !lines[index + 1].hasPrefix("+++") else { return [] }
       oldLine = String(line.dropFirst())
       newLine = String(lines[index + 1].dropFirst())
     }
-    guard DiffRenderPolicy.allowsInlineHighlight(oldLine: oldLine, newLine: newLine, diffLineCount: diffLineCount) else { return nil }
+    guard DiffRenderPolicy.allowsInlineHighlight(oldLine: oldLine, newLine: newLine, diffLineCount: diffLineCount) else { return [] }
 
     let ranges = DiffInlineHighlighter.changedRanges(old: oldLine, new: newLine)
     let content = isAddition ? newLine : oldLine
-    let range = isAddition ? ranges.newRange : ranges.oldRange
-    guard let range else { return nil }
-    let lower = content.distance(from: content.startIndex, to: range.lowerBound) + 1
-    let length = content.distance(from: range.lowerBound, to: range.upperBound)
-    return NSRange(location: lower, length: length)
+    let changedRanges = isAddition ? ranges.newRanges : ranges.oldRanges
+    return changedRanges.map { range in
+      let lower = content.distance(from: content.startIndex, to: range.lowerBound) + 1
+      let length = content.distance(from: range.lowerBound, to: range.upperBound)
+      return NSRange(location: lower, length: length)
+    }
   }
 
   private static func applySearchHighlights(
