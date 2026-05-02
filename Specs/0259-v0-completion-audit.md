@@ -31,6 +31,7 @@ development, regular checkpoint commits, and OSS-ready project structure.
 | Public binary distribution | `script/package_release.sh --notarize` exists, but credentialed Developer ID signing and Apple notarization have not been run in this environment | Blocked |
 | Hosted OSS validation | `.github/workflows/ci.yml` runs non-credentialed macOS validation for pushes and pull requests | Covered |
 | OSS contribution intake | GitHub issue forms and pull request template keep bug, feature, security, and validation details structured | Covered |
+| Public release handoff | `Documentation/ReleaseChecklist.md` defines the v0 evidence, validation, notarization, artifact, and post-release sequence | Covered |
 
 ## Current Blocking Evidence
 

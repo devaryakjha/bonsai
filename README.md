@@ -106,6 +106,7 @@ Useful project paths:
 - `Tests/BonsaiTests` - focused parser, command, workflow, and integration tests
 - `Documentation/ReleasePackaging.md` - release packaging, signing, and
   notarization workflow
+- `Documentation/ReleaseChecklist.md` - first public release checklist
 
 ## Contributing
 
