@@ -105,6 +105,9 @@ private struct StatusRow: View {
           }
         }
         Divider()
+        Button("Copy Path") {
+          copyPath()
+        }
         Button("Reveal in Finder") {
           revealInFinder()
         }
@@ -143,6 +146,13 @@ private struct StatusRow: View {
         }
       }
       Divider()
+      Button("Copy Path") {
+        copyPath()
+      }
+      Button("Reveal in Finder") {
+        revealInFinder()
+      }
+      Divider()
       Button("Discard Change", role: .destructive) {
         store.presentDiscardChange(entry)
       }
@@ -150,9 +160,6 @@ private struct StatusRow: View {
         Button("Resolve Conflict") {
           store.presentConflictResolver(for: entry)
         }
-      }
-      Button("Reveal in Finder") {
-        revealInFinder()
       }
     }
   }
@@ -175,6 +182,10 @@ private struct StatusRow: View {
   private func showFileHistory() {
     store.selectStatusEntry(entry)
     Task { await store.showFileHistoryForSelection() }
+  }
+
+  private func copyPath() {
+    PasteboardWriter.copy(entry.path)
   }
 
   private func revealInFinder() {

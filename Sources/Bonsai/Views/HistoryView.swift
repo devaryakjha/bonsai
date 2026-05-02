@@ -87,8 +87,7 @@ struct HistoryView: View {
               }
               Divider()
               Button("Copy Hash") {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(commit.hash, forType: .string)
+                PasteboardWriter.copy(commit.hash)
               }
             }
         }
@@ -235,6 +234,15 @@ private struct ChangedFilesView: View {
                 store.selectChangedFile(file)
                 Task { await store.showFileHistoryForSelection() }
               }
+              Divider()
+              Button("Copy Path") {
+                PasteboardWriter.copy(file.path)
+              }
+              if let oldPath = file.oldPath {
+                Button("Copy Previous Path") {
+                  PasteboardWriter.copy(oldPath)
+                }
+              }
             }
           }
         }
@@ -278,6 +286,11 @@ private struct ChangedFilesView: View {
               .tag(entry.id)
               .onTapGesture {
                 store.openTreeEntry(entry)
+              }
+              .contextMenu {
+                Button("Copy Path") {
+                  PasteboardWriter.copy(entry.path)
+                }
               }
             }
           }
