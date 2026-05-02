@@ -7,6 +7,7 @@ struct SidebarView: View {
   @AppStorage("bonsai.sidebar.worktreesExpanded") private var worktreesExpanded = false
   @AppStorage("bonsai.sidebar.remotesExpanded") private var remotesExpanded = false
   @AppStorage("bonsai.sidebar.submodulesExpanded") private var submodulesExpanded = false
+  @AppStorage("bonsai.sidebar.lfsFilesExpanded") private var lfsFilesExpanded = false
 
   var body: some View {
     List {
@@ -134,6 +135,7 @@ struct SidebarView: View {
         DisclosureGroup(isExpanded: $repositoryDetailsExpanded) {
           repositoryDetailsRows
           integrationRows
+          lfsRows
         } label: {
           Label("Repository details", systemImage: "info.circle")
         }
@@ -243,6 +245,31 @@ struct SidebarView: View {
         Label("Mark read", systemImage: "checkmark.circle")
       }
       .buttonStyle(.plain)
+    }
+  }
+
+  @ViewBuilder
+  private var lfsRows: some View {
+    if store.snapshot.integrations.lfsAvailable && !store.snapshot.integrations.lfsFiles.isEmpty {
+      DisclosureGroup(isExpanded: $lfsFilesExpanded) {
+        ForEach(store.snapshot.integrations.lfsFiles) { file in
+          LFSFileSidebarRow(file: file)
+            .contextMenu {
+              Button("Lock") {
+                Task { await store.lfsLock(file) }
+              }
+              Button("Unlock") {
+                Task { await store.lfsUnlock(file) }
+              }
+            }
+        }
+      } label: {
+        SidebarDisclosureLabel(
+          title: "Git LFS files",
+          count: store.snapshot.integrations.lfsFiles.count,
+          systemImage: "externaldrive.connected.to.line.below"
+        )
+      }
     }
   }
 
@@ -447,6 +474,21 @@ private struct SubmoduleSidebarRow: View {
       systemImage: "shippingbox",
       iconStyle: submodule.status == "U" ? .orange : .secondary
     )
+  }
+}
+
+private struct LFSFileSidebarRow: View {
+  var file: GitLFSFile
+
+  var body: some View {
+    AdvancedSidebarRow(
+      title: file.path,
+      detail: file.shortOID,
+      tertiary: nil,
+      systemImage: "doc",
+      iconStyle: .secondary
+    )
+    .help(file.oid)
   }
 }
 

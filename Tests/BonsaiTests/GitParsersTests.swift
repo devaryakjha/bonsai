@@ -415,12 +415,13 @@ final class GitParsersTests: XCTestCase {
 
   func testParseLFSFilesExtractsOidAndPath() {
     let files = GitParsers.parseLFSFiles("""
-    2f9c2a4d3b * Assets/image.png
+    2f9c2a4d3b123456 * Assets/image.png
     aaaaa11111 - Fixtures/archive.zip
     """)
 
     XCTAssertEqual(files.count, 2)
-    XCTAssertEqual(files[0].oid, "2f9c2a4d3b")
+    XCTAssertEqual(files[0].oid, "2f9c2a4d3b123456")
+    XCTAssertEqual(files[0].shortOID, "2f9c2a4d3b")
     XCTAssertEqual(files[0].path, "Assets/image.png")
     XCTAssertEqual(files[1].path, "Fixtures/archive.zip")
   }

@@ -300,6 +300,7 @@ struct GitLFSFile: Identifiable, Hashable {
   var path: String
 
   var id: String { path }
+  var shortOID: String { String(oid.prefix(10)) }
 }
 
 struct GitBisectStatus: Hashable {

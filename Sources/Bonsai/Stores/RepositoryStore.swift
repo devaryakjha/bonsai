@@ -913,6 +913,14 @@ final class RepositoryStore {
 
   func lfsLockSelectedFile() async {
     guard let path = selectedPreviewPath else { return }
+    await lfsLock(path: path)
+  }
+
+  func lfsLock(_ file: GitLFSFile) async {
+    await lfsLock(path: file.path)
+  }
+
+  private func lfsLock(path: String) async {
     await runMutation(title: "Git LFS lock \(path)") {
       try await gitClient.lfsLock(path: path, in: requiredRepository())
     }
@@ -920,6 +928,14 @@ final class RepositoryStore {
 
   func lfsUnlockSelectedFile(force: Bool = false) async {
     guard let path = selectedPreviewPath else { return }
+    await lfsUnlock(path: path, force: force)
+  }
+
+  func lfsUnlock(_ file: GitLFSFile, force: Bool = false) async {
+    await lfsUnlock(path: file.path, force: force)
+  }
+
+  private func lfsUnlock(path: String, force: Bool) async {
     await runMutation(title: "Git LFS unlock \(path)") {
       try await gitClient.lfsUnlock(path: path, force: force, in: requiredRepository())
     }
