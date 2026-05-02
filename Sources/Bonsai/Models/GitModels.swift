@@ -535,6 +535,18 @@ struct GitHubRepositoryRequest: Identifiable, Hashable {
     let value = repositoryDescription.trimmingCharacters(in: .whitespacesAndNewlines)
     return value.isEmpty ? nil : value
   }
+
+  var validationMessage: String? {
+    switch operation {
+    case .create:
+      return normalizedName.isEmpty ? "Repository name is required." : nil
+    case .delete:
+      if normalizedOwner.isEmpty {
+        return "Repository owner is required."
+      }
+      return normalizedName.isEmpty ? "Repository name is required." : nil
+    }
+  }
 }
 
 struct RepositorySnapshot {

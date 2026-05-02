@@ -174,6 +174,67 @@ final class GitHubNotificationTests: XCTestCase {
     XCTAssertNil(emptyDescriptionRequest.normalizedDescription)
   }
 
+  func testGitHubRepositoryRequestValidationUsesNormalizedValues() {
+    XCTAssertEqual(
+      GitHubRepositoryRequest(
+        operation: .create,
+        owner: "",
+        name: " \n ",
+        repositoryDescription: "",
+        isPrivate: false
+      ).validationMessage,
+      "Repository name is required."
+    )
+    XCTAssertEqual(
+      GitHubRepositoryRequest(
+        operation: .delete,
+        owner: " ",
+        name: "bonsai",
+        repositoryDescription: "",
+        isPrivate: false
+      ).validationMessage,
+      "Repository owner is required."
+    )
+    XCTAssertNil(GitHubRepositoryRequest(
+      operation: .delete,
+      owner: " example ",
+      name: " bonsai ",
+      repositoryDescription: "",
+      isPrivate: false
+    ).validationMessage)
+  }
+
+  @MainActor
+  func testInvalidGitHubRepositoryRequestSurfacesCommandResultWithoutDismissingRequest() async {
+    let previousToken = UserDefaults.standard.string(forKey: "bonsai.githubToken")
+    UserDefaults.standard.set("test-token", forKey: "bonsai.githubToken")
+    defer {
+      if let previousToken {
+        UserDefaults.standard.set(previousToken, forKey: "bonsai.githubToken")
+      } else {
+        UserDefaults.standard.removeObject(forKey: "bonsai.githubToken")
+      }
+    }
+
+    let store = RepositoryStore()
+    let request = GitHubRepositoryRequest(
+      operation: .delete,
+      owner: "",
+      name: "bonsai",
+      repositoryDescription: "",
+      isPrivate: false
+    )
+    store.gitHubRepositoryRequest = request
+
+    await store.runGitHubRepositoryOperation(request)
+
+    XCTAssertEqual(store.commandResult?.title, "Delete GitHub repository")
+    XCTAssertEqual(store.commandResult?.isError, true)
+    XCTAssertEqual(store.commandResult?.output, "Repository owner is required.")
+    XCTAssertEqual(store.errorMessage, "Repository owner is required.")
+    XCTAssertEqual(store.gitHubRepositoryRequest, request)
+  }
+
   func testGitHubRepositoryTargetParsesCommonRemoteURLs() {
     XCTAssertEqual(
       GitHubRepositoryTarget(remoteURL: "https://github.com/example/bonsai.git"),

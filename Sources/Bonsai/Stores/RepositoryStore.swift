@@ -1342,6 +1342,11 @@ final class RepositoryStore {
 
   func runGitHubRepositoryOperation(_ request: GitHubRepositoryRequest) async {
     guard let token = githubToken(commandTitle: request.operation.title) else { return }
+    if let validationMessage = request.validationMessage {
+      commandResult = CommandResult(title: request.operation.title, output: validationMessage, isError: true)
+      errorMessage = validationMessage
+      return
+    }
     gitHubRepositoryRequest = nil
 
     do {
