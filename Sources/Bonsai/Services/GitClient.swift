@@ -363,8 +363,11 @@ struct GitClient {
     try await runRaw(["worktree", "remove", worktree.path], in: repository)
   }
 
-  func stashPush(message: String?, in repository: GitRepository) async throws -> String {
+  func stashPush(message: String?, includeUntracked: Bool = false, in repository: GitRepository) async throws -> String {
     var args = ["stash", "push"]
+    if includeUntracked {
+      args.append("--include-untracked")
+    }
     if let message, !message.isEmpty {
       args += ["-m", message]
     }

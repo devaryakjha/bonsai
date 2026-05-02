@@ -330,6 +330,16 @@ final class GitClientIntegrationTests: XCTestCase {
     _ = try await client.stashDrop(stash, in: repository)
     stashes = try await client.stashes(in: repository)
     XCTAssertTrue(stashes.isEmpty)
+
+    try write("scratch\n", to: repo.appending(path: "scratch.txt"))
+    _ = try await client.stashPush(message: "save scratch", includeUntracked: true, in: repository)
+    XCTAssertFalse(FileManager.default.fileExists(atPath: repo.appending(path: "scratch.txt").path(percentEncoded: false)))
+    stashes = try await client.stashes(in: repository)
+    let untrackedStash = try XCTUnwrap(stashes.first { $0.message.contains("save scratch") })
+    _ = try await client.stashApply(untrackedStash, pop: false, in: repository)
+    XCTAssertEqual(try String(contentsOf: repo.appending(path: "scratch.txt"), encoding: .utf8), "scratch\n")
+    _ = try await client.git(["clean", "-f", "--", "scratch.txt"], in: repo)
+    _ = try await client.stashDrop(untrackedStash, in: repository)
   }
 
   func testSubmoduleListingAndSingleUpdate() async throws {

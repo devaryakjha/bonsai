@@ -578,6 +578,7 @@ enum GitOperationKind: String, Identifiable {
   case createTag
   case createWorktree
   case stashPush
+  case stashPushIncludeUntracked
   case gitFlowFeatureStart
   case gitFlowReleaseStart
   case gitFlowHotfixStart
@@ -586,6 +587,10 @@ enum GitOperationKind: String, Identifiable {
   case gitFlowHotfixFinish
 
   var id: String { rawValue }
+
+  var allowsEmptyInput: Bool {
+    self == .stashPush || self == .stashPushIncludeUntracked
+  }
 }
 
 struct GitOperationRequest: Identifiable {

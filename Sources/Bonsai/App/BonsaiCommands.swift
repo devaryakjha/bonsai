@@ -66,6 +66,11 @@ struct BonsaiCommands: Commands {
       }
       .disabled(store.selectedRepository == nil)
 
+      Button("Create Stash Including Untracked...") {
+        store.presentStashPush(includeUntracked: true)
+      }
+      .disabled(store.selectedRepository == nil)
+
       Button("Show Reflog") {
         Task { await store.showReflog() }
       }

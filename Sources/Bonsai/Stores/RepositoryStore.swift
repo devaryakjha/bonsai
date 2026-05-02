@@ -628,12 +628,12 @@ final class RepositoryStore {
     )
   }
 
-  func presentStashPush() {
+  func presentStashPush(includeUntracked: Bool = false) {
     operationInput = ""
     operationRequest = GitOperationRequest(
-      kind: .stashPush,
-      title: "Create Stash",
-      message: "Save current working tree changes to a stash.",
+      kind: includeUntracked ? .stashPushIncludeUntracked : .stashPush,
+      title: includeUntracked ? "Create Stash Including Untracked" : "Create Stash",
+      message: includeUntracked ? "Save tracked changes and untracked files to a stash." : "Save current working tree changes to a stash.",
       placeholder: "Optional stash message",
       defaultValue: "",
       primaryActionTitle: "Stash"
@@ -691,6 +691,10 @@ final class RepositoryStore {
     case .stashPush:
       await runMutation(title: "Create Stash") {
         try await gitClient.stashPush(message: value.isEmpty ? nil : value, in: requiredRepository())
+      }
+    case .stashPushIncludeUntracked:
+      await runMutation(title: "Create Stash Including Untracked") {
+        try await gitClient.stashPush(message: value.isEmpty ? nil : value, includeUntracked: true, in: requiredRepository())
       }
     case .gitFlowFeatureStart:
       guard !value.isEmpty else { return }

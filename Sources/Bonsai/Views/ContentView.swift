@@ -116,6 +116,9 @@ struct ContentView: View {
           Button("Create Stash...") {
             store.presentStashPush()
           }
+          Button("Create Stash Including Untracked...") {
+            store.presentStashPush(includeUntracked: true)
+          }
           Divider()
           ForEach(store.snapshot.stashes) { stash in
             Menu(stash.index) {
@@ -1152,7 +1155,7 @@ private struct OperationSheet: View {
         Button("Cancel", action: onCancel)
         Button(request.primaryActionTitle, action: onConfirm)
           .buttonStyle(.borderedProminent)
-          .disabled(request.kind != .stashPush && input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+          .disabled(!request.kind.allowsEmptyInput && input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
       }
     }
     .padding(20)
