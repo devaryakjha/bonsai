@@ -3,6 +3,7 @@ import SwiftUI
 
 struct SplitDiffTextView: NSViewRepresentable {
   var splitDiff: SplitDiff
+  var paneContext: SplitDiffPaneContext = .fallback
 
   func makeCoordinator() -> Coordinator {
     Coordinator()
@@ -13,8 +14,8 @@ struct SplitDiffTextView: NSViewRepresentable {
     splitView.isVertical = true
     splitView.dividerStyle = .thin
 
-    let oldPane = Self.makePane(title: "Before", systemImage: "minus.line.diagonal")
-    let newPane = Self.makePane(title: "After", systemImage: "plus.line.diagonal")
+    let oldPane = Self.makePane(descriptor: paneContext.old)
+    let newPane = Self.makePane(descriptor: paneContext.new)
     splitView.addArrangedSubview(oldPane.container)
     splitView.addArrangedSubview(newPane.container)
 
@@ -22,6 +23,10 @@ struct SplitDiffTextView: NSViewRepresentable {
     context.coordinator.newTextView = newPane.textView
     context.coordinator.oldScrollView = oldPane.scrollView
     context.coordinator.newScrollView = newPane.scrollView
+    context.coordinator.oldTitleLabel = oldPane.titleLabel
+    context.coordinator.oldDetailLabel = oldPane.detailLabel
+    context.coordinator.newTitleLabel = newPane.titleLabel
+    context.coordinator.newDetailLabel = newPane.detailLabel
     context.coordinator.installScrollSync()
 
     updateNSView(splitView, context: context)
@@ -30,6 +35,7 @@ struct SplitDiffTextView: NSViewRepresentable {
 
   func updateNSView(_ splitView: NSSplitView, context: Context) {
     context.coordinator.setInitialDividerPositionIfNeeded(in: splitView)
+    context.coordinator.updatePaneContextIfNeeded(paneContext)
     guard context.coordinator.lastDiff != splitDiff else { return }
     context.coordinator.lastDiff = splitDiff
     context.coordinator.oldTextView?.textStorage?.setAttributedString(Self.attributedDiff(splitDiff.oldLines, counterpart: splitDiff.newLines, side: .old))
@@ -41,7 +47,12 @@ struct SplitDiffTextView: NSViewRepresentable {
     weak var newTextView: NSTextView?
     weak var oldScrollView: NSScrollView?
     weak var newScrollView: NSScrollView?
+    weak var oldTitleLabel: NSTextField?
+    weak var oldDetailLabel: NSTextField?
+    weak var newTitleLabel: NSTextField?
+    weak var newDetailLabel: NSTextField?
     var lastDiff: SplitDiff?
+    private var lastPaneContext: SplitDiffPaneContext?
     private var didSetInitialDividerPosition = false
     private var isSyncing = false
 
@@ -90,17 +101,51 @@ struct SplitDiffTextView: NSViewRepresentable {
       target.reflectScrolledClipView(target.contentView)
       isSyncing = false
     }
+
+    func updatePaneContextIfNeeded(_ paneContext: SplitDiffPaneContext) {
+      guard lastPaneContext != paneContext else { return }
+      lastPaneContext = paneContext
+      updateHeader(
+        titleLabel: oldTitleLabel,
+        detailLabel: oldDetailLabel,
+        descriptor: paneContext.old
+      )
+      updateHeader(
+        titleLabel: newTitleLabel,
+        detailLabel: newDetailLabel,
+        descriptor: paneContext.new
+      )
+    }
+
+    private func updateHeader(
+      titleLabel: NSTextField?,
+      detailLabel: NSTextField?,
+      descriptor: SplitDiffPaneDescriptor
+    ) {
+      titleLabel?.stringValue = descriptor.title
+      detailLabel?.stringValue = descriptor.detail ?? ""
+      detailLabel?.isHidden = descriptor.detail == nil
+      detailLabel?.toolTip = descriptor.detail
+    }
   }
 
-  private static func makePane(title: String, systemImage: String) -> (container: NSStackView, scrollView: NSScrollView, textView: NSTextView) {
+  private static func makePane(
+    descriptor: SplitDiffPaneDescriptor
+  ) -> (
+    container: NSStackView,
+    scrollView: NSScrollView,
+    textView: NSTextView,
+    titleLabel: NSTextField,
+    detailLabel: NSTextField
+  ) {
     let container = NSStackView()
     container.orientation = .vertical
     container.alignment = .width
     container.distribution = .fill
     container.spacing = 0
 
-    let header = makeHeader(title: title, systemImage: systemImage)
-    header.heightAnchor.constraint(equalToConstant: 30).isActive = true
+    let header = makeHeader(descriptor: descriptor)
+    header.view.heightAnchor.constraint(equalToConstant: 30).isActive = true
 
     let scrollView = NSScrollView()
     scrollView.hasVerticalScroller = true
@@ -128,12 +173,14 @@ struct SplitDiffTextView: NSViewRepresentable {
     textView.autoresizingMask = [.width]
 
     scrollView.documentView = textView
-    container.addArrangedSubview(header)
+    container.addArrangedSubview(header.view)
     container.addArrangedSubview(scrollView)
-    return (container, scrollView, textView)
+    return (container, scrollView, textView, header.titleLabel, header.detailLabel)
   }
 
-  private static func makeHeader(title: String, systemImage: String) -> NSView {
+  private static func makeHeader(
+    descriptor: SplitDiffPaneDescriptor
+  ) -> (view: NSView, titleLabel: NSTextField, detailLabel: NSTextField) {
     let material = NSVisualEffectView()
     material.material = .headerView
     material.blendingMode = .withinWindow
@@ -145,7 +192,7 @@ struct SplitDiffTextView: NSViewRepresentable {
     stack.spacing = 6
     stack.translatesAutoresizingMaskIntoConstraints = false
 
-    if let image = NSImage(systemSymbolName: systemImage, accessibilityDescription: title) {
+    if let image = NSImage(systemSymbolName: descriptor.systemImage, accessibilityDescription: descriptor.title) {
       let imageView = NSImageView(image: image)
       imageView.contentTintColor = .secondaryLabelColor
       imageView.translatesAutoresizingMaskIntoConstraints = false
@@ -153,14 +200,20 @@ struct SplitDiffTextView: NSViewRepresentable {
       stack.addArrangedSubview(imageView)
     }
 
-    let label = NSTextField(labelWithString: title)
+    let label = NSTextField(labelWithString: descriptor.title)
     label.font = .systemFont(ofSize: NSFont.smallSystemFontSize, weight: .semibold)
     label.textColor = .secondaryLabelColor
     stack.addArrangedSubview(label)
 
-    let spacer = NSView()
-    spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-    stack.addArrangedSubview(spacer)
+    let detailLabel = NSTextField(labelWithString: descriptor.detail ?? "")
+    detailLabel.font = .monospacedSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
+    detailLabel.textColor = .tertiaryLabelColor
+    detailLabel.lineBreakMode = .byTruncatingMiddle
+    detailLabel.maximumNumberOfLines = 1
+    detailLabel.isHidden = descriptor.detail == nil
+    detailLabel.toolTip = descriptor.detail
+    detailLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    stack.addArrangedSubview(detailLabel)
 
     material.addSubview(stack)
     NSLayoutConstraint.activate([
@@ -168,7 +221,7 @@ struct SplitDiffTextView: NSViewRepresentable {
       stack.trailingAnchor.constraint(equalTo: material.trailingAnchor, constant: -12),
       stack.centerYAnchor.constraint(equalTo: material.centerYAnchor)
     ])
-    return material
+    return (material, label, detailLabel)
   }
 
   private enum SplitSide {

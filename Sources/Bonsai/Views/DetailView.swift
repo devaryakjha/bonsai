@@ -255,7 +255,7 @@ private struct DiffView: View {
           case .unified:
             RichDiffTextView(text: store.diffText)
           case .split:
-            SplitDiffViewer(splitDiff: store.splitDiff)
+            SplitDiffViewer(splitDiff: store.splitDiff, paneContext: splitPaneContext)
           }
         }
       }
@@ -265,13 +265,30 @@ private struct DiffView: View {
   private var shouldShowHunks: Bool {
     store.selectedStatusEntry != nil && !store.diffHunks.isEmpty
   }
+
+  private var splitPaneContext: SplitDiffPaneContext {
+    if let entry = store.selectedStatusEntry {
+      return .workingTree(entry: entry)
+    }
+    if let file = store.selectedChangedFile {
+      if let stash = store.selectedStash {
+        return .changedFile(file, oldTitle: "Base", newTitle: stash.index)
+      }
+      if let commit = store.selectedCommit {
+        return .changedFile(file, oldTitle: "Parent", newTitle: commit.shortHash)
+      }
+      return .changedFile(file, oldTitle: "Before", newTitle: "After")
+    }
+    return .fallback
+  }
 }
 
 private struct SplitDiffViewer: View {
   var splitDiff: SplitDiff
+  var paneContext: SplitDiffPaneContext
 
   var body: some View {
-    SplitDiffTextView(splitDiff: splitDiff)
+    SplitDiffTextView(splitDiff: splitDiff, paneContext: paneContext)
   }
 }
 
