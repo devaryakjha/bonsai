@@ -43,6 +43,7 @@ final class RepositoryStore {
   var operationInput = ""
   var branchRenameSource: GitRef?
   var branchStartPoint: String?
+  var tagTarget: String?
   var stashBranchSource: GitStash?
   var conflictResolutionRequest: ConflictResolutionRequest?
   var discardChangeRequest: DiscardChangeRequest?
@@ -667,6 +668,7 @@ final class RepositoryStore {
   func presentCreateBranch() {
     branchRenameSource = nil
     branchStartPoint = selectedCommit?.hash
+    tagTarget = nil
     operationInput = ""
     operationRequest = GitOperationRequest(
       kind: .createBranch,
@@ -681,6 +683,7 @@ final class RepositoryStore {
   func presentCreateBranch(from ref: GitRef) {
     branchRenameSource = nil
     branchStartPoint = ref.shortName
+    tagTarget = nil
     operationInput = ""
     operationRequest = GitOperationRequest(
       kind: .createBranch,
@@ -695,6 +698,7 @@ final class RepositoryStore {
   func presentRenameBranch(_ branch: GitRef) {
     branchRenameSource = branch
     branchStartPoint = nil
+    tagTarget = nil
     operationInput = branch.shortName
     operationRequest = GitOperationRequest(
       kind: .renameBranch,
@@ -709,11 +713,27 @@ final class RepositoryStore {
   func presentCreateTag() {
     branchRenameSource = nil
     branchStartPoint = nil
+    tagTarget = selectedCommit?.hash
     operationInput = ""
     operationRequest = GitOperationRequest(
       kind: .createTag,
       title: "Create tag",
       message: selectedCommit.map { "Create a tag at \($0.shortHash)." } ?? "Create a tag at HEAD.",
+      placeholder: "v0.1.0",
+      defaultValue: "",
+      primaryActionTitle: "Create"
+    )
+  }
+
+  func presentCreateTag(from ref: GitRef) {
+    branchRenameSource = nil
+    branchStartPoint = nil
+    tagTarget = ref.shortName
+    operationInput = ""
+    operationRequest = GitOperationRequest(
+      kind: .createTag,
+      title: "Create tag",
+      message: "Create a tag at \(ref.shortName).",
       placeholder: "v0.1.0",
       defaultValue: "",
       primaryActionTitle: "Create"
@@ -807,10 +827,12 @@ final class RepositoryStore {
     let value = operationInput.trimmingCharacters(in: .whitespacesAndNewlines)
     let branchToRename = branchRenameSource
     let branchStartPoint = branchStartPoint
+    let tagTarget = tagTarget
     let stashToBranch = stashBranchSource
     operationRequest = nil
     branchRenameSource = nil
     self.branchStartPoint = nil
+    self.tagTarget = nil
     stashBranchSource = nil
 
     switch request.kind {
@@ -827,7 +849,7 @@ final class RepositoryStore {
     case .createTag:
       guard !value.isEmpty else { return }
       await runMutation(title: "Create tag \(value)") {
-        try await gitClient.createTag(named: value, target: selectedCommit?.hash, in: requiredRepository())
+        try await gitClient.createTag(named: value, target: tagTarget, in: requiredRepository())
       }
     case .createWorktree:
       guard !value.isEmpty else { return }

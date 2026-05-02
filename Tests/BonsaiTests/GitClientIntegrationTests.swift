@@ -519,6 +519,13 @@ final class GitClientIntegrationTests: XCTestCase {
     await createBranchStore.confirmOperation()
     refs = try await client.refs(in: repository)
     XCTAssertTrue(refs.contains { $0.shortName == "feature/from-local" && $0.kind == .localBranch })
+    await MainActor.run {
+      createBranchStore.presentCreateTag(from: publishLocalRef)
+      createBranchStore.operationInput = "local-ref-tag"
+    }
+    await createBranchStore.confirmOperation()
+    refs = try await client.refs(in: repository)
+    XCTAssertTrue(refs.contains { $0.shortName == "local-ref-tag" && $0.kind == .tag })
 
     _ = try await client.createBranch(named: "feature/delete-remote", startPoint: nil, in: repository)
     _ = try await client.checkout("feature/delete-remote", in: repository)
@@ -550,6 +557,13 @@ final class GitClientIntegrationTests: XCTestCase {
     await createRemoteBranchStore.confirmOperation()
     refs = try await client.refs(in: repository)
     XCTAssertTrue(refs.contains { $0.shortName == "feature/from-remote" && $0.kind == .localBranch })
+    await MainActor.run {
+      createRemoteBranchStore.presentCreateTag(from: remoteFeatureRef)
+      createRemoteBranchStore.operationInput = "remote-ref-tag"
+    }
+    await createRemoteBranchStore.confirmOperation()
+    refs = try await client.refs(in: repository)
+    XCTAssertTrue(refs.contains { $0.shortName == "remote-ref-tag" && $0.kind == .tag })
 
     XCTAssertEqual(remoteFeature.remoteTrackingLocalName, "feature/remote")
     _ = try await client.checkoutTrackingRemote(remoteFeature, in: repository)

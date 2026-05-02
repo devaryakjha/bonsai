@@ -117,6 +117,9 @@ struct SidebarView: View {
               Button("Create Branch from Here...") {
                 store.presentCreateBranch(from: branch)
               }
+              Button("Create Tag Here...") {
+                store.presentCreateTag(from: branch)
+              }
               Button("Rename...") {
                 store.presentRenameBranch(branch)
               }
@@ -287,6 +290,9 @@ struct SidebarView: View {
           }
           Button("Create Branch from Here...") {
             store.presentCreateBranch(from: branch)
+          }
+          Button("Create Tag Here...") {
+            store.presentCreateTag(from: branch)
           }
           Button("Set as Upstream for Current Branch") {
             Task { await store.setCurrentBranchUpstream(branch) }
