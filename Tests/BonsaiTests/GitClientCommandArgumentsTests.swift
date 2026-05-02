@@ -430,4 +430,89 @@ final class GitClientCommandArgumentsTests: XCTestCase {
       ["lfs", "unlock", "--force", "Assets/logo.png"]
     )
   }
+
+  func testStageAndUnstageArgumentsPreservePaths() {
+    let entry = statusEntry(path: "Sources/App View.swift", indexStatus: " ", workTreeStatus: "M")
+    let second = statusEntry(path: "Docs/Release Notes.md", indexStatus: "?", workTreeStatus: "?")
+
+    XCTAssertEqual(
+      GitClient.stageArguments(entry),
+      ["add", "--", "Sources/App View.swift"]
+    )
+    XCTAssertEqual(
+      GitClient.stageAllArguments([entry, second]),
+      ["add", "--all", "--", "Sources/App View.swift", "Docs/Release Notes.md"]
+    )
+    XCTAssertEqual(
+      GitClient.unstageArguments(entry),
+      ["restore", "--staged", "--", "Sources/App View.swift"]
+    )
+  }
+
+  func testUnstageAllArgumentsSwitchForRepositoriesWithoutHead() {
+    let entry = statusEntry(path: "Sources/App View.swift", indexStatus: "A", workTreeStatus: " ")
+    let second = statusEntry(path: "Docs/Release Notes.md", indexStatus: "A", workTreeStatus: " ")
+
+    XCTAssertEqual(
+      GitClient.unstageAllArguments([entry, second], hasHead: true),
+      ["restore", "--staged", "--", "Sources/App View.swift", "Docs/Release Notes.md"]
+    )
+    XCTAssertEqual(
+      GitClient.unstageAllArguments([entry, second], hasHead: false),
+      ["rm", "--cached", "-r", "--", "Sources/App View.swift", "Docs/Release Notes.md"]
+    )
+  }
+
+  func testDiscardArgumentsSeparateUntrackedAndTrackedPaths() {
+    let untracked = statusEntry(path: "scratch file.txt", indexStatus: "?", workTreeStatus: "?")
+    let modified = statusEntry(path: "Sources/App View.swift", indexStatus: " ", workTreeStatus: "M")
+
+    XCTAssertEqual(
+      GitClient.discardUntrackedArguments(untracked),
+      ["clean", "-f", "--", "scratch file.txt"]
+    )
+    XCTAssertEqual(
+      GitClient.discardWorktreeArguments(modified),
+      ["restore", "--worktree", "--", "Sources/App View.swift"]
+    )
+  }
+
+  func testPatchApplicationArgumentsCoverHunksLinesAndFullPatch() {
+    XCTAssertEqual(GitClient.stageHunkArguments(), ["apply", "--cached"])
+    XCTAssertEqual(GitClient.unstageHunkArguments(), ["apply", "--cached", "--reverse"])
+    XCTAssertEqual(GitClient.stageLineChangeArguments(), ["apply", "--cached", "--unidiff-zero"])
+    XCTAssertEqual(GitClient.unstageLineChangeArguments(), ["apply", "--cached", "--reverse", "--unidiff-zero"])
+    XCTAssertEqual(GitClient.discardHunkArguments(), ["apply", "--reverse"])
+    XCTAssertEqual(GitClient.discardLineChangeArguments(), ["apply", "--reverse", "--unidiff-zero"])
+    XCTAssertEqual(GitClient.applyPatchArguments(), ["apply"])
+  }
+
+  func testCommitAndRepositoryActionArgumentsPreserveMessagesAndFlags() {
+    XCTAssertEqual(
+      GitClient.commitArguments(message: "Ship polished sidebar", amend: false, sign: false),
+      ["commit", "-m", "Ship polished sidebar"]
+    )
+    XCTAssertEqual(
+      GitClient.commitArguments(message: "Ship polished sidebar", amend: true, sign: true),
+      ["commit", "-m", "Ship polished sidebar", "--amend", "-S"]
+    )
+    XCTAssertEqual(GitClient.repositoryActionArguments(.fetch), ["fetch", "--all", "--prune"])
+    XCTAssertEqual(GitClient.repositoryActionArguments(.pull), ["pull", "--ff-only"])
+    XCTAssertEqual(GitClient.repositoryActionArguments(.push), ["push"])
+  }
+
+  private func statusEntry(
+    path: String,
+    indexStatus: Character,
+    workTreeStatus: Character,
+    kind: GitStatusEntry.ChangeKind = .modified
+  ) -> GitStatusEntry {
+    GitStatusEntry(
+      path: path,
+      originalPath: nil,
+      indexStatus: indexStatus,
+      workTreeStatus: workTreeStatus,
+      kind: kind
+    )
+  }
 }

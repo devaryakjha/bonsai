@@ -314,43 +314,63 @@ struct GitClient {
   }
 
   func stage(_ entry: GitStatusEntry, in repository: GitRepository) async throws -> String {
-    let output = try await git(["add", "--", entry.path], in: repository.url)
-    return output.combinedOutput
+    try await runRaw(Self.stageArguments(entry), in: repository)
+  }
+
+  static func stageArguments(_ entry: GitStatusEntry) -> [String] {
+    ["add", "--", entry.path]
   }
 
   func stageAll(_ entries: [GitStatusEntry], in repository: GitRepository) async throws -> String {
     guard !entries.isEmpty else { return "" }
-    let output = try await git(["add", "--all", "--"] + entries.map(\.path), in: repository.url)
-    return output.combinedOutput
+    return try await runRaw(Self.stageAllArguments(entries), in: repository)
+  }
+
+  static func stageAllArguments(_ entries: [GitStatusEntry]) -> [String] {
+    ["add", "--all", "--"] + entries.map(\.path)
   }
 
   func unstage(_ entry: GitStatusEntry, in repository: GitRepository) async throws -> String {
-    let output = try await git(["restore", "--staged", "--", entry.path], in: repository.url)
-    return output.combinedOutput
+    try await runRaw(Self.unstageArguments(entry), in: repository)
+  }
+
+  static func unstageArguments(_ entry: GitStatusEntry) -> [String] {
+    ["restore", "--staged", "--", entry.path]
   }
 
   func unstageAll(_ entries: [GitStatusEntry], in repository: GitRepository) async throws -> String {
     guard !entries.isEmpty else { return "" }
+    let hasHead = await commandSucceeds(["rev-parse", "--verify", "HEAD"], in: repository)
+    return try await runRaw(Self.unstageAllArguments(entries, hasHead: hasHead), in: repository)
+  }
+
+  static func unstageAllArguments(_ entries: [GitStatusEntry], hasHead: Bool) -> [String] {
     let paths = entries.map(\.path)
-    if await commandSucceeds(["rev-parse", "--verify", "HEAD"], in: repository) {
-      let output = try await git(["restore", "--staged", "--"] + paths, in: repository.url)
-      return output.combinedOutput
+    if hasHead {
+      return ["restore", "--staged", "--"] + paths
     }
-    let output = try await git(["rm", "--cached", "-r", "--"] + paths, in: repository.url)
-    return output.combinedOutput
+    return ["rm", "--cached", "-r", "--"] + paths
   }
 
   func discard(_ entry: GitStatusEntry, in repository: GitRepository) async throws -> String {
     if entry.isUntracked {
-      return try await runRaw(["clean", "-f", "--", entry.path], in: repository)
+      return try await runRaw(Self.discardUntrackedArguments(entry), in: repository)
     }
 
     var outputs: [String] = []
     if entry.isStaged {
       outputs.append(try await unstage(entry, in: repository))
     }
-    outputs.append(try await runRaw(["restore", "--worktree", "--", entry.path], in: repository))
+    outputs.append(try await runRaw(Self.discardWorktreeArguments(entry), in: repository))
     return outputs.filter { !$0.isEmpty }.joined(separator: "\n")
+  }
+
+  static func discardUntrackedArguments(_ entry: GitStatusEntry) -> [String] {
+    ["clean", "-f", "--", entry.path]
+  }
+
+  static func discardWorktreeArguments(_ entry: GitStatusEntry) -> [String] {
+    ["restore", "--worktree", "--", entry.path]
   }
 
   func ignorePath(_ path: String, in repository: GitRepository) throws -> String {
@@ -390,60 +410,93 @@ struct GitClient {
   }
 
   func stageHunk(_ hunk: DiffHunk, in repository: GitRepository) async throws -> String {
-    let output = try await git(["apply", "--cached"], in: repository.url, standardInput: hunk.patch)
+    let output = try await git(Self.stageHunkArguments(), in: repository.url, standardInput: hunk.patch)
     return output.combinedOutput
+  }
+
+  static func stageHunkArguments() -> [String] {
+    ["apply", "--cached"]
   }
 
   func unstageHunk(_ hunk: DiffHunk, in repository: GitRepository) async throws -> String {
-    let output = try await git(["apply", "--cached", "--reverse"], in: repository.url, standardInput: hunk.patch)
+    let output = try await git(Self.unstageHunkArguments(), in: repository.url, standardInput: hunk.patch)
     return output.combinedOutput
+  }
+
+  static func unstageHunkArguments() -> [String] {
+    ["apply", "--cached", "--reverse"]
   }
 
   func stageLineChange(_ change: DiffLineChange, in repository: GitRepository) async throws -> String {
-    let output = try await git(["apply", "--cached", "--unidiff-zero"], in: repository.url, standardInput: change.patch)
+    let output = try await git(Self.stageLineChangeArguments(), in: repository.url, standardInput: change.patch)
     return output.combinedOutput
+  }
+
+  static func stageLineChangeArguments() -> [String] {
+    ["apply", "--cached", "--unidiff-zero"]
   }
 
   func unstageLineChange(_ change: DiffLineChange, in repository: GitRepository) async throws -> String {
-    let output = try await git(["apply", "--cached", "--reverse", "--unidiff-zero"], in: repository.url, standardInput: change.patch)
+    let output = try await git(Self.unstageLineChangeArguments(), in: repository.url, standardInput: change.patch)
     return output.combinedOutput
+  }
+
+  static func unstageLineChangeArguments() -> [String] {
+    ["apply", "--cached", "--reverse", "--unidiff-zero"]
   }
 
   func discardHunk(_ hunk: DiffHunk, in repository: GitRepository) async throws -> String {
-    let output = try await git(["apply", "--reverse"], in: repository.url, standardInput: hunk.patch)
+    let output = try await git(Self.discardHunkArguments(), in: repository.url, standardInput: hunk.patch)
     return output.combinedOutput
+  }
+
+  static func discardHunkArguments() -> [String] {
+    ["apply", "--reverse"]
   }
 
   func discardLineChange(_ change: DiffLineChange, in repository: GitRepository) async throws -> String {
-    let output = try await git(["apply", "--reverse", "--unidiff-zero"], in: repository.url, standardInput: change.patch)
+    let output = try await git(Self.discardLineChangeArguments(), in: repository.url, standardInput: change.patch)
     return output.combinedOutput
+  }
+
+  static func discardLineChangeArguments() -> [String] {
+    ["apply", "--reverse", "--unidiff-zero"]
   }
 
   func applyPatch(_ patch: String, in repository: GitRepository) async throws -> String {
-    let output = try await git(["apply"], in: repository.url, standardInput: patch)
+    let output = try await git(Self.applyPatchArguments(), in: repository.url, standardInput: patch)
     return output.combinedOutput
+  }
+
+  static func applyPatchArguments() -> [String] {
+    ["apply"]
   }
 
   func commit(message: String, amend: Bool, sign: Bool, in repository: GitRepository) async throws -> String {
-    var args = ["commit", "-m", message]
-    if amend { args.append("--amend") }
-    if sign { args.append("-S") }
-    let output = try await git(args, in: repository.url)
+    let output = try await git(Self.commitArguments(message: message, amend: amend, sign: sign), in: repository.url)
     return output.combinedOutput
   }
 
+  static func commitArguments(message: String, amend: Bool, sign: Bool) -> [String] {
+    var args = ["commit", "-m", message]
+    if amend { args.append("--amend") }
+    if sign { args.append("-S") }
+    return args
+  }
+
   func runAction(_ action: RepositoryAction, in repository: GitRepository) async throws -> String {
-    let command: [String]
+    try await runRaw(Self.repositoryActionArguments(action), in: repository)
+  }
+
+  static func repositoryActionArguments(_ action: RepositoryAction) -> [String] {
     switch action {
     case .fetch:
-      command = ["fetch", "--all", "--prune"]
+      return ["fetch", "--all", "--prune"]
     case .pull:
-      command = ["pull", "--ff-only"]
+      return ["pull", "--ff-only"]
     case .push:
-      command = ["push"]
+      return ["push"]
     }
-    let output = try await git(command, in: repository.url)
-    return output.combinedOutput
   }
 
   func publishBranch(_ branch: String, remote: String, in repository: GitRepository) async throws -> String {
