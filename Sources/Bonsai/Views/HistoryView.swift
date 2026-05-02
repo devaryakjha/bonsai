@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HistoryView: View {
   @Bindable var store: RepositoryStore
+  @AppStorage("bonsai.showCommitRowDetails") private var showCommitRowDetails = false
 
   var body: some View {
     VStack(spacing: 0) {
@@ -46,7 +47,7 @@ struct HistoryView: View {
         }
 
         ForEach(store.filteredCommits) { commit in
-          CommitRow(commit: commit)
+          CommitRow(commit: commit, showsDetails: showCommitRowDetails)
             .tag(commit.id)
             .contextMenu {
               Button("Cherry-pick") {
@@ -119,9 +120,10 @@ private struct StashRow: View {
 
 private struct CommitRow: View {
   var commit: GitCommit
+  var showsDetails: Bool
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 6) {
+    VStack(alignment: .leading, spacing: showsDetails ? 6 : 0) {
       HStack(spacing: 8) {
         Text(commit.graph.isEmpty ? "*" : commit.graph)
           .font(.caption.monospaced())
@@ -138,25 +140,37 @@ private struct CommitRow: View {
           .monospaced()
       }
 
-      HStack(spacing: 8) {
-        Spacer()
-          .frame(width: 42)
-        Text(commit.authorName)
-        if let date = commit.date {
-          Text(date, style: .relative)
+      if showsDetails {
+        HStack(spacing: 8) {
+          Spacer()
+            .frame(width: 42)
+          Text(commit.authorName)
+          if let date = commit.date {
+            Text(date, style: .relative)
+          }
+          ForEach(commit.decorations.prefix(3), id: \.self) { decoration in
+            Text(decoration)
+              .font(.caption2)
+              .padding(.horizontal, 6)
+              .padding(.vertical, 2)
+              .background(.quaternary, in: Capsule())
+          }
         }
-        ForEach(commit.decorations.prefix(3), id: \.self) { decoration in
-          Text(decoration)
-            .font(.caption2)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(.quaternary, in: Capsule())
-        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
       }
-      .font(.caption)
-      .foregroundStyle(.secondary)
     }
-    .padding(.vertical, 4)
+    .padding(.vertical, showsDetails ? 4 : 3)
+    .help(helpText)
+  }
+
+  private var helpText: String {
+    var parts = [commit.shortHash, commit.authorName]
+    if let date = commit.date {
+      parts.append(date.formatted(date: .abbreviated, time: .shortened))
+    }
+    parts.append(contentsOf: commit.decorations)
+    return parts.filter { !$0.isEmpty }.joined(separator: " - ")
   }
 }
 

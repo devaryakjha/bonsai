@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
   @AppStorage("bonsai.showToolbarLabels") private var showToolbarLabels = false
   @AppStorage("bonsai.autoRefresh") private var autoRefresh = true
+  @AppStorage("bonsai.showCommitRowDetails") private var showCommitRowDetails = false
   @AppStorage("bonsai.diffAlgorithm") private var diffAlgorithm = DiffAlgorithm.histogram.rawValue
   @AppStorage("bonsai.diffDisplayMode") private var diffDisplayMode = DiffDisplayMode.unified.rawValue
   @AppStorage("bonsai.githubToken") private var githubToken = ""
@@ -10,6 +11,7 @@ struct SettingsView: View {
   var body: some View {
     Form {
       Toggle("Show toolbar labels", isOn: $showToolbarLabels)
+      Toggle("Show commit row details", isOn: $showCommitRowDetails)
       Toggle("Refresh after Git operations", isOn: $autoRefresh)
       Picker("Diff algorithm", selection: $diffAlgorithm) {
         ForEach(DiffAlgorithm.allCases) { algorithm in
