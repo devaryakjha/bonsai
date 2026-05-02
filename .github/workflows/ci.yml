@@ -35,3 +35,6 @@ jobs:
 
       - name: Verify release bundle
         run: ./script/package_release.sh --verify
+
+      - name: Verify release archive
+        run: ./script/package_release.sh --verify-archive

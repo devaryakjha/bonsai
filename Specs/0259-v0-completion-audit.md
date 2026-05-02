@@ -29,11 +29,12 @@ development, regular checkpoint commits, and OSS-ready project structure.
 | Current public Fork release-note refresh | `Specs/0242-v0-parity-evidence.md` records `https://fork.dev/releasenotes` showing Fork 2.66 dated 10 Apr 2026 | Covered |
 | Local build/test validation | `swift test`, `git diff --check`, app verifier, and release package verifier were run after the latest implementation checkpoints | Covered |
 | Public binary distribution | `script/package_release.sh --notarize` exists, but credentialed Developer ID signing and Apple notarization have not been run in this environment | Blocked |
-| Hosted OSS validation | `.github/workflows/ci.yml` runs non-credentialed macOS validation for pushes and pull requests | Covered |
+| Hosted OSS validation | `.github/workflows/ci.yml` runs non-credentialed macOS validation, bundle verification, and archive verification for pushes and pull requests | Covered |
 | OSS contribution intake | GitHub issue forms and pull request template keep bug, feature, security, and validation details structured | Covered |
 | Public release handoff | `Documentation/ReleaseChecklist.md` defines the v0 evidence, validation, notarization, artifact, and post-release sequence | Covered |
 | Release version metadata | `VERSION` plus package scripts stamp `CFBundleShortVersionString` and `CFBundleVersion` into app bundles | Covered |
 | Notarized archive contents | `script/package_release.sh --notarize` recreates `Bonsai.zip` after stapling so the published archive contains the stapled app | Covered |
+| Release archive validation | `script/package_release.sh` extracts each release zip and validates archived bundle metadata after creation | Covered |
 
 ## Current Blocking Evidence
 

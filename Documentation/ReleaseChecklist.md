@@ -21,6 +21,7 @@ git diff --check
 swift test
 ./script/build_and_run.sh --verify
 ./script/package_release.sh --verify
+./script/package_release.sh --verify-archive
 ```
 
 For diff performance-sensitive changes, also run:

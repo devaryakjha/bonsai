@@ -18,6 +18,12 @@ This builds `Bonsai` with `swift build -c release`, stages
 the code signature. This proves the bundle is structurally signable without
 requiring an Apple Developer account.
 
+To also create and validate a local test archive with an ad-hoc signature, run:
+
+```sh
+script/package_release.sh --verify-archive
+```
+
 The package version defaults to the root `VERSION` file. The build number
 defaults to `git rev-list --count HEAD`. Release automation may override either
 value:
@@ -37,7 +43,9 @@ script/package_release.sh --archive
 ```
 
 The script writes `dist/release/Bonsai.zip` using `ditto` after signing with the
-provided identity, timestamp, and hardened runtime option.
+provided identity, timestamp, and hardened runtime option, then validates that
+the archive contains `Bonsai.app` with the expected bundle identifier, package
+type, marketing version, build number, and a strict-valid code signature.
 
 ## Notarization
 
@@ -70,6 +78,7 @@ Application` certificate present in the login keychain, and validates
 ## Outputs
 
 - `dist/release/Bonsai.app`
-- `dist/release/Bonsai.zip` for `--archive` and `--notarize`
+- `dist/release/Bonsai.zip` for `--verify-archive`, `--archive`, and
+  `--notarize`
 
 The `dist/` directory is ignored by Git.

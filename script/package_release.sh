@@ -21,9 +21,10 @@ APP_MARK_SOURCE="$ROOT_DIR/Assets/AppIcon/bonsai-worktree-topology.svg"
 
 usage() {
   cat >&2 <<USAGE
-usage: script/package_release.sh [--verify|--archive|--notarize|--check-credentials]
+usage: script/package_release.sh [--verify|--verify-archive|--archive|--notarize|--check-credentials]
 
   --verify             Build, stage, ad-hoc sign, and validate the release app bundle.
+  --verify-archive     Build, ad-hoc sign, validate, and write a local test archive.
   --archive            Build, Developer ID sign, validate, and write dist/release/Bonsai.zip.
   --notarize           Build, Developer ID sign, archive, submit to notarytool, and staple.
   --check-credentials  Validate Developer ID and notarytool credentials without packaging.
@@ -181,6 +182,50 @@ create_archive() {
   rm -f "$ARCHIVE_PATH"
   ditto -c -k --keepParent "$APP_BUNDLE" "$ARCHIVE_PATH"
   require_file "$ARCHIVE_PATH"
+  validate_archive
+}
+
+validate_archive() {
+  local archive_app_bundle archive_extract_dir archive_info_plist
+  archive_extract_dir="$(mktemp -d)"
+
+  ditto -x -k "$ARCHIVE_PATH" "$archive_extract_dir"
+  archive_app_bundle="$archive_extract_dir/$APP_NAME.app"
+  archive_info_plist="$archive_app_bundle/Contents/Info.plist"
+  require_file "$archive_info_plist"
+  plutil -lint "$archive_info_plist" >/dev/null
+
+  local archived_bundle_id
+  archived_bundle_id="$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$archive_info_plist")"
+  if [[ "$archived_bundle_id" != "$BUNDLE_ID" ]]; then
+    echo "unexpected archived CFBundleIdentifier: $archived_bundle_id" >&2
+    exit 1
+  fi
+
+  local archived_package_type
+  archived_package_type="$(/usr/libexec/PlistBuddy -c "Print :CFBundlePackageType" "$archive_info_plist")"
+  if [[ "$archived_package_type" != "APPL" ]]; then
+    echo "unexpected archived CFBundlePackageType: $archived_package_type" >&2
+    exit 1
+  fi
+
+  local archived_short_version
+  archived_short_version="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$archive_info_plist")"
+  if [[ -z "$archived_short_version" ]]; then
+    echo "missing archived CFBundleShortVersionString" >&2
+    exit 1
+  fi
+
+  local archived_bundle_version
+  archived_bundle_version="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$archive_info_plist")"
+  if [[ -z "$archived_bundle_version" ]]; then
+    echo "missing archived CFBundleVersion" >&2
+    exit 1
+  fi
+
+  codesign --verify --strict --verbose=2 "$archive_app_bundle"
+
+  rm -rf "$archive_extract_dir"
 }
 
 developer_id_identity() {
@@ -228,6 +273,12 @@ check_distribution_credentials() {
   check_notary_credentials "$profile"
 }
 
+check_archive_credentials() {
+  local identity
+  identity="$(developer_id_identity)"
+  check_developer_id_identity "$identity"
+}
+
 package_with_identity() {
   local identity="$1"
   build_release_binary
@@ -240,7 +291,12 @@ case "$MODE" in
   --verify|verify)
     package_with_identity "-"
     ;;
+  --verify-archive|verify-archive)
+    package_with_identity "-"
+    create_archive
+    ;;
   --archive|archive)
+    check_archive_credentials
     package_with_identity "$(developer_id_identity)"
     create_archive
     ;;

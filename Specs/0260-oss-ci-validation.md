@@ -13,6 +13,7 @@ maintainers do not depend only on local manual checks.
 - Validate shell syntax for project scripts.
 - Run the Swift test suite.
 - Run the credential-free release packaging verifier.
+- Run the credential-free release archive verifier.
 - Avoid credentialed Developer ID signing and notarization in CI.
 
 ## Acceptance
@@ -23,4 +24,5 @@ maintainers do not depend only on local manual checks.
   `script/package_release.sh`, and `script/perf_large_repo.sh`.
 - The workflow runs `swift test`.
 - The workflow runs `./script/package_release.sh --verify`.
+- The workflow runs `./script/package_release.sh --verify-archive`.
 - Contributing docs mention that CI mirrors the non-credentialed gates.
