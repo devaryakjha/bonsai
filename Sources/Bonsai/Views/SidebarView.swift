@@ -207,7 +207,7 @@ struct SidebarView: View {
                   Task { await store.unsetUpstream(branch) }
                 }
               }
-              if let webURL = store.githubWebURL(forLocalBranch: branch) {
+              if let webURL = store.webURL(forLocalBranch: branch) {
                 Button("Open in Browser") {
                   store.openLocalBranchInBrowser(branch)
                 }
@@ -448,7 +448,7 @@ struct SidebarView: View {
             Task { await store.rebaseOntoReference(branch) }
           }
           .disabled(store.currentBranch == nil || branch.remoteBranchName == nil)
-          if let webURL = store.githubWebURL(forRemoteBranch: branch) {
+          if let webURL = store.webURL(forRemoteBranch: branch) {
             Button("Open in Browser") {
               store.openRemoteBranchInBrowser(branch)
             }
@@ -502,7 +502,7 @@ struct SidebarView: View {
               }
             }
           }
-          if let webURL = store.githubWebURL(forTag: tag) {
+          if let webURL = store.webURL(forTag: tag) {
             Button("Open in Browser") {
               store.openTagInBrowser(tag)
             }
@@ -593,7 +593,7 @@ struct SidebarView: View {
         Button("Prune") {
           Task { await store.pruneRemote(remote) }
         }
-        if let webURL = remote.githubWebURL {
+        if let webURL = remote.webURL {
           Button("Open in Browser") {
             store.openRemoteInBrowser(remote)
           }

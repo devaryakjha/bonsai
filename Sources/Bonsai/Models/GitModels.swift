@@ -208,6 +208,26 @@ struct GitRemote: Identifiable, Hashable {
   var pushURL: String?
 
   var id: String { name }
+
+  var repositoryWebTarget: RepositoryWebTarget? {
+    [fetchURL, pushURL]
+      .compactMap { $0 }
+      .compactMap(RepositoryWebTarget.init(remoteURL:))
+      .first
+  }
+
+  var webURL: URL? {
+    repositoryWebTarget?.webURL
+  }
+
+  func branchWebURL(branchName: String) -> URL? {
+    repositoryWebTarget?.branchWebURL(branchName)
+  }
+
+  func tagWebURL(tagName: String) -> URL? {
+    repositoryWebTarget?.tagWebURL(tagName)
+  }
+
   var githubRepositoryTarget: GitHubRepositoryTarget? {
     [fetchURL, pushURL]
       .compactMap { $0 }
@@ -608,6 +628,87 @@ struct GitHubRepository: Identifiable, Hashable, Decodable {
   }
 }
 
+enum RepositoryWebProvider: String, Hashable {
+  case github
+  case gitlab
+}
+
+struct RepositoryWebTarget: Hashable {
+  var provider: RepositoryWebProvider
+  var host: String
+  var projectPath: String
+
+  var webURL: URL? {
+    URL(string: "https://\(host)/\(encodedProjectPath)")
+  }
+
+  func branchWebURL(_ branchName: String) -> URL? {
+    switch provider {
+    case .github:
+      treeWebURL(refName: branchName)
+    case .gitlab:
+      gitLabTreeWebURL(refName: branchName)
+    }
+  }
+
+  func tagWebURL(_ tagName: String) -> URL? {
+    branchWebURL(tagName)
+  }
+
+  func commitWebURL(_ hash: String) -> URL? {
+    guard let encodedHash = hash.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
+      return nil
+    }
+    switch provider {
+    case .github:
+      return URL(string: "https://\(host)/\(encodedProjectPath)/commit/\(encodedHash)")
+    case .gitlab:
+      return URL(string: "https://\(host)/\(encodedProjectPath)/-/commit/\(encodedHash)")
+    }
+  }
+
+  init(provider: RepositoryWebProvider, host: String, projectPath: String) {
+    self.provider = provider
+    self.host = host
+    self.projectPath = projectPath
+  }
+
+  init?(remoteURL: String) {
+    guard let remote = ParsedRepositoryRemoteURL(remoteURL) else { return nil }
+    if remote.host == "github.com" {
+      provider = .github
+    } else if remote.host.contains("gitlab") {
+      provider = .gitlab
+    } else {
+      return nil
+    }
+
+    host = remote.host
+    projectPath = remote.projectPath
+  }
+
+  private var encodedProjectPath: String {
+    projectPath
+      .split(separator: "/", omittingEmptySubsequences: true)
+      .map { String($0).addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? String($0) }
+      .joined(separator: "/")
+  }
+
+  private func treeWebURL(refName: String) -> URL? {
+    guard let encodedRef = refName.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
+      return nil
+    }
+    return URL(string: "https://\(host)/\(encodedProjectPath)/tree/\(encodedRef)")
+  }
+
+  private func gitLabTreeWebURL(refName: String) -> URL? {
+    guard let encodedRef = refName.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
+      return nil
+    }
+    return URL(string: "https://\(host)/\(encodedProjectPath)/-/tree/\(encodedRef)")
+  }
+}
+
 struct GitHubRepositoryTarget: Hashable {
   var owner: String
   var name: String
@@ -643,28 +744,61 @@ struct GitHubRepositoryTarget: Hashable {
   }
 
   init?(remoteURL: String) {
+    guard let remote = ParsedRepositoryRemoteURL(remoteURL),
+          remote.host == "github.com" else { return nil }
+
+    let parts = remote.projectPath.split(separator: "/", omittingEmptySubsequences: true).map(String.init)
+    guard parts.count == 2 else { return nil }
+
+    owner = parts[0]
+    name = parts[1]
+  }
+}
+
+private struct ParsedRepositoryRemoteURL {
+  var host: String
+  var projectPath: String
+
+  init?(_ remoteURL: String) {
     let trimmed = remoteURL.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else { return nil }
 
-    let path: String
-    if let url = URL(string: trimmed), url.host == "github.com" {
-      path = url.path
-    } else if trimmed.hasPrefix("git@github.com:") {
-      path = String(trimmed.dropFirst("git@github.com:".count))
-    } else {
+    if let parsed = ParsedRepositoryRemoteURL.parseStandardURL(trimmed) {
+      self = parsed
+      return
+    }
+    if let parsed = ParsedRepositoryRemoteURL.parseSCPStyleURL(trimmed) {
+      self = parsed
+      return
+    }
+    return nil
+  }
+
+  private static func parseStandardURL(_ value: String) -> ParsedRepositoryRemoteURL? {
+    guard let url = URL(string: value),
+          let host = url.host?.lowercased() else { return nil }
+    return ParsedRepositoryRemoteURL(host: host, path: url.path)
+  }
+
+  private static func parseSCPStyleURL(_ value: String) -> ParsedRepositoryRemoteURL? {
+    let parts = value.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+    guard parts.count == 2,
+          let host = parts[0].split(separator: "@", maxSplits: 1).last.map(String.init)?.lowercased() else {
       return nil
     }
+    return ParsedRepositoryRemoteURL(host: host, path: String(parts[1]))
+  }
 
-    let parts = path
+  private init?(host: String, path: String) {
+    let cleanedPath = path
       .split(separator: "/", omittingEmptySubsequences: true)
       .map(String.init)
-    guard parts.count >= 2 else { return nil }
+      .joined(separator: "/")
+    let projectPath = cleanedPath.hasSuffix(".git") ? String(cleanedPath.dropLast(4)) : cleanedPath
+    guard !host.isEmpty, !projectPath.isEmpty, projectPath.contains("/") else { return nil }
 
-    let repository = parts[1].hasSuffix(".git") ? String(parts[1].dropLast(4)) : parts[1]
-    guard !parts[0].isEmpty, !repository.isEmpty else { return nil }
-
-    owner = parts[0]
-    name = repository
+    self.host = host
+    self.projectPath = projectPath
   }
 }
 

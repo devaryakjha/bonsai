@@ -333,6 +333,40 @@ final class GitHubNotificationTests: XCTestCase {
     )
   }
 
+  func testRepositoryWebTargetParsesGitHubAndGitLabRemoteURLs() {
+    XCTAssertEqual(
+      RepositoryWebTarget(remoteURL: "https://github.com/example/bonsai.git"),
+      RepositoryWebTarget(provider: .github, host: "github.com", projectPath: "example/bonsai")
+    )
+    XCTAssertEqual(
+      RepositoryWebTarget(remoteURL: "git@gitlab.example.com:mobile-apps/kite.git"),
+      RepositoryWebTarget(provider: .gitlab, host: "gitlab.example.com", projectPath: "mobile-apps/kite")
+    )
+    XCTAssertEqual(
+      RepositoryWebTarget(remoteURL: "ssh://git@gitlab.example.com/mobile/apps/kite.git"),
+      RepositoryWebTarget(provider: .gitlab, host: "gitlab.example.com", projectPath: "mobile/apps/kite")
+    )
+    XCTAssertNil(RepositoryWebTarget(remoteURL: "git@example.com:team/app.git"))
+  }
+
+  func testRepositoryWebTargetExposesGitLabWebURLs() {
+    let target = RepositoryWebTarget(provider: .gitlab, host: "gitlab.example.com", projectPath: "mobile-apps/kite")
+
+    XCTAssertEqual(target.webURL?.absoluteString, "https://gitlab.example.com/mobile-apps/kite")
+    XCTAssertEqual(
+      target.branchWebURL("feature/dashboard polish")?.absoluteString,
+      "https://gitlab.example.com/mobile-apps/kite/-/tree/feature/dashboard%20polish"
+    )
+    XCTAssertEqual(
+      target.tagWebURL("release/v1.0 candidate")?.absoluteString,
+      "https://gitlab.example.com/mobile-apps/kite/-/tree/release/v1.0%20candidate"
+    )
+    XCTAssertEqual(
+      target.commitWebURL("abc123def456")?.absoluteString,
+      "https://gitlab.example.com/mobile-apps/kite/-/commit/abc123def456"
+    )
+  }
+
   func testRemoteExposesFirstGitHubRepositoryTarget() {
     let remote = GitRemote(
       name: "origin",
@@ -364,6 +398,20 @@ final class GitHubNotificationTests: XCTestCase {
       remote.githubBranchWebURL(branchName: "feature/dashboard polish")?.absoluteString,
       "https://github.com/example/bonsai/tree/feature/dashboard%20polish"
     )
+  }
+
+  func testRemoteExposesFirstRepositoryWebTarget() {
+    let remote = GitRemote(
+      name: "origin",
+      fetchURL: "git@gitlab.example.com:mobile-apps/kite.git",
+      pushURL: "git@github.com:example/bonsai.git"
+    )
+
+    XCTAssertEqual(
+      remote.repositoryWebTarget,
+      RepositoryWebTarget(provider: .gitlab, host: "gitlab.example.com", projectPath: "mobile-apps/kite")
+    )
+    XCTAssertEqual(remote.webURL?.absoluteString, "https://gitlab.example.com/mobile-apps/kite")
   }
 
   @MainActor
@@ -415,6 +463,28 @@ final class GitHubNotificationTests: XCTestCase {
   }
 
   @MainActor
+  func testStoreLocalBranchWebURLUsesGitLabUpstream() {
+    let store = RepositoryStore()
+    let branch = GitRef(
+      name: "refs/heads/dashboard",
+      shortName: "dashboard",
+      objectName: "abc123",
+      upstream: "origin/feature/dashboard polish",
+      isHead: true,
+      kind: .localBranch
+    )
+    store.snapshot.remotes = [
+      GitRemote(name: "origin", fetchURL: "git@gitlab.example.com:mobile-apps/kite.git", pushURL: nil)
+    ]
+
+    XCTAssertEqual(
+      store.webURL(forLocalBranch: branch)?.absoluteString,
+      "https://gitlab.example.com/mobile-apps/kite/-/tree/feature/dashboard%20polish"
+    )
+    XCTAssertNil(store.githubWebURL(forLocalBranch: branch))
+  }
+
+  @MainActor
   func testStoreGitHubCommandURLsUseCurrentBranchAndSelectedCommit() {
     let store = RepositoryStore()
     let branch = GitRef(
@@ -448,6 +518,44 @@ final class GitHubNotificationTests: XCTestCase {
       store.selectedCommitGitHubWebURL?.absoluteString,
       "https://github.com/example/bonsai/commit/abc123def456"
     )
+  }
+
+  @MainActor
+  func testStoreHostingCommandURLsUseGitLabOrigin() {
+    let store = RepositoryStore()
+    let branch = GitRef(
+      name: "refs/heads/dashboard",
+      shortName: "dashboard",
+      objectName: "abc123",
+      upstream: "origin/feature/dashboard",
+      isHead: true,
+      kind: .localBranch
+    )
+    let commit = GitCommit(
+      hash: "abc123def456",
+      shortHash: "abc123d",
+      authorName: "Asha",
+      authorEmail: "asha@example.test",
+      date: nil,
+      subject: "Commit",
+      decorations: []
+    )
+    store.snapshot.refs = [branch]
+    store.snapshot.remotes = [
+      GitRemote(name: "origin", fetchURL: "git@gitlab.example.com:mobile-apps/kite.git", pushURL: nil)
+    ]
+    store.selectedCommit = commit
+
+    XCTAssertEqual(
+      store.currentBranchWebURL?.absoluteString,
+      "https://gitlab.example.com/mobile-apps/kite/-/tree/feature/dashboard"
+    )
+    XCTAssertEqual(
+      store.selectedCommitWebURL?.absoluteString,
+      "https://gitlab.example.com/mobile-apps/kite/-/commit/abc123def456"
+    )
+    XCTAssertNil(store.currentBranchGitHubWebURL)
+    XCTAssertNil(store.selectedCommitGitHubWebURL)
   }
 
   @MainActor
@@ -512,6 +620,34 @@ final class GitHubNotificationTests: XCTestCase {
     ]
 
     XCTAssertEqual(store.githubWebURL(forCommit: commit)?.absoluteString, "https://github.com/backup/bonsai/commit/abc123def456")
+  }
+
+  @MainActor
+  func testStoreTagAndCommitWebURLsPreferOriginHostingRemote() {
+    let store = RepositoryStore()
+    let tag = GitRef(name: "refs/tags/v1.0.0", shortName: "v1.0.0", objectName: "abc123", isHead: false, kind: .tag)
+    let commit = GitCommit(
+      hash: "abc123def456",
+      shortHash: "abc123d",
+      authorName: "Asha",
+      authorEmail: "asha@example.test",
+      date: nil,
+      subject: "Commit",
+      decorations: []
+    )
+    store.snapshot.remotes = [
+      GitRemote(name: "backup", fetchURL: "https://github.com/backup/bonsai.git", pushURL: nil),
+      GitRemote(name: "origin", fetchURL: "git@gitlab.example.com:mobile-apps/kite.git", pushURL: nil)
+    ]
+
+    XCTAssertEqual(
+      store.webURL(forTag: tag)?.absoluteString,
+      "https://gitlab.example.com/mobile-apps/kite/-/tree/v1.0.0"
+    )
+    XCTAssertEqual(
+      store.webURL(forCommit: commit)?.absoluteString,
+      "https://gitlab.example.com/mobile-apps/kite/-/commit/abc123def456"
+    )
   }
 
   @MainActor

@@ -367,6 +367,14 @@ final class RepositoryStore {
     shouldPublishCurrentBranch ? "Publish" : (currentBranch?.pushTitle ?? "Push")
   }
 
+  var currentBranchWebURL: URL? {
+    currentBranch.flatMap { webURL(forLocalBranch: $0) }
+  }
+
+  var selectedCommitWebURL: URL? {
+    selectedCommit.flatMap { webURL(forCommit: $0) }
+  }
+
   var currentBranchGitHubWebURL: URL? {
     currentBranch.flatMap { githubWebURL(forLocalBranch: $0) }
   }
@@ -983,8 +991,17 @@ final class RepositoryStore {
   }
 
   func openRemoteInBrowser(_ remote: GitRemote) {
-    guard let url = remote.githubWebURL else { return }
+    guard let url = remote.webURL else { return }
     NSWorkspace.shared.open(url)
+  }
+
+  func webURL(forRemoteBranch branch: GitRef) -> URL? {
+    guard let remoteName = branch.remoteName,
+          let branchName = branch.remoteBranchName,
+          let remote = snapshot.remotes.first(where: { $0.name == remoteName }) else {
+      return nil
+    }
+    return remote.branchWebURL(branchName: branchName)
   }
 
   func githubWebURL(forRemoteBranch branch: GitRef) -> URL? {
@@ -997,8 +1014,17 @@ final class RepositoryStore {
   }
 
   func openRemoteBranchInBrowser(_ branch: GitRef) {
-    guard let url = githubWebURL(forRemoteBranch: branch) else { return }
+    guard let url = webURL(forRemoteBranch: branch) else { return }
     NSWorkspace.shared.open(url)
+  }
+
+  func webURL(forLocalBranch branch: GitRef) -> URL? {
+    guard let remoteName = branch.upstreamRemoteName,
+          let branchName = branch.upstreamBranchName,
+          let remote = snapshot.remotes.first(where: { $0.name == remoteName }) else {
+      return nil
+    }
+    return remote.branchWebURL(branchName: branchName)
   }
 
   func githubWebURL(forLocalBranch branch: GitRef) -> URL? {
@@ -1011,13 +1037,18 @@ final class RepositoryStore {
   }
 
   func openLocalBranchInBrowser(_ branch: GitRef) {
-    guard let url = githubWebURL(forLocalBranch: branch) else { return }
+    guard let url = webURL(forLocalBranch: branch) else { return }
     NSWorkspace.shared.open(url)
   }
 
   func openCurrentBranchInBrowser() {
-    guard let url = currentBranchGitHubWebURL else { return }
+    guard let url = currentBranchWebURL else { return }
     NSWorkspace.shared.open(url)
+  }
+
+  func webURL(forTag tag: GitRef) -> URL? {
+    guard tag.kind == .tag else { return nil }
+    return preferredWebRemote?.tagWebURL(tagName: tag.shortName)
   }
 
   func githubWebURL(forTag tag: GitRef) -> URL? {
@@ -1026,8 +1057,12 @@ final class RepositoryStore {
   }
 
   func openTagInBrowser(_ tag: GitRef) {
-    guard let url = githubWebURL(forTag: tag) else { return }
+    guard let url = webURL(forTag: tag) else { return }
     NSWorkspace.shared.open(url)
+  }
+
+  func webURL(forCommit commit: GitCommit) -> URL? {
+    preferredWebRemote?.repositoryWebTarget?.commitWebURL(commit.hash)
   }
 
   func githubWebURL(forCommit commit: GitCommit) -> URL? {
@@ -1035,13 +1070,18 @@ final class RepositoryStore {
   }
 
   func openCommitInBrowser(_ commit: GitCommit) {
-    guard let url = githubWebURL(forCommit: commit) else { return }
+    guard let url = webURL(forCommit: commit) else { return }
     NSWorkspace.shared.open(url)
   }
 
   func openSelectedCommitInBrowser() {
-    guard let url = selectedCommitGitHubWebURL else { return }
+    guard let url = selectedCommitWebURL else { return }
     NSWorkspace.shared.open(url)
+  }
+
+  private var preferredWebRemote: GitRemote? {
+    snapshot.remotes.first(where: { $0.name == "origin" && $0.repositoryWebTarget != nil })
+      ?? snapshot.remotes.first(where: { $0.repositoryWebTarget != nil })
   }
 
   private var preferredGitHubRemote: GitRemote? {

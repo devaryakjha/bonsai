@@ -195,40 +195,40 @@ struct RepositoryToolbarActionsMenu: View {
           }
         }
         Divider()
-        Menu("GitHub") {
+        Menu("Hosting") {
           Button("Open Current Branch in Browser") {
             store.openCurrentBranchInBrowser()
           }
-          .disabled(store.currentBranchGitHubWebURL == nil)
+          .disabled(store.currentBranchWebURL == nil)
           Button("Copy Current Branch Web URL") {
-            if let url = store.currentBranchGitHubWebURL {
+            if let url = store.currentBranchWebURL {
               PasteboardWriter.copy(url.absoluteString)
             }
           }
-          .disabled(store.currentBranchGitHubWebURL == nil)
+          .disabled(store.currentBranchWebURL == nil)
           Button("Open Selected Commit in Browser") {
             store.openSelectedCommitInBrowser()
           }
-          .disabled(store.selectedCommitGitHubWebURL == nil)
+          .disabled(store.selectedCommitWebURL == nil)
           Button("Copy Selected Commit Web URL") {
-            if let url = store.selectedCommitGitHubWebURL {
+            if let url = store.selectedCommitWebURL {
               PasteboardWriter.copy(url.absoluteString)
             }
           }
-          .disabled(store.selectedCommitGitHubWebURL == nil)
+          .disabled(store.selectedCommitWebURL == nil)
           Divider()
-          Button("Fetch Notifications") {
+          Button("Fetch GitHub Notifications") {
             Task { await store.fetchGitHubNotifications() }
           }
-          Button("Mark Notifications Read") {
+          Button("Mark GitHub Notifications Read") {
             Task { await store.markGitHubNotificationsRead() }
           }
           .disabled(store.gitHubNotifications.isEmpty)
           Divider()
-          Button("Create Repository...") {
+          Button("Create GitHub Repository...") {
             store.presentCreateGitHubRepository()
           }
-          Button("Delete Repository...") {
+          Button("Delete GitHub Repository...") {
             store.presentDeleteGitHubRepository()
           }
         }

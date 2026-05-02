@@ -102,7 +102,7 @@ struct HistoryView: View {
                 store.selectCommit(commit)
                 store.presentCreateAnnotatedTag()
               }
-              if let webURL = store.githubWebURL(forCommit: commit) {
+              if let webURL = store.webURL(forCommit: commit) {
                 Button("Open in Browser") {
                   store.openCommitInBrowser(commit)
                 }
