@@ -38,6 +38,7 @@ development, regular checkpoint commits, and OSS-ready project structure.
 | Release credential diagnosis | `script/package_release.sh --doctor` reports Developer ID identity, configured signing identity, and notary profile readiness without mutating artifacts | Covered |
 | Release artifact evidence | `script/package_release.sh` writes `dist/release/Bonsai.release.plist` for archive-producing modes with version, build, commit, zip hash, signature kind, team, and notarization state | Covered |
 | Release artifact verification | `script/package_release.sh --verify-artifacts` validates the zip, manifest shape, archive name, byte size, and SHA-256 after packaging or download | Covered |
+| Release guardrail tests | `Tests/BonsaiTests/ReleaseScriptTests.swift` covers credential rejection, doctor output, artifact verifier wiring, manifest upload, and temporary keychain cleanup wiring without running release builds or notarization | Covered |
 | Credentialed GitHub release path | `.github/workflows/release.yml` is manual-only, uses the protected `release` environment, imports the Developer ID certificate, stores notarytool credentials in a temporary keychain, runs `--notarize`, uploads zip plus manifest, and cleans up the temporary keychain | Covered pending configured secrets |
 
 ## Current Blocking Evidence
@@ -65,6 +66,7 @@ development, regular checkpoint commits, and OSS-ready project structure.
   `script/package_release.sh --doctor`.
 - A post-build artifact verifier exists:
   `script/package_release.sh --verify-artifacts`.
+- Release guardrails are covered by `ReleaseScriptTests`.
 - A manual GitHub release workflow exists for maintainers after protected
   release secrets are configured.
 - The audit does not mark the goal complete while Developer ID notarization is
