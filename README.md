@@ -88,6 +88,7 @@ swift test
 ./script/build_and_run.sh --verify
 ./script/package_release.sh --verify
 ./script/package_release.sh --verify-archive
+./script/package_release.sh --verify-artifacts
 ```
 
 ## Development
@@ -95,7 +96,7 @@ swift test
 Bonsai is developed spec-first. Start with the relevant document in `Specs/`,
 keep implementation slices small, and commit checkpoints as work lands.
 Pull requests run macOS CI for shell syntax, `swift test`, and the
-credential-free release bundle verifier.
+credential-free release bundle, archive, and artifact verifiers.
 
 Useful project paths:
 

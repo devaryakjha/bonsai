@@ -26,12 +26,13 @@ swift test
 ./script/build_and_run.sh --verify
 ./script/package_release.sh --verify
 ./script/package_release.sh --verify-archive
+./script/package_release.sh --verify-artifacts
 ```
 
 For UI-only documentation changes, `git diff --check` is the minimum gate. Run
 the Swift validation commands when source, package, or script behavior changes.
 GitHub Actions mirrors the non-credentialed gates on macOS: shell syntax,
-`swift test`, and the package verifier modes.
+`swift test`, and the package verifier modes, including artifact verification.
 
 ## Pull Requests
 
