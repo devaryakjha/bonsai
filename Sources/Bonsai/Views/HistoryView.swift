@@ -174,6 +174,8 @@ private struct ChangedFilesView: View {
         }
         .pickerStyle(.segmented)
         .controlSize(.small)
+        .labelsHidden()
+        .accessibilityLabel("Commit panel")
         .frame(width: 190)
         Spacer()
         Text(countText)
