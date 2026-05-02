@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
-  @AppStorage("bonsai.showToolbarLabels") private var showToolbarLabels = true
+  @AppStorage("bonsai.showToolbarLabels") private var showToolbarLabels = false
   @AppStorage("bonsai.autoRefresh") private var autoRefresh = true
   @AppStorage("bonsai.diffAlgorithm") private var diffAlgorithm = DiffAlgorithm.histogram.rawValue
   @AppStorage("bonsai.diffDisplayMode") private var diffDisplayMode = DiffDisplayMode.unified.rawValue

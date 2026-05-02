@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
   @Bindable var store: RepositoryStore
+  @AppStorage("bonsai.showToolbarLabels") private var showToolbarLabels = false
 
   var body: some View {
     NavigationSplitView {
@@ -19,7 +20,7 @@ struct ContentView: View {
         Button {
           store.presentOpenRepositoryPanel()
         } label: {
-          Label("Open", systemImage: "folder")
+          ToolbarLabel("Open", systemImage: "folder", showTitle: showToolbarLabels)
         }
 
         Menu {
@@ -30,13 +31,13 @@ struct ContentView: View {
             store.presentCreateRepository()
           }
         } label: {
-          Label("New", systemImage: "plus")
+          ToolbarLabel("New", systemImage: "plus", showTitle: showToolbarLabels)
         }
 
         Button {
           Task { await store.refreshAll() }
         } label: {
-          Label("Refresh", systemImage: "arrow.clockwise")
+          ToolbarLabel("Refresh", systemImage: "arrow.clockwise", showTitle: showToolbarLabels)
         }
         .disabled(store.selectedRepository == nil || store.isRefreshing)
       }
@@ -45,21 +46,21 @@ struct ContentView: View {
         Button {
           Task { await store.runRepositoryAction(.fetch) }
         } label: {
-          Label("Fetch", systemImage: "arrow.down.circle")
+          ToolbarLabel("Fetch", systemImage: "arrow.down.circle", showTitle: showToolbarLabels)
         }
         .disabled(store.selectedRepository == nil)
 
         Button {
           Task { await store.runRepositoryAction(.pull) }
         } label: {
-          Label(store.currentBranch?.pullTitle ?? "Pull", systemImage: "arrow.down.to.line.circle")
+          ToolbarLabel(store.currentBranch?.pullTitle ?? "Pull", systemImage: "arrow.down.to.line.circle", showTitle: showToolbarLabels)
         }
         .disabled(store.selectedRepository == nil)
 
         Button {
           Task { await store.runRepositoryAction(.push) }
         } label: {
-          Label(store.currentBranch?.pushTitle ?? "Push", systemImage: "arrow.up.to.line.circle")
+          ToolbarLabel(store.currentBranch?.pushTitle ?? "Push", systemImage: "arrow.up.to.line.circle", showTitle: showToolbarLabels)
         }
         .disabled(store.selectedRepository == nil)
       }
@@ -78,7 +79,7 @@ struct ContentView: View {
           }
           .disabled(store.selectedCommit == nil)
         } label: {
-          Label("Branch", systemImage: "point.3.connected.trianglepath.dotted")
+          ToolbarLabel("Branch", systemImage: "point.3.connected.trianglepath.dotted", showTitle: showToolbarLabels)
         }
         .disabled(store.selectedRepository == nil)
 
@@ -136,7 +137,7 @@ struct ContentView: View {
           }
           .disabled(!store.snapshot.integrations.bisect.active)
         } label: {
-          Label("Actions", systemImage: "bolt")
+          ToolbarLabel("Actions", systemImage: "bolt", showTitle: showToolbarLabels)
         }
         .disabled(store.selectedRepository == nil)
 
@@ -162,7 +163,7 @@ struct ContentView: View {
             }
           }
         } label: {
-          Label("Stash", systemImage: "tray")
+          ToolbarLabel("Stash", systemImage: "tray", showTitle: showToolbarLabels)
         }
         .disabled(store.selectedRepository == nil)
 
@@ -245,7 +246,7 @@ struct ContentView: View {
             store.presentDeleteGitHubRepository()
           }
         } label: {
-          Label("Tools", systemImage: "wrench.and.screwdriver")
+          ToolbarLabel("Tools", systemImage: "wrench.and.screwdriver", showTitle: showToolbarLabels)
         }
         .disabled(store.selectedRepository == nil)
       }
@@ -679,6 +680,30 @@ private struct DiscardChangeSheet: View {
     }
     .padding(20)
     .frame(width: 460)
+  }
+}
+
+private struct ToolbarLabel: View {
+  var title: String
+  var systemImage: String
+  var showTitle: Bool
+
+  init(_ title: String, systemImage: String, showTitle: Bool) {
+    self.title = title
+    self.systemImage = systemImage
+    self.showTitle = showTitle
+  }
+
+  var body: some View {
+    if showTitle {
+      Label(title, systemImage: systemImage)
+        .help(title)
+    } else {
+      Label(title, systemImage: systemImage)
+        .labelStyle(.iconOnly)
+        .help(title)
+        .accessibilityLabel(title)
+    }
   }
 }
 
