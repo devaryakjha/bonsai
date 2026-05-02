@@ -315,6 +315,10 @@ struct GitClient {
     return output.combinedOutput
   }
 
+  func runRevisionCommand(_ command: GitRevisionCommand, commit: GitCommit, in repository: GitRepository) async throws -> String {
+    try await runRaw([command.gitSubcommand, commit.hash], in: repository)
+  }
+
   func createBranch(named name: String, startPoint: String?, in repository: GitRepository) async throws -> String {
     var args = ["branch", name]
     if let startPoint, !startPoint.isEmpty {

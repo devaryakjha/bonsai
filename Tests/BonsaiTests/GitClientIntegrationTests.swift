@@ -384,8 +384,10 @@ final class GitClientIntegrationTests: XCTestCase {
     try write("main\n", to: file)
     try await commitAll(in: repo, message: "Main change")
 
+    let sideCommit = try await client.commit(revision: sideHash, in: repository)
+
     do {
-      _ = try await client.runRaw(["merge", "side"], in: repository)
+      _ = try await client.runRevisionCommand(.merge, commit: sideCommit, in: repository)
       XCTFail("Expected merge conflict")
     } catch {
       var operation = try await client.snapshot(for: repository, selectedCommit: nil).inProgressOperation
@@ -397,7 +399,7 @@ final class GitClientIntegrationTests: XCTestCase {
     }
 
     do {
-      _ = try await client.runRaw(["cherry-pick", sideHash], in: repository)
+      _ = try await client.runRevisionCommand(.cherryPick, commit: sideCommit, in: repository)
       XCTFail("Expected cherry-pick conflict")
     } catch {
       var operation = try await client.snapshot(for: repository, selectedCommit: nil).inProgressOperation

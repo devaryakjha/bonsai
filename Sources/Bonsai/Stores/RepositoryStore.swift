@@ -1002,7 +1002,7 @@ final class RepositoryStore {
   func runRevisionCommand(_ command: GitRevisionCommand) async {
     guard let selectedCommit else { return }
     await runMutation(title: command.resultTitle(shortHash: selectedCommit.shortHash)) {
-      try await gitClient.runRaw([command.gitSubcommand, selectedCommit.hash], in: requiredRepository())
+      try await gitClient.runRevisionCommand(command, commit: selectedCommit, in: requiredRepository())
     }
   }
 
