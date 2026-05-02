@@ -338,7 +338,7 @@ private struct BinaryPreviewView: View {
           .font(.system(size: 48))
           .foregroundStyle(.secondary)
 
-        Text(store.selectedPreviewIsImage ? "Image Diff" : "Binary Diff")
+        Text(store.selectedPreviewIsImage ? "Image diff" : "Binary diff")
           .font(.title3)
           .fontWeight(.semibold)
 
@@ -381,7 +381,7 @@ private struct ImageDiffPane: View {
           .foregroundStyle(.secondary)
       } else {
         ContentUnavailableView(
-          "No Image",
+          "No image",
           systemImage: "photo",
           description: Text("This side is not available for the selected change.")
         )
@@ -413,7 +413,7 @@ private struct HunkActionStrip: View {
           Button {
             onSelectHunk(hunk)
           } label: {
-            Label(isStaged ? "Unstage Hunk \(hunk.id + 1)" : "Stage Hunk \(hunk.id + 1)", systemImage: isStaged ? "minus.circle" : "plus.circle")
+            Label(isStaged ? "Unstage hunk \(hunk.id + 1)" : "Stage hunk \(hunk.id + 1)", systemImage: isStaged ? "minus.circle" : "plus.circle")
           }
           .buttonStyle(.bordered)
           .controlSize(.small)

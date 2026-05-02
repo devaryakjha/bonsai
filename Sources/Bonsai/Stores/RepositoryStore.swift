@@ -338,7 +338,7 @@ final class RepositoryStore {
       await refreshCommitFilesAndDiff()
       errorMessage = nil
     } catch {
-      commandResult = CommandResult(title: "Show Commit", output: error.localizedDescription, isError: true)
+      commandResult = CommandResult(title: "Show commit", output: error.localizedDescription, isError: true)
       errorMessage = error.localizedDescription
     }
   }
@@ -463,13 +463,13 @@ final class RepositoryStore {
   }
 
   func stageHunk(_ hunk: DiffHunk) async {
-    await runMutation(title: "Stage Hunk") {
+    await runMutation(title: "Stage hunk") {
       try await gitClient.stageHunk(hunk, in: requiredRepository())
     }
   }
 
   func unstageHunk(_ hunk: DiffHunk) async {
-    await runMutation(title: "Unstage Hunk") {
+    await runMutation(title: "Unstage hunk") {
       try await gitClient.unstageHunk(hunk, in: requiredRepository())
     }
   }

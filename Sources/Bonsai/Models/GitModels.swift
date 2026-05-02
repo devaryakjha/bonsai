@@ -512,9 +512,9 @@ struct DiffLineChange: Identifiable, Hashable {
 }
 
 enum ConflictResolutionChoice: String {
-  case ours = "Accept Ours"
-  case theirs = "Accept Theirs"
-  case markResolved = "Mark Resolved"
+  case ours = "Accept ours"
+  case theirs = "Accept theirs"
+  case markResolved = "Mark resolved"
 }
 
 struct ConflictResolutionRequest: Identifiable, Hashable {
