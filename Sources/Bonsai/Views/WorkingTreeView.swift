@@ -284,9 +284,12 @@ private struct CommitComposerView: View {
             }
           } label: {
             Label("Recent messages", systemImage: "clock")
+              .labelStyle(.iconOnly)
               .lineLimit(1)
           }
           .menuStyle(.borderlessButton)
+          .help("Recent commit messages")
+          .accessibilityLabel("Recent commit messages")
         }
 
         Menu {
@@ -294,10 +297,12 @@ private struct CommitComposerView: View {
           Toggle("Sign Commit", isOn: $store.signCommit)
         } label: {
           Label("Commit settings", systemImage: "slider.horizontal.3")
+            .labelStyle(.iconOnly)
             .lineLimit(1)
         }
         .menuStyle(.borderlessButton)
         .help(commitOptionsHelp)
+        .accessibilityLabel("Commit settings")
 
         if !commitOptionsSummary.isEmpty {
           Text(commitOptionsSummary)
