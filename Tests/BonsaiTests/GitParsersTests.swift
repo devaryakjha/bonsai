@@ -274,6 +274,28 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(GitRevisionCommand.rebase.selectedCommitTitle, "Rebase onto selected commit")
   }
 
+  func testRevisionCommandRequestCopyNamesCommandAndCommit() {
+    let commit = GitCommit(
+      hash: "abcdef1234567890",
+      shortHash: "abcdef1",
+      authorName: "Asha",
+      authorEmail: "asha@example.test",
+      date: nil,
+      subject: "Refactor parser",
+      decorations: []
+    )
+
+    let cherryPick = RevisionCommandRequest(command: .cherryPick, commit: commit)
+    XCTAssertEqual(cherryPick.title, "Cherry-pick selected commit")
+    XCTAssertEqual(cherryPick.message, "Cherry-pick abcdef1.")
+    XCTAssertEqual(cherryPick.detail, "Refactor parser")
+    XCTAssertEqual(cherryPick.primaryActionTitle, "Cherry-pick")
+
+    XCTAssertEqual(RevisionCommandRequest(command: .revert, commit: commit).title, "Revert selected commit")
+    XCTAssertEqual(RevisionCommandRequest(command: .merge, commit: commit).primaryActionTitle, "Merge")
+    XCTAssertEqual(RevisionCommandRequest(command: .rebase, commit: commit).message, "Rebase onto abcdef1.")
+  }
+
   func testDeleteRefRequestCopyNamesReferenceKind() {
     let local = GitRef(name: "refs/heads/feature", shortName: "feature", objectName: "abc123", isHead: false, kind: .localBranch)
     let remote = GitRef(name: "refs/remotes/origin/feature", shortName: "origin/feature", objectName: "abc123", isHead: false, kind: .remoteBranch)

@@ -769,6 +769,17 @@ enum GitRevisionCommand: String, CaseIterable, Identifiable {
   }
 }
 
+struct RevisionCommandRequest: Identifiable, Hashable {
+  var command: GitRevisionCommand
+  var commit: GitCommit
+
+  var id: String { "\(command.rawValue):\(commit.hash)" }
+  var title: String { command.selectedCommitTitle }
+  var message: String { "\(command.historyTitle) \(commit.shortHash)." }
+  var detail: String { commit.subject }
+  var primaryActionTitle: String { command.historyTitle }
+}
+
 struct ResetRequest: Identifiable, Hashable {
   var commit: GitCommit
   var mode: ResetMode = .mixed

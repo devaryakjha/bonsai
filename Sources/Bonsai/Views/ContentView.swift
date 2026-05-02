@@ -136,6 +136,17 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.revisionCommandRequest) { request in
+      RevisionCommandSheet(
+        request: request,
+        onCancel: {
+          store.revisionCommandRequest = nil
+        },
+        onConfirm: {
+          Task { await store.runRequestedRevisionCommand() }
+        }
+      )
+    }
     .sheet(isPresented: Binding(
       get: { store.interactiveRebasePlan != nil },
       set: { if !$0 { store.interactiveRebasePlan = nil } }
@@ -589,6 +600,37 @@ private struct DropStashSheet: View {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Drop", role: .destructive, action: onDrop)
+          .buttonStyle(.borderedProminent)
+      }
+    }
+    .padding(20)
+    .frame(width: 460)
+  }
+}
+
+private struct RevisionCommandSheet: View {
+  var request: RevisionCommandRequest
+  var onCancel: () -> Void
+  var onConfirm: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text(request.title)
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      Text(request.message)
+        .font(.body.monospaced())
+        .lineLimit(1)
+
+      Text(request.detail)
+        .foregroundStyle(.secondary)
+        .lineLimit(3)
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button(request.primaryActionTitle, action: onConfirm)
           .buttonStyle(.borderedProminent)
       }
     }

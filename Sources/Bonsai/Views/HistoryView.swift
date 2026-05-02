@@ -62,19 +62,19 @@ struct HistoryView: View {
               }
               Button(GitRevisionCommand.cherryPick.historyTitle) {
                 store.selectCommit(commit)
-                Task { await store.runRevisionCommand(.cherryPick) }
+                store.presentRevisionCommand(.cherryPick)
               }
               Button(GitRevisionCommand.revert.historyTitle) {
                 store.selectCommit(commit)
-                Task { await store.runRevisionCommand(.revert) }
+                store.presentRevisionCommand(.revert)
               }
               Button(GitRevisionCommand.merge.historyTitle) {
                 store.selectCommit(commit)
-                Task { await store.runRevisionCommand(.merge) }
+                store.presentRevisionCommand(.merge)
               }
               Button(GitRevisionCommand.rebase.historyTitle) {
                 store.selectCommit(commit)
-                Task { await store.runRevisionCommand(.rebase) }
+                store.presentRevisionCommand(.rebase)
               }
               Button("Reset Here...") {
                 store.selectCommit(commit)

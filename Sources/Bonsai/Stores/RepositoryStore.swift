@@ -49,6 +49,7 @@ final class RepositoryStore {
   var discardChangeRequest: DiscardChangeRequest?
   var dropStashRequest: DropStashRequest?
   var interactiveRebasePlan: InteractiveRebasePlan?
+  var revisionCommandRequest: RevisionCommandRequest?
   var resetRequest: ResetRequest?
   var deleteRefRequest: DeleteRefRequest?
   var deleteRefForce = false
@@ -999,10 +1000,16 @@ final class RepositoryStore {
     }
   }
 
-  func runRevisionCommand(_ command: GitRevisionCommand) async {
+  func presentRevisionCommand(_ command: GitRevisionCommand) {
     guard let selectedCommit else { return }
-    await runMutation(title: command.resultTitle(shortHash: selectedCommit.shortHash)) {
-      try await gitClient.runRevisionCommand(command, commit: selectedCommit, in: requiredRepository())
+    revisionCommandRequest = RevisionCommandRequest(command: command, commit: selectedCommit)
+  }
+
+  func runRequestedRevisionCommand() async {
+    guard let request = revisionCommandRequest else { return }
+    revisionCommandRequest = nil
+    await runMutation(title: request.command.resultTitle(shortHash: request.commit.shortHash)) {
+      try await gitClient.runRevisionCommand(request.command, commit: request.commit, in: requiredRepository())
     }
   }
 
