@@ -740,6 +740,58 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(commandResult?.isError, false)
   }
 
+  func testStorePullsNonCurrentLocalBranchFromUpstream() async throws {
+    let remote = try await makeBareRepository()
+    let source = try await makeRepository()
+    let sourceRepository = GitRepository(path: source.path(percentEncoded: false))
+    try write("seed\n", to: source.appending(path: "README.md"))
+    try await commitAll(in: source, message: "Seed")
+    _ = try await client.git(["remote", "add", "origin", remote.path(percentEncoded: false)], in: source)
+    _ = try await client.git(["push", "-u", "origin", "main"], in: source)
+    _ = try await client.git(["symbolic-ref", "HEAD", "refs/heads/main"], in: remote)
+    _ = try await client.createBranch(named: "feature/pull-target", startPoint: nil, in: sourceRepository)
+    _ = try await client.checkout("feature/pull-target", in: sourceRepository)
+    try write("one\n", to: source.appending(path: "feature.txt"))
+    try await commitAll(in: source, message: "Feature seed")
+    _ = try await client.runRaw(["push", "-u", "origin", "feature/pull-target"], in: sourceRepository)
+
+    let clone = temporaryDirectory()
+    _ = try await client.cloneRepository(from: remote.path(percentEncoded: false), to: clone)
+    let cloneRepository = GitRepository(path: clone.path(percentEncoded: false))
+    var refs = try await client.refs(in: cloneRepository)
+    let remoteFeature = try XCTUnwrap(refs.first { $0.shortName == "origin/feature/pull-target" && $0.kind == .remoteBranch })
+    _ = try await client.checkoutTrackingRemote(remoteFeature, in: cloneRepository)
+    _ = try await client.checkout("main", in: cloneRepository)
+    refs = try await client.refs(in: cloneRepository)
+    let oldLocalFeature = try XCTUnwrap(refs.first { $0.shortName == "feature/pull-target" && $0.kind == .localBranch })
+
+    try write("two\n", to: source.appending(path: "feature.txt"))
+    try await commitAll(in: source, message: "Feature update")
+    _ = try await client.git(["push", "origin", "feature/pull-target"], in: source)
+    let newHash = try await client.git(["rev-parse", "--short", "HEAD"], in: source).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: clone)
+    let branches = await store.localBranches
+    let branch = try XCTUnwrap(branches.first { $0.shortName == "feature/pull-target" })
+
+    await store.pullBranch(branch)
+
+    let currentBranch = try await client.git(["branch", "--show-current"], in: clone).stdout
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    refs = try await client.refs(in: cloneRepository)
+    let updatedLocalFeature = try XCTUnwrap(refs.first { $0.shortName == "feature/pull-target" && $0.kind == .localBranch })
+    let updatedRemoteFeature = try XCTUnwrap(refs.first { $0.shortName == "origin/feature/pull-target" && $0.kind == .remoteBranch })
+    let commandResult = await store.commandResult
+    XCTAssertEqual(currentBranch, "main")
+    XCTAssertNotEqual(updatedLocalFeature.objectName, oldLocalFeature.objectName)
+    XCTAssertEqual(updatedLocalFeature.objectName, newHash)
+    XCTAssertEqual(updatedRemoteFeature.objectName, newHash)
+    XCTAssertEqual(commandResult?.title, "Pull feature/pull-target")
+    XCTAssertEqual(commandResult?.isError, false)
+  }
+
   func testStoreFetchesSelectedRemoteBranch() async throws {
     let remote = try await makeBareRepository()
     let source = try await makeRepository()

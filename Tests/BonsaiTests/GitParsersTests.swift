@@ -44,6 +44,8 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(refs[0].trackingSummary, "↑ 2 ↓ 1")
     XCTAssertEqual(refs[0].pullTitle, "Pull ↓ 1")
     XCTAssertEqual(refs[0].pushTitle, "Push ↑ 2")
+    XCTAssertEqual(refs[0].upstreamRemoteName, "origin")
+    XCTAssertEqual(refs[0].upstreamBranchName, "main")
     XCTAssertEqual(refs[1].pullTitle, "Pull")
     XCTAssertEqual(refs[1].pushTitle, "Push")
     XCTAssertTrue(refs[1].upstreamGone)

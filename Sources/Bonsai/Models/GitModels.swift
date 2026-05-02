@@ -167,6 +167,14 @@ struct GitRef: Identifiable, Hashable {
     ahead > 0 ? "Push ↑ \(ahead)" : "Push"
   }
 
+  var upstreamRemoteName: String? {
+    upstreamParts?.remote
+  }
+
+  var upstreamBranchName: String? {
+    upstreamParts?.branch
+  }
+
   var remoteTrackingLocalName: String? {
     remoteBranchName
   }
@@ -183,6 +191,13 @@ struct GitRef: Identifiable, Hashable {
     guard kind == .remoteBranch else { return nil }
     let parts = shortName.split(separator: "/", maxSplits: 1).map(String.init)
     guard parts.count == 2, parts[1] != "HEAD" else { return nil }
+    return (parts[0], parts[1])
+  }
+
+  private var upstreamParts: (remote: String, branch: String)? {
+    guard kind == .localBranch, let upstream else { return nil }
+    let parts = upstream.split(separator: "/", maxSplits: 1).map(String.init)
+    guard parts.count == 2 else { return nil }
     return (parts[0], parts[1])
   }
 }

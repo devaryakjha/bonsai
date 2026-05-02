@@ -1222,6 +1222,13 @@ final class RepositoryStore {
     }
   }
 
+  func pullBranch(_ branch: GitRef) async {
+    guard branch.upstream != nil, !branch.upstreamGone else { return }
+    await runMutation(title: "Pull \(branch.shortName)") {
+      try await gitClient.pullBranch(branch, in: requiredRepository())
+    }
+  }
+
   func unsetUpstream(_ branch: GitRef) async {
     await runMutation(title: "Unset upstream \(branch.shortName)") {
       try await gitClient.unsetUpstream(for: branch.shortName, in: requiredRepository())

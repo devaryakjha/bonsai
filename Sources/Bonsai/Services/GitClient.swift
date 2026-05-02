@@ -392,6 +392,22 @@ struct GitClient {
     try await runRaw(["push", "-u", remote, branch], in: repository)
   }
 
+  func pullBranch(_ branch: GitRef, in repository: GitRepository) async throws -> String {
+    if branch.isHead {
+      return try await runRaw(["pull", "--ff-only"], in: repository)
+    }
+    guard let remoteName = branch.upstreamRemoteName,
+          let upstreamBranchName = branch.upstreamBranchName else {
+      throw GitClientError.invalidBranchUpstream(branch.shortName)
+    }
+    return try await runRaw([
+      "fetch",
+      remoteName,
+      "\(upstreamBranchName):refs/remotes/\(remoteName)/\(upstreamBranchName)",
+      "\(upstreamBranchName):refs/heads/\(branch.shortName)"
+    ], in: repository)
+  }
+
   func pushTag(_ tag: String, remote: String, in repository: GitRepository) async throws -> String {
     try await runRaw(["push", remote, tag], in: repository)
   }
@@ -804,6 +820,7 @@ enum GitClientError: LocalizedError {
   case notEnoughCommitsForInteractiveRebase
   case commitNotFound(String)
   case invalidRemoteBranch(String)
+  case invalidBranchUpstream(String)
 
   var errorDescription: String? {
     switch self {
@@ -813,6 +830,8 @@ enum GitClientError: LocalizedError {
       return "Could not find commit \(revision)."
     case .invalidRemoteBranch(let branch):
       return "\(branch) is not a remote branch."
+    case .invalidBranchUpstream(let branch):
+      return "\(branch) does not have a usable upstream."
     }
   }
 }
