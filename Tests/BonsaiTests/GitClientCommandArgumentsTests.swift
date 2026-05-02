@@ -29,6 +29,48 @@ final class GitClientCommandArgumentsTests: XCTestCase {
     XCTAssertThrowsError(try GitClient.deleteRemoteBranchArguments(branch))
   }
 
+  func testStashPushArgumentsPreserveMessageAndUntrackedFlagOrder() {
+    XCTAssertEqual(
+      GitClient.stashPushArguments(message: nil),
+      ["stash", "push"]
+    )
+    XCTAssertEqual(
+      GitClient.stashPushArguments(message: "save local work", includeUntracked: true),
+      ["stash", "push", "--include-untracked", "-m", "save local work"]
+    )
+  }
+
+  func testStashApplyArgumentsSwitchBetweenApplyAndPop() {
+    let stash = GitStash(index: "stash@{0}", branch: "main", message: "WIP on main")
+
+    XCTAssertEqual(
+      GitClient.stashApplyArguments(stash, pop: false),
+      ["stash", "apply", "stash@{0}"]
+    )
+    XCTAssertEqual(
+      GitClient.stashApplyArguments(stash, pop: true),
+      ["stash", "pop", "stash@{0}"]
+    )
+  }
+
+  func testStashDropArgumentsUseStashReference() {
+    let stash = GitStash(index: "stash@{1}", branch: "main", message: "WIP on main")
+
+    XCTAssertEqual(
+      GitClient.stashDropArguments(stash),
+      ["stash", "drop", "stash@{1}"]
+    )
+  }
+
+  func testStashBranchArgumentsKeepBranchNameAsSingleArgument() {
+    let stash = GitStash(index: "stash@{2}", branch: "main", message: "WIP on main")
+
+    XCTAssertEqual(
+      GitClient.stashBranchArguments("feature/stashed work", stash: stash),
+      ["stash", "branch", "feature/stashed work", "stash@{2}"]
+    )
+  }
+
   func testUpdateSubmodulesArgumentsUseRecursiveInitUpdate() {
     XCTAssertEqual(
       GitClient.updateSubmodulesArguments(),

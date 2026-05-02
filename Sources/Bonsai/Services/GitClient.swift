@@ -581,6 +581,10 @@ struct GitClient {
   }
 
   func stashPush(message: String?, includeUntracked: Bool = false, in repository: GitRepository) async throws -> String {
+    try await runRaw(Self.stashPushArguments(message: message, includeUntracked: includeUntracked), in: repository)
+  }
+
+  static func stashPushArguments(message: String?, includeUntracked: Bool = false) -> [String] {
     var args = ["stash", "push"]
     if includeUntracked {
       args.append("--include-untracked")
@@ -588,11 +592,15 @@ struct GitClient {
     if let message, !message.isEmpty {
       args += ["-m", message]
     }
-    return try await runRaw(args, in: repository)
+    return args
   }
 
   func stashApply(_ stash: GitStash, pop: Bool, in repository: GitRepository) async throws -> String {
-    try await runRaw(["stash", pop ? "pop" : "apply", stash.index], in: repository)
+    try await runRaw(Self.stashApplyArguments(stash, pop: pop), in: repository)
+  }
+
+  static func stashApplyArguments(_ stash: GitStash, pop: Bool) -> [String] {
+    ["stash", pop ? "pop" : "apply", stash.index]
   }
 
   func stashPatch(
@@ -617,11 +625,19 @@ struct GitClient {
   }
 
   func stashDrop(_ stash: GitStash, in repository: GitRepository) async throws -> String {
-    try await runRaw(["stash", "drop", stash.index], in: repository)
+    try await runRaw(Self.stashDropArguments(stash), in: repository)
+  }
+
+  static func stashDropArguments(_ stash: GitStash) -> [String] {
+    ["stash", "drop", stash.index]
   }
 
   func stashBranch(_ branch: String, stash: GitStash, in repository: GitRepository) async throws -> String {
-    try await runRaw(["stash", "branch", branch, stash.index], in: repository)
+    try await runRaw(Self.stashBranchArguments(branch, stash: stash), in: repository)
+  }
+
+  static func stashBranchArguments(_ branch: String, stash: GitStash) -> [String] {
+    ["stash", "branch", branch, stash.index]
   }
 
   func updateSubmodules(in repository: GitRepository) async throws -> String {
