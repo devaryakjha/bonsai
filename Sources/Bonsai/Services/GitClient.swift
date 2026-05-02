@@ -50,7 +50,7 @@ struct GitClient {
   }
 
   func status(in repository: GitRepository) async throws -> [GitStatusEntry] {
-    let output = try await git(["status", "--porcelain=v1"], in: repository.url)
+    let output = try await git(["status", "--porcelain=v1", "--untracked-files=all"], in: repository.url)
     return GitParsers.parseStatus(output.stdout)
   }
 
@@ -285,6 +285,24 @@ struct GitClient {
     }
     outputs.append(try await runRaw(["restore", "--worktree", "--", entry.path], in: repository))
     return outputs.filter { !$0.isEmpty }.joined(separator: "\n")
+  }
+
+  func ignorePath(_ path: String, in repository: GitRepository) throws -> String {
+    let pattern = GitIgnorePattern.repositoryRootPattern(for: path)
+    let ignoreURL = repository.url.appending(path: ".gitignore")
+    let existing = (try? String(contentsOf: ignoreURL, encoding: .utf8)) ?? ""
+    let existingPatterns = Set(existing.split(separator: "\n").map(String.init))
+    if existingPatterns.contains(pattern) {
+      return "Already ignored \(path)."
+    }
+
+    var updated = existing
+    if !updated.isEmpty && !updated.hasSuffix("\n") {
+      updated.append("\n")
+    }
+    updated.append("\(pattern)\n")
+    try updated.write(to: ignoreURL, atomically: true, encoding: .utf8)
+    return "Added \(pattern) to .gitignore."
   }
 
   func stageHunk(_ hunk: DiffHunk, in repository: GitRepository) async throws -> String {

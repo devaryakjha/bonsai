@@ -368,6 +368,12 @@ final class GitParsersTests: XCTestCase {
     )
   }
 
+  func testGitIgnorePatternIsRepositoryRootRelative() {
+    XCTAssertEqual(GitIgnorePattern.repositoryRootPattern(for: "DerivedData/app.log"), "/DerivedData/app.log")
+    XCTAssertEqual(GitIgnorePattern.repositoryRootPattern(for: "/DerivedData/app.log"), "/DerivedData/app.log")
+    XCTAssertEqual(GitIgnorePattern.repositoryRootPattern(for: "Build Products/app.zip"), "/Build Products/app.zip")
+  }
+
   func testDeleteRefRequestCopyNamesReferenceKind() {
     let local = GitRef(name: "refs/heads/feature", shortName: "feature", objectName: "abc123", isHead: false, kind: .localBranch)
     let remote = GitRef(name: "refs/remotes/origin/feature", shortName: "origin/feature", objectName: "abc123", isHead: false, kind: .remoteBranch)

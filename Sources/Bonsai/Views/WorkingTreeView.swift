@@ -164,6 +164,12 @@ private struct StatusRow: View {
         Button("Reveal in Finder") {
           revealInFinder()
         }
+        if entry.isUntracked {
+          Divider()
+          Button("Ignore") {
+            ignoreFile()
+          }
+        }
         Button("Discard Change", role: .destructive) {
           store.presentDiscardChange(entry)
         }
@@ -211,6 +217,11 @@ private struct StatusRow: View {
       Button("Reveal in Finder") {
         revealInFinder()
       }
+      if entry.isUntracked {
+        Button("Ignore") {
+          ignoreFile()
+        }
+      }
       Divider()
       Button("Discard Change", role: .destructive) {
         store.presentDiscardChange(entry)
@@ -257,6 +268,10 @@ private struct StatusRow: View {
 
   private func revealInFinder() {
     store.revealInFinder(path: entry.path)
+  }
+
+  private func ignoreFile() {
+    Task { await store.ignore(entry) }
   }
 }
 

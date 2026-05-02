@@ -911,6 +911,31 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(status.isEmpty)
   }
 
+  func testStoreIgnoresUntrackedFile() async throws {
+    let repo = try await makeRepository()
+    try write("tracked\n", to: repo.appending(path: "tracked.txt"))
+    try await commitAll(in: repo, message: "Initial")
+    try write("cache\n", to: repo.appending(path: "DerivedData/cache.log"))
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    await MainActor.run {
+      store.mainMode = .changes
+      store.selectedStatusEntry = store.snapshot.status.first { $0.path == "DerivedData/cache.log" }
+    }
+
+    await store.ignoreSelectedStatusEntry()
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let ignoreText = try String(contentsOf: repo.appending(path: ".gitignore"), encoding: .utf8)
+    let status = try await client.status(in: repository)
+    let commandResult = await store.commandResult
+    XCTAssertTrue(ignoreText.contains("/DerivedData/cache.log\n"))
+    XCTAssertFalse(status.contains { $0.path == "DerivedData/cache.log" })
+    XCTAssertEqual(commandResult?.title, "Ignore DerivedData/cache.log")
+    XCTAssertEqual(commandResult?.isError, false)
+  }
+
   func testReflogEntryCanResetHeadToPreviousCommit() async throws {
     let repo = try await makeRepository()
     try write("one\n", to: repo.appending(path: "file.txt"))

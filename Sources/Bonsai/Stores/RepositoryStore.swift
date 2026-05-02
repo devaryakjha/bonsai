@@ -252,6 +252,10 @@ final class RepositoryStore {
     selectedStatusEntry?.isStaged == true
   }
 
+  var canIgnoreSelectedStatusEntry: Bool {
+    selectedStatusEntry?.isUntracked == true
+  }
+
   var canStageAll: Bool {
     !unstagedChanges.isEmpty
   }
@@ -699,6 +703,18 @@ final class RepositoryStore {
     await runMutation(title: "Discard \(request.entry.path)") {
       try await gitClient.discard(request.entry, in: requiredRepository())
     }
+  }
+
+  func ignore(_ entry: GitStatusEntry) async {
+    guard entry.isUntracked else { return }
+    await runMutation(title: "Ignore \(entry.path)") {
+      try gitClient.ignorePath(entry.path, in: requiredRepository())
+    }
+  }
+
+  func ignoreSelectedStatusEntry() async {
+    guard canIgnoreSelectedStatusEntry, let selectedStatusEntry else { return }
+    await ignore(selectedStatusEntry)
   }
 
   func presentDiscardHunk(_ hunk: DiffHunk) {

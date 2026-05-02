@@ -87,6 +87,11 @@ struct BonsaiCommands: Commands {
       }
       .disabled(store.selectedRepository == nil || !store.canUnstageSelectedStatusEntry)
 
+      Button("Ignore Selected File") {
+        Task { await store.ignoreSelectedStatusEntry() }
+      }
+      .disabled(store.selectedRepository == nil || !store.canIgnoreSelectedStatusEntry)
+
       Button("Stage All") {
         Task { await store.stageAll() }
       }
