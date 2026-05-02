@@ -13,10 +13,10 @@ struct SplitDiffTextView: NSViewRepresentable {
     splitView.isVertical = true
     splitView.dividerStyle = .thin
 
-    let oldPane = Self.makePane()
-    let newPane = Self.makePane()
-    splitView.addArrangedSubview(oldPane.scrollView)
-    splitView.addArrangedSubview(newPane.scrollView)
+    let oldPane = Self.makePane(title: "Before", systemImage: "minus.line.diagonal")
+    let newPane = Self.makePane(title: "After", systemImage: "plus.line.diagonal")
+    splitView.addArrangedSubview(oldPane.container)
+    splitView.addArrangedSubview(newPane.container)
 
     context.coordinator.oldTextView = oldPane.textView
     context.coordinator.newTextView = newPane.textView
@@ -92,7 +92,16 @@ struct SplitDiffTextView: NSViewRepresentable {
     }
   }
 
-  private static func makePane() -> (scrollView: NSScrollView, textView: NSTextView) {
+  private static func makePane(title: String, systemImage: String) -> (container: NSStackView, scrollView: NSScrollView, textView: NSTextView) {
+    let container = NSStackView()
+    container.orientation = .vertical
+    container.alignment = .width
+    container.distribution = .fill
+    container.spacing = 0
+
+    let header = makeHeader(title: title, systemImage: systemImage)
+    header.heightAnchor.constraint(equalToConstant: 30).isActive = true
+
     let scrollView = NSScrollView()
     scrollView.hasVerticalScroller = true
     scrollView.hasHorizontalScroller = true
@@ -119,7 +128,47 @@ struct SplitDiffTextView: NSViewRepresentable {
     textView.autoresizingMask = [.width]
 
     scrollView.documentView = textView
-    return (scrollView, textView)
+    container.addArrangedSubview(header)
+    container.addArrangedSubview(scrollView)
+    return (container, scrollView, textView)
+  }
+
+  private static func makeHeader(title: String, systemImage: String) -> NSView {
+    let material = NSVisualEffectView()
+    material.material = .headerView
+    material.blendingMode = .withinWindow
+    material.state = .active
+
+    let stack = NSStackView()
+    stack.orientation = .horizontal
+    stack.alignment = .centerY
+    stack.spacing = 6
+    stack.translatesAutoresizingMaskIntoConstraints = false
+
+    if let image = NSImage(systemSymbolName: systemImage, accessibilityDescription: title) {
+      let imageView = NSImageView(image: image)
+      imageView.contentTintColor = .secondaryLabelColor
+      imageView.translatesAutoresizingMaskIntoConstraints = false
+      imageView.widthAnchor.constraint(equalToConstant: 14).isActive = true
+      stack.addArrangedSubview(imageView)
+    }
+
+    let label = NSTextField(labelWithString: title)
+    label.font = .systemFont(ofSize: NSFont.smallSystemFontSize, weight: .semibold)
+    label.textColor = .secondaryLabelColor
+    stack.addArrangedSubview(label)
+
+    let spacer = NSView()
+    spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+    stack.addArrangedSubview(spacer)
+
+    material.addSubview(stack)
+    NSLayoutConstraint.activate([
+      stack.leadingAnchor.constraint(equalTo: material.leadingAnchor, constant: 12),
+      stack.trailingAnchor.constraint(equalTo: material.trailingAnchor, constant: -12),
+      stack.centerYAnchor.constraint(equalTo: material.centerYAnchor)
+    ])
+    return material
   }
 
   private enum SplitSide {

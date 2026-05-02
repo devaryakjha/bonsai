@@ -271,35 +271,7 @@ private struct SplitDiffViewer: View {
   var splitDiff: SplitDiff
 
   var body: some View {
-    VStack(spacing: 0) {
-      HStack(spacing: 0) {
-        SplitDiffHeader(title: "Before", systemImage: "minus.line.diagonal")
-        Divider()
-        SplitDiffHeader(title: "After", systemImage: "plus.line.diagonal")
-      }
-      .frame(height: 30)
-      .background(.bar)
-      Divider()
-      SplitDiffTextView(splitDiff: splitDiff)
-    }
-  }
-}
-
-private struct SplitDiffHeader: View {
-  var title: String
-  var systemImage: String
-
-  var body: some View {
-    HStack(spacing: 6) {
-      Image(systemName: systemImage)
-        .foregroundStyle(.secondary)
-      Text(title)
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(.secondary)
-      Spacer()
-    }
-    .padding(.horizontal, 12)
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    SplitDiffTextView(splitDiff: splitDiff)
   }
 }
 
