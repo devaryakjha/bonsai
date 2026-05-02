@@ -66,54 +66,63 @@ struct HistoryView: View {
           )
             .tag(HistorySelectionKey.commit(commit.id))
             .contextMenu {
-              Button("Checkout") {
-                store.selectCommit(commit)
-                Task { await store.checkoutSelectedCommit() }
+              Menu(CommitContextMenuCopy.revisionMenuTitle) {
+                Button("Checkout") {
+                  store.selectCommit(commit)
+                  Task { await store.checkoutSelectedCommit() }
+                }
+                Button(GitRevisionCommand.cherryPick.historyTitle) {
+                  store.selectCommit(commit)
+                  store.presentRevisionCommand(.cherryPick)
+                }
+                Button(GitRevisionCommand.revert.historyTitle) {
+                  store.selectCommit(commit)
+                  store.presentRevisionCommand(.revert)
+                }
+                Button(GitRevisionCommand.merge.historyTitle) {
+                  store.selectCommit(commit)
+                  store.presentRevisionCommand(.merge)
+                }
+                Button(GitRevisionCommand.rebase.historyTitle) {
+                  store.selectCommit(commit)
+                  store.presentRevisionCommand(.rebase)
+                }
+                Divider()
+                Button("Reset Here…") {
+                  store.selectCommit(commit)
+                  store.presentResetToSelectedCommit()
+                }
               }
-              Button(GitRevisionCommand.cherryPick.historyTitle) {
-                store.selectCommit(commit)
-                store.presentRevisionCommand(.cherryPick)
-              }
-              Button(GitRevisionCommand.revert.historyTitle) {
-                store.selectCommit(commit)
-                store.presentRevisionCommand(.revert)
-              }
-              Button(GitRevisionCommand.merge.historyTitle) {
-                store.selectCommit(commit)
-                store.presentRevisionCommand(.merge)
-              }
-              Button(GitRevisionCommand.rebase.historyTitle) {
-                store.selectCommit(commit)
-                store.presentRevisionCommand(.rebase)
-              }
-              Button("Reset Here…") {
-                store.selectCommit(commit)
-                store.presentResetToSelectedCommit()
-              }
-              Button("Create Branch Here…") {
-                store.selectCommit(commit)
-                store.presentCreateBranch()
-              }
-              Button("Create Tag Here…") {
-                store.selectCommit(commit)
-                store.presentCreateTag()
-              }
-              Button("Create Annotated Tag Here…") {
-                store.selectCommit(commit)
-                store.presentCreateAnnotatedTag()
+              Menu(CommitContextMenuCopy.createMenuTitle) {
+                Button("Create Branch Here…") {
+                  store.selectCommit(commit)
+                  store.presentCreateBranch()
+                }
+                Button("Create Tag Here…") {
+                  store.selectCommit(commit)
+                  store.presentCreateTag()
+                }
+                Button("Create Annotated Tag Here…") {
+                  store.selectCommit(commit)
+                  store.presentCreateAnnotatedTag()
+                }
               }
               if let webURL = store.webURL(forCommit: commit) {
-                Button("Open in Browser") {
-                  store.openCommitInBrowser(commit)
-                }
-                Button("Copy Web URL") {
-                  PasteboardWriter.copy(webURL.absoluteString)
+                Menu(CommitContextMenuCopy.hostingMenuTitle) {
+                  Button("Open in Browser") {
+                    store.openCommitInBrowser(commit)
+                  }
+                  Button("Copy Web URL") {
+                    PasteboardWriter.copy(webURL.absoluteString)
+                  }
                 }
               }
-              Divider()
-              CommitCopyMenu(commit: commit)
-              Button("Copy Patch") {
-                Task { await store.copyCommitPatch(commit) }
+              Menu(CommitContextMenuCopy.copyMenuTitle) {
+                CommitCopyCommands(commit: commit)
+                Divider()
+                Button("Copy Patch") {
+                  Task { await store.copyCommitPatch(commit) }
+                }
               }
             }
         }
@@ -169,7 +178,7 @@ private enum HistorySelectionKey {
   }
 }
 
-private struct CommitCopyMenu: View {
+private struct CommitCopyCommands: View {
   var commit: GitCommit
 
   var body: some View {
