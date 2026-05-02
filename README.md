@@ -1,17 +1,22 @@
-# Bonsai
-
 <p align="center">
   <img src="Assets/AppIcon/bonsai-worktree-topology.svg#gh-light-mode-only" width="96" alt="Bonsai worktree topology logo">
   <img src="Assets/AppIcon/bonsai-worktree-topology-dark.svg#gh-dark-mode-only" width="96" alt="Bonsai worktree topology logo">
 </p>
 
+<h1 align="center">Bonsai</h1>
+
 <p align="center">
-  <strong>A native macOS Git client, built in the open.</strong>
+  A native macOS Git client, built in the open as a free alternative to Fork.
 </p>
 
 <p align="center">
-  Bonsai is a free, open-source alternative to Fork for people who want fast
-  history, calm staging, rich diffs, and native macOS ergonomics.
+  <a href="#status">Status</a>
+  ·
+  <a href="#highlights">Highlights</a>
+  ·
+  <a href="#build">Build</a>
+  ·
+  <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
 <p align="center">
