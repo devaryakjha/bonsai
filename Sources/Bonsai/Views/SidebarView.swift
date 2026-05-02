@@ -102,6 +102,27 @@ struct SidebarView: View {
           isEnabled: store.snapshot.integrations.gitFlowInitialized
         )
         IntegrationRow(
+          title: "Bisect",
+          detail: store.snapshot.integrations.bisect.detail,
+          systemImage: "scope",
+          isEnabled: store.snapshot.integrations.bisect.active
+        )
+        if store.snapshot.integrations.bisect.active {
+          HStack {
+            ForEach(GitBisectMark.allCases) { mark in
+              Button(mark.title) {
+                Task { await store.markBisect(mark) }
+              }
+              .buttonStyle(.borderless)
+            }
+            Button("Reset") {
+              Task { await store.resetBisect() }
+            }
+            .buttonStyle(.borderless)
+          }
+          .font(.caption)
+        }
+        IntegrationRow(
           title: "GitHub",
           detail: store.gitHubNotifications.isEmpty ? "No unread notifications" : "\(store.gitHubNotifications.count) unread",
           systemImage: "bell",

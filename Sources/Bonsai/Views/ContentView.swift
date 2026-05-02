@@ -107,6 +107,21 @@ struct ContentView: View {
           Button("Interactive Rebase...") {
             Task { await store.presentInteractiveRebase() }
           }
+          Divider()
+          Button("Start Bisect with Selected Commit...") {
+            store.presentStartBisect()
+          }
+          .disabled(store.selectedCommit == nil || store.snapshot.integrations.bisect.active)
+          ForEach(GitBisectMark.allCases) { mark in
+            Button("Mark Current Commit \(mark.title)") {
+              Task { await store.markBisect(mark) }
+            }
+            .disabled(!store.snapshot.integrations.bisect.active)
+          }
+          Button("Reset Bisect") {
+            Task { await store.resetBisect() }
+          }
+          .disabled(!store.snapshot.integrations.bisect.active)
         } label: {
           Label("Actions", systemImage: "bolt")
         }

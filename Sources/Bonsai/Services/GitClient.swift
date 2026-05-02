@@ -135,6 +135,7 @@ struct GitClient {
     async let signingKey = configValue("user.signingkey", in: repository)
     async let flowMain = configValue("gitflow.branch.master", in: repository)
     async let flowDevelop = configValue("gitflow.branch.develop", in: repository)
+    async let bisect = bisectStatus(in: repository)
 
     let mainBranch = await flowMain
     let developBranch = await flowDevelop
@@ -146,7 +147,8 @@ struct GitClient {
       gitFlowAvailable: gitFlowAvailable,
       gitFlowInitialized: mainBranch != nil && developBranch != nil,
       gitFlowMainBranch: mainBranch,
-      gitFlowDevelopBranch: developBranch
+      gitFlowDevelopBranch: developBranch,
+      bisect: bisect
     )
   }
 
@@ -411,6 +413,18 @@ struct GitClient {
     try await runRaw(["config", "commit.gpgsign", enabled ? "true" : "false"], in: repository)
   }
 
+  func startBisect(bad: String, good: String, in repository: GitRepository) async throws -> String {
+    try await runRaw(["bisect", "start", bad, good], in: repository)
+  }
+
+  func markBisect(_ mark: GitBisectMark, in repository: GitRepository) async throws -> String {
+    try await runRaw(["bisect", mark.rawValue], in: repository)
+  }
+
+  func resetBisect(in repository: GitRepository) async throws -> String {
+    try await runRaw(["bisect", "reset"], in: repository)
+  }
+
   func initializeGitFlow(in repository: GitRepository) async throws -> String {
     try await runRaw(["flow", "init", "-d"], in: repository)
   }
@@ -583,6 +597,42 @@ struct GitClient {
     guard let output = try? await git(["config", "--get", key], in: repository.url) else { return nil }
     let value = output.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
     return value.isEmpty ? nil : value
+  }
+
+  private func bisectStatus(in repository: GitRepository) async -> GitBisectStatus {
+    guard let refs = try? await git([
+      "for-each-ref",
+      "refs/bisect",
+      "--format=%(refname)%1f%(objectname)%1f%(objectname:short)"
+    ], in: repository.url) else {
+      return GitBisectStatus()
+    }
+
+    var status = GitBisectStatus()
+    for line in refs.stdout.split(separator: "\n", omittingEmptySubsequences: true) {
+      let parts = line.split(separator: "\u{1f}", omittingEmptySubsequences: false).map(String.init)
+      guard parts.count >= 3 else { continue }
+      let refName = parts[0]
+      if refName == "refs/bisect/bad" {
+        status.badRevision = parts[1]
+      } else if refName.hasPrefix("refs/bisect/good-") {
+        status.goodRevisions.append(parts[1])
+      } else if refName.hasPrefix("refs/bisect/skip-") {
+        status.skippedRevisions.append(parts[1])
+      }
+    }
+
+    status.active = status.badRevision != nil || !status.goodRevisions.isEmpty || !status.skippedRevisions.isEmpty
+    guard status.active else { return status }
+
+    if let head = try? await git(["rev-parse", "HEAD"], in: repository.url),
+       let shortHead = try? await git(["rev-parse", "--short", "HEAD"], in: repository.url) {
+      status.currentHash = head.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+      status.currentShortHash = shortHead.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    status.goodRevisions.sort()
+    status.skippedRevisions.sort()
+    return status
   }
 
   private func lfsFiles(in repository: GitRepository) async -> [GitLFSFile] {

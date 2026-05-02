@@ -247,6 +247,42 @@ struct GitLFSFile: Identifiable, Hashable {
   var id: String { path }
 }
 
+struct GitBisectStatus: Hashable {
+  var active = false
+  var currentHash: String?
+  var currentShortHash: String?
+  var badRevision: String?
+  var goodRevisions: [String] = []
+  var skippedRevisions: [String] = []
+
+  var detail: String {
+    guard active else { return "Inactive" }
+    var parts: [String] = []
+    if let currentShortHash {
+      parts.append("testing \(currentShortHash)")
+    }
+    if let badRevision {
+      parts.append("bad \(String(badRevision.prefix(7)))")
+    }
+    if !goodRevisions.isEmpty {
+      parts.append("\(goodRevisions.count) good")
+    }
+    if !skippedRevisions.isEmpty {
+      parts.append("\(skippedRevisions.count) skipped")
+    }
+    return parts.isEmpty ? "Active" : parts.joined(separator: " / ")
+  }
+}
+
+enum GitBisectMark: String, CaseIterable, Identifiable {
+  case good
+  case bad
+  case skip
+
+  var id: String { rawValue }
+  var title: String { rawValue.capitalized }
+}
+
 struct GitIntegrationStatus: Hashable {
   var lfsAvailable = false
   var lfsFiles: [GitLFSFile] = []
@@ -256,6 +292,7 @@ struct GitIntegrationStatus: Hashable {
   var gitFlowInitialized = false
   var gitFlowMainBranch: String?
   var gitFlowDevelopBranch: String?
+  var bisect = GitBisectStatus()
 }
 
 struct GitHubNotification: Identifiable, Hashable, Decodable {
@@ -579,6 +616,7 @@ enum GitOperationKind: String, Identifiable {
   case createWorktree
   case stashPush
   case stashPushIncludeUntracked
+  case bisectStart
   case gitFlowFeatureStart
   case gitFlowReleaseStart
   case gitFlowHotfixStart

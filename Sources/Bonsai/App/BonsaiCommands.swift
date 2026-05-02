@@ -98,6 +98,23 @@ struct BonsaiCommands: Commands {
       }
       .disabled(store.selectedRepository == nil)
 
+      Button("Start Bisect with Selected Commit...") {
+        store.presentStartBisect()
+      }
+      .disabled(store.selectedRepository == nil || store.selectedCommit == nil || store.snapshot.integrations.bisect.active)
+
+      ForEach(GitBisectMark.allCases) { mark in
+        Button("Mark Current Commit \(mark.title)") {
+          Task { await store.markBisect(mark) }
+        }
+        .disabled(store.selectedRepository == nil || !store.snapshot.integrations.bisect.active)
+      }
+
+      Button("Reset Bisect") {
+        Task { await store.resetBisect() }
+      }
+      .disabled(store.selectedRepository == nil || !store.snapshot.integrations.bisect.active)
+
       Divider()
 
       Button("Git LFS Pull") {

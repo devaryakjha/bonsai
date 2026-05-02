@@ -254,6 +254,54 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(currentHash, firstHash)
   }
 
+  func testBisectWorkflowTracksActiveStateAndMarksRevisions() async throws {
+    let repo = try await makeRepository()
+    let file = repo.appending(path: "file.txt")
+    for index in 1...5 {
+      try write("\(index)\n", to: file)
+      try await commitAll(in: repo, message: "Commit \(index)")
+    }
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let goodHash = try await client.git(["rev-list", "--max-parents=0", "HEAD"], in: repo).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+    let badHash = try await client.git(["rev-parse", "HEAD"], in: repo).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    var bisect = await client.integrations(in: repository).bisect
+    XCTAssertFalse(bisect.active)
+
+    _ = try await client.startBisect(bad: badHash, good: goodHash, in: repository)
+    bisect = await client.integrations(in: repository).bisect
+    XCTAssertTrue(bisect.active)
+    XCTAssertEqual(bisect.badRevision, badHash)
+    XCTAssertTrue(bisect.goodRevisions.contains(goodHash))
+    XCTAssertFalse(bisect.currentShortHash?.isEmpty ?? true)
+
+    let skippedHash = try XCTUnwrap(bisect.currentHash)
+    _ = try await client.markBisect(.skip, in: repository)
+    bisect = await client.integrations(in: repository).bisect
+    XCTAssertTrue(bisect.active)
+    XCTAssertTrue(bisect.skippedRevisions.contains(skippedHash))
+
+    _ = try await client.resetBisect(in: repository)
+    _ = try await client.startBisect(bad: badHash, good: goodHash, in: repository)
+    bisect = await client.integrations(in: repository).bisect
+    XCTAssertTrue(bisect.active)
+
+    _ = try await client.markBisect(.good, in: repository)
+    bisect = await client.integrations(in: repository).bisect
+    XCTAssertTrue(bisect.active)
+    XCTAssertGreaterThanOrEqual(bisect.goodRevisions.count, 2)
+
+    _ = try await client.markBisect(.bad, in: repository)
+    bisect = await client.integrations(in: repository).bisect
+    XCTAssertTrue(bisect.active)
+    XCTAssertNotEqual(bisect.badRevision, badHash)
+
+    _ = try await client.resetBisect(in: repository)
+    bisect = await client.integrations(in: repository).bisect
+    XCTAssertFalse(bisect.active)
+  }
+
   func testRefsStashesRemotesAndRepositoryActions() async throws {
     let remote = try await makeBareRepository()
     let repo = try await makeRepository()

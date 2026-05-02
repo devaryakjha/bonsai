@@ -640,6 +640,19 @@ final class RepositoryStore {
     )
   }
 
+  func presentStartBisect() {
+    guard let selectedCommit, !snapshot.integrations.bisect.active else { return }
+    operationInput = ""
+    operationRequest = GitOperationRequest(
+      kind: .bisectStart,
+      title: "Start Bisect",
+      message: "Use \(selectedCommit.shortHash) as the known bad revision and enter a known good revision.",
+      placeholder: "main~10 or a good commit hash",
+      defaultValue: "",
+      primaryActionTitle: "Start"
+    )
+  }
+
   func presentGitFlowStart(_ kind: GitFlowStartKind) {
     presentGitFlow(.start, kind: kind)
   }
@@ -695,6 +708,11 @@ final class RepositoryStore {
     case .stashPushIncludeUntracked:
       await runMutation(title: "Create Stash Including Untracked") {
         try await gitClient.stashPush(message: value.isEmpty ? nil : value, includeUntracked: true, in: requiredRepository())
+      }
+    case .bisectStart:
+      guard let selectedCommit, !value.isEmpty else { return }
+      await runMutation(title: "Start Bisect") {
+        try await gitClient.startBisect(bad: selectedCommit.hash, good: value, in: requiredRepository())
       }
     case .gitFlowFeatureStart:
       guard !value.isEmpty else { return }
@@ -856,6 +874,18 @@ final class RepositoryStore {
   func setCommitSigning(_ enabled: Bool) async {
     await runMutation(title: enabled ? "Enable GPG Signing" : "Disable GPG Signing") {
       try await gitClient.setCommitSigning(enabled, in: requiredRepository())
+    }
+  }
+
+  func markBisect(_ mark: GitBisectMark) async {
+    await runMutation(title: "Bisect \(mark.title)") {
+      try await gitClient.markBisect(mark, in: requiredRepository())
+    }
+  }
+
+  func resetBisect() async {
+    await runMutation(title: "Reset Bisect") {
+      try await gitClient.resetBisect(in: requiredRepository())
     }
   }
 
