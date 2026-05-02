@@ -208,11 +208,8 @@ private struct ChangedFilesView: View {
           }
         )) {
           ForEach(store.displayedChangedFiles) { file in
-            HStack {
-              Text(file.status)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(width: 34, alignment: .leading)
+            HStack(spacing: 8) {
+              ChangeStatusBadge(changedFile: file)
               Text(file.path)
                 .lineLimit(1)
               Spacer()

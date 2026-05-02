@@ -200,6 +200,31 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(entries[1].changes.first?.path, "Sources/App.swift")
   }
 
+  func testChangedFileStatusPresentationNormalizesScoredStatuses() {
+    let renamed = GitChangedFile(status: "R100", path: "New.swift", oldPath: "Old.swift")
+    let copied = GitChangedFile(status: "C75", path: "Copy.swift", oldPath: "Source.swift")
+    let modified = GitChangedFile(status: "M", path: "App.swift", oldPath: nil)
+
+    XCTAssertEqual(renamed.statusCode, "R")
+    XCTAssertEqual(renamed.statusTitle, "Renamed (R100)")
+    XCTAssertEqual(copied.statusCode, "C")
+    XCTAssertEqual(copied.statusTitle, "Copied (C75)")
+    XCTAssertEqual(modified.statusCode, "M")
+    XCTAssertEqual(modified.statusTitle, "Modified")
+  }
+
+  func testStatusEntryPresentationUsesGitStatusLetters() {
+    let entries = GitParsers.parseStatus("""
+    A  Added.swift
+     M Modified.swift
+     D Deleted.swift
+    UU Conflict.swift
+    """)
+
+    XCTAssertEqual(entries.map(\.statusCode), ["A", "M", "D", "U"])
+    XCTAssertEqual(entries.map(\.statusTitle), ["Added", "Modified", "Deleted", "Conflicted"])
+  }
+
   func testParseLineHistoryEntriesReadsCommitsAndSkipsPatchBodies() {
     let entries = GitParsers.parseLineHistoryEntries("""
     \u{1e}abcdef1234567890\u{1f}abcdef1\u{1f}Asha\u{1f}asha@example.test\u{1f}2026-05-02T10:00:00+05:30\u{1f}Update line

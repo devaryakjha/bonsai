@@ -16,6 +16,9 @@ precise under inspection, and never playful with critical developer workflows.
   `Reveal in Finder`.
 - Use conventional compact notation for Git tracking badges: `↑ 2`, `↓ 1`, or
   `↑ 2 ↓ 1`, not spelled-out `up` / `down` labels.
+- Use conventional semantic color for Git status badges: added green, deleted
+  red, modified/type-changed amber, renamed purple, copied blue, conflicted
+  orange, and unknown/untracked neutral.
 - Do not use cute, playful, apologetic, or explanatory copy in the product UI.
 - Do not add visible instructional copy when a tooltip, menu placement,
   placeholder, or empty state can carry the context.

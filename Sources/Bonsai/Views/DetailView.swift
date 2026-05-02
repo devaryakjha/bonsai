@@ -89,13 +89,13 @@ private struct DetailHeaderView: View {
         .font(.headline)
         .lineLimit(2)
       HStack(spacing: 8) {
-        Text(entry.kind.rawValue)
+        ChangeStatusBadge(statusEntry: entry)
         if entry.isStaged {
           Text("Staged")
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
       }
-      .font(.caption)
-      .foregroundStyle(.secondary)
     } else {
       Text("Diff")
         .font(.headline)

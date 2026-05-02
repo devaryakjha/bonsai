@@ -39,6 +39,29 @@ struct GitStatusEntry: Identifiable, Hashable {
   var isConflicted: Bool {
     ["DD", "AU", "UD", "UA", "DU", "AA", "UU"].contains("\(indexStatus)\(workTreeStatus)")
   }
+  var statusCode: String {
+    switch kind {
+    case .modified:
+      return "M"
+    case .added:
+      return "A"
+    case .deleted:
+      return "D"
+    case .renamed:
+      return "R"
+    case .copied:
+      return "C"
+    case .untracked:
+      return "?"
+    case .conflicted:
+      return "U"
+    case .typeChanged:
+      return "T"
+    case .unknown:
+      return "?"
+    }
+  }
+  var statusTitle: String { kind.rawValue }
 }
 
 struct GitCommit: Identifiable, Hashable {
@@ -60,6 +83,32 @@ struct GitChangedFile: Identifiable, Hashable {
   var oldPath: String?
 
   var id: String { "\(status):\(oldPath ?? ""):\(path)" }
+  var statusCode: String {
+    guard let first = status.first else { return "?" }
+    return String(first)
+  }
+  var statusTitle: String {
+    switch statusCode {
+    case "M":
+      return "Modified"
+    case "A":
+      return "Added"
+    case "D":
+      return "Deleted"
+    case "R":
+      return status.count > 1 ? "Renamed (\(status))" : "Renamed"
+    case "C":
+      return status.count > 1 ? "Copied (\(status))" : "Copied"
+    case "U":
+      return "Conflicted"
+    case "T":
+      return "Type changed"
+    case "?":
+      return "Untracked"
+    default:
+      return "Changed (\(status))"
+    }
+  }
 }
 
 struct GitTreeEntry: Identifiable, Hashable {

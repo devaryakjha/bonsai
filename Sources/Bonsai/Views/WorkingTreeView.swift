@@ -49,16 +49,21 @@ private struct StatusRow: View {
 
   var body: some View {
     HStack(spacing: 10) {
-      Image(systemName: iconName)
-        .foregroundStyle(iconColor)
-        .frame(width: 18)
+      ChangeStatusBadge(statusEntry: entry)
 
       VStack(alignment: .leading, spacing: 2) {
         Text(entry.path)
           .lineLimit(1)
-        Text(entry.kind.rawValue)
-          .font(.caption)
-          .foregroundStyle(.secondary)
+        if entry.isConflicted {
+          Text("Conflict needs resolution")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        } else if let originalPath = entry.originalPath {
+          Text(originalPath)
+            .font(.caption.monospaced())
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+        }
       }
 
       Spacer()
@@ -177,34 +182,6 @@ private struct StatusRow: View {
       NSWorkspace.shared.activateFileViewerSelecting([
         URL(filePath: repository.path).appending(path: entry.path)
       ])
-    }
-  }
-
-  private var iconName: String {
-    switch entry.kind {
-    case .added, .untracked:
-      return "plus.circle"
-    case .deleted:
-      return "minus.circle"
-    case .renamed, .copied:
-      return "arrow.triangle.2.circlepath"
-    case .conflicted:
-      return "exclamationmark.triangle"
-    case .modified, .typeChanged, .unknown:
-      return "circle.fill"
-    }
-  }
-
-  private var iconColor: Color {
-    switch entry.kind {
-    case .added, .untracked:
-      return .green
-    case .deleted:
-      return .red
-    case .conflicted:
-      return .orange
-    default:
-      return .blue
     }
   }
 }

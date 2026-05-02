@@ -342,9 +342,7 @@ private struct FileChangePill: View {
 
   var body: some View {
     HStack(spacing: 5) {
-      Text(change.status)
-        .font(.caption2.monospaced().weight(.semibold))
-        .foregroundStyle(.secondary)
+      ChangeStatusBadge(changedFile: change)
       Text(change.oldPath.map { "\($0) -> \(change.path)" } ?? change.path)
         .font(.caption.monospaced())
         .lineLimit(1)
