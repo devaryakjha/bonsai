@@ -28,6 +28,55 @@ final class GitHubNotificationTests: XCTestCase {
     XCTAssertEqual(notifications[0].repository.fullName, "example/bonsai")
     XCTAssertEqual(notifications[0].subject.title, "Review requested")
     XCTAssertEqual(notifications[0].reason, "mention")
+    XCTAssertEqual(notifications[0].webURL?.absoluteString, "https://github.com/example/bonsai/pull/1")
+    XCTAssertEqual(notifications[0].sidebarDetail, "example/bonsai - PullRequest")
+  }
+
+  func testNotificationWebURLFallsBackToRepository() {
+    let notification = GitHubNotification(
+      id: "1",
+      unread: true,
+      reason: "mention",
+      updatedAt: "2026-05-02T00:00:00Z",
+      subject: GitHubNotification.Subject(
+        title: "Repository notice",
+        type: "Repository",
+        url: nil
+      ),
+      repository: GitHubNotification.Repository(fullName: "example/bonsai")
+    )
+
+    XCTAssertEqual(notification.webURL?.absoluteString, "https://github.com/example/bonsai")
+  }
+
+  func testNotificationWebURLConvertsIssueAndCommitAPIURLs() {
+    let issue = GitHubNotification(
+      id: "1",
+      unread: true,
+      reason: "mention",
+      updatedAt: "2026-05-02T00:00:00Z",
+      subject: GitHubNotification.Subject(
+        title: "Issue",
+        type: "Issue",
+        url: "https://api.github.com/repos/example/bonsai/issues/42"
+      ),
+      repository: GitHubNotification.Repository(fullName: "example/bonsai")
+    )
+    let commit = GitHubNotification(
+      id: "2",
+      unread: true,
+      reason: "mention",
+      updatedAt: "2026-05-02T00:00:00Z",
+      subject: GitHubNotification.Subject(
+        title: "Commit",
+        type: "Commit",
+        url: "https://api.github.com/repos/example/bonsai/commits/abc123"
+      ),
+      repository: GitHubNotification.Repository(fullName: "example/bonsai")
+    )
+
+    XCTAssertEqual(issue.webURL?.absoluteString, "https://github.com/example/bonsai/issues/42")
+    XCTAssertEqual(commit.webURL?.absoluteString, "https://github.com/example/bonsai/commits/abc123")
   }
 
   func testGitHubNotificationSummaryIsEmptyWhenNoUnreadThreadsExist() {

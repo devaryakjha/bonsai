@@ -464,6 +464,37 @@ struct GitHubNotification: Identifiable, Hashable, Decodable {
     case subject
     case repository
   }
+
+  var webURL: URL? {
+    if let subjectURL = subject.url, let url = GitHubNotification.webURL(fromAPIURL: subjectURL) {
+      return url
+    }
+    return URL(string: "https://github.com/\(repository.fullName)")
+  }
+
+  var sidebarDetail: String {
+    "\(repository.fullName) - \(subject.type)"
+  }
+
+  private static func webURL(fromAPIURL value: String) -> URL? {
+    guard let url = URL(string: value), url.host == "api.github.com" else {
+      return URL(string: value)
+    }
+
+    let parts = url.pathComponents.filter { $0 != "/" }
+    guard let reposIndex = parts.firstIndex(of: "repos"),
+          parts.count > reposIndex + 2 else {
+      return nil
+    }
+
+    let owner = parts[reposIndex + 1]
+    let repository = parts[reposIndex + 2]
+    let remaining = Array(parts.dropFirst(reposIndex + 3)).map { part in
+      part == "pulls" ? "pull" : part
+    }
+    let path = ([owner, repository] + remaining).joined(separator: "/")
+    return URL(string: "https://github.com/\(path)")
+  }
 }
 
 struct GitHubRepository: Identifiable, Hashable, Decodable {

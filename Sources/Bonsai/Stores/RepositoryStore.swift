@@ -1373,6 +1373,11 @@ final class RepositoryStore {
     }
   }
 
+  func openGitHubNotification(_ notification: GitHubNotification) {
+    guard let url = notification.webURL else { return }
+    NSWorkspace.shared.open(url)
+  }
+
   func presentCreateGitHubRepository() {
     gitHubRepositoryRequest = GitHubRepositoryRequest(
       operation: .create,

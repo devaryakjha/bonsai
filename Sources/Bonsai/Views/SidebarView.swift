@@ -9,6 +9,7 @@ struct SidebarView: View {
   @AppStorage("bonsai.sidebar.remotesExpanded") private var remotesExpanded = false
   @AppStorage("bonsai.sidebar.submodulesExpanded") private var submodulesExpanded = false
   @AppStorage("bonsai.sidebar.lfsFilesExpanded") private var lfsFilesExpanded = false
+  @AppStorage("bonsai.sidebar.githubNotificationsExpanded") private var gitHubNotificationsExpanded = false
 
   var body: some View {
     List {
@@ -287,6 +288,32 @@ struct SidebarView: View {
       isEnabled: !store.gitHubNotifications.isEmpty
     )
     if !store.gitHubNotifications.isEmpty {
+      DisclosureGroup(isExpanded: $gitHubNotificationsExpanded) {
+        ForEach(store.gitHubNotifications.prefix(GitHubNotificationSummary.maxItems)) { notification in
+          GitHubNotificationSidebarRow(notification: notification)
+            .contextMenu {
+              Button("Open in Browser") {
+                store.openGitHubNotification(notification)
+              }
+              .disabled(notification.webURL == nil)
+              Button("Copy Title") {
+                PasteboardWriter.copy(notification.subject.title)
+              }
+              if let url = notification.webURL {
+                Button("Copy URL") {
+                  PasteboardWriter.copy(url.absoluteString)
+                }
+              }
+            }
+        }
+      } label: {
+        SidebarDisclosureLabel(
+          title: "Notifications",
+          count: store.gitHubNotifications.count,
+          systemImage: "bell"
+        )
+      }
+
       Button {
         Task { await store.markGitHubNotificationsRead() }
       } label: {
@@ -692,6 +719,21 @@ private struct SubmoduleSidebarRow: View {
     Commit: \(submodule.commit)
     Path: \(submodule.path)
     """
+  }
+}
+
+private struct GitHubNotificationSidebarRow: View {
+  var notification: GitHubNotification
+
+  var body: some View {
+    AdvancedSidebarRow(
+      title: notification.subject.title,
+      detail: notification.sidebarDetail,
+      tertiary: nil,
+      systemImage: "bell",
+      iconStyle: .secondary
+    )
+    .help(notification.webURL?.absoluteString ?? notification.sidebarDetail)
   }
 }
 
