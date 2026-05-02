@@ -300,6 +300,12 @@ final class GitHubNotificationTests: XCTestCase {
     XCTAssertNil(GitHubRepositoryTarget(remoteURL: "git@gitlab.com:example/bonsai.git"))
   }
 
+  func testGitHubRepositoryTargetExposesWebURL() {
+    let target = GitHubRepositoryTarget(owner: "example", name: "bonsai")
+
+    XCTAssertEqual(target.webURL?.absoluteString, "https://github.com/example/bonsai")
+  }
+
   func testRemoteExposesFirstGitHubRepositoryTarget() {
     let remote = GitRemote(
       name: "origin",
@@ -308,6 +314,16 @@ final class GitHubNotificationTests: XCTestCase {
     )
 
     XCTAssertEqual(remote.githubRepositoryTarget, GitHubRepositoryTarget(owner: "example", name: "bonsai"))
+  }
+
+  func testRemoteExposesFirstGitHubWebURL() {
+    let remote = GitRemote(
+      name: "origin",
+      fetchURL: "git@gitlab.com:example/other.git",
+      pushURL: "git@github.com:example/bonsai.git"
+    )
+
+    XCTAssertEqual(remote.githubWebURL?.absoluteString, "https://github.com/example/bonsai")
   }
 
   @MainActor

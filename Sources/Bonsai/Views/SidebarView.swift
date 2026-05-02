@@ -556,6 +556,14 @@ struct SidebarView: View {
         Button("Prune") {
           Task { await store.pruneRemote(remote) }
         }
+        if let webURL = remote.githubWebURL {
+          Button("Open in Browser") {
+            store.openRemoteInBrowser(remote)
+          }
+          Button("Copy Web URL") {
+            PasteboardWriter.copy(webURL.absoluteString)
+          }
+        }
         if let fetchURL = remote.fetchURL {
           Button("Copy Fetch URL") {
             PasteboardWriter.copy(fetchURL)

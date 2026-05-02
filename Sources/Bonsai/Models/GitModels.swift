@@ -214,6 +214,9 @@ struct GitRemote: Identifiable, Hashable {
       .compactMap(GitHubRepositoryTarget.init(remoteURL:))
       .first
   }
+  var githubWebURL: URL? {
+    githubRepositoryTarget?.webURL
+  }
 }
 
 struct GitStash: Identifiable, Hashable {
@@ -602,6 +605,7 @@ struct GitHubRepositoryTarget: Hashable {
   var name: String
 
   var fullName: String { "\(owner)/\(name)" }
+  var webURL: URL? { URL(string: "https://github.com/\(fullName)") }
 
   init(owner: String, name: String) {
     self.owner = owner
