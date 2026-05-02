@@ -118,6 +118,7 @@ final class RemoteManagementTests: XCTestCase {
     let url = temporaryDirectory()
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     _ = try await client.git(["init", "--bare"], in: url)
+    _ = try await client.git(["symbolic-ref", "HEAD", "refs/heads/main"], in: url)
     return url
   }
 
