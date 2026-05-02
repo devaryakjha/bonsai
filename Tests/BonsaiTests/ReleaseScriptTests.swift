@@ -51,16 +51,22 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(script.contains("plutil -extract archiveSHA256 raw"))
   }
 
-  func testReleaseWorkflowUploadsManifestAndCleansTemporaryKeychain() throws {
+  func testReleaseWorkflowVerifiesArtifactsBeforeUploadAndCleansTemporaryKeychain() throws {
     let root = try packageRoot()
     let workflow = try String(
       contentsOf: root.appending(path: ".github/workflows/release.yml"),
       encoding: .utf8
     )
+    let verifyRange = workflow.range(of: "name: Verify release artifacts")
+    let uploadRange = workflow.range(of: "uses: actions/upload-artifact@v4")
 
     XCTAssertTrue(workflow.contains("environment: release"))
     XCTAssertTrue(workflow.contains("dist/release/Bonsai.zip"))
     XCTAssertTrue(workflow.contains("dist/release/Bonsai.release.plist"))
+    XCTAssertTrue(workflow.contains("./script/package_release.sh --verify-artifacts"))
+    XCTAssertNotNil(verifyRange)
+    XCTAssertNotNil(uploadRange)
+    XCTAssertLessThan(verifyRange?.lowerBound ?? workflow.endIndex, uploadRange?.lowerBound ?? workflow.startIndex)
     XCTAssertTrue(workflow.contains("if: always()"))
     XCTAssertTrue(workflow.contains("security delete-keychain \"$BONSAI_NOTARY_KEYCHAIN\""))
   }
