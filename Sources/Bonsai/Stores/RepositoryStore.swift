@@ -146,6 +146,10 @@ final class RepositoryStore {
     selectedPreviewPath.map(FilePreviewSupport.isImagePath) ?? false
   }
 
+  var selectedPreviewStatusTitle: String? {
+    selectedStatusEntry?.statusTitle ?? selectedChangedFile?.statusTitle
+  }
+
   var selectedDiffIsBinary: Bool {
     FilePreviewSupport.isBinaryDiff(diffText)
   }

@@ -408,42 +408,89 @@ private struct BinaryPreviewView: View {
   let store: RepositoryStore
 
   var body: some View {
-    VStack(spacing: 16) {
+    VStack(spacing: 0) {
       if let snapshot = store.imageDiffSnapshot {
+        BinaryPreviewHeader(store: store)
+          .padding(.horizontal, 14)
+          .padding(.vertical, 10)
+        Divider()
         HStack(spacing: 0) {
           ImageDiffPane(side: .before, data: snapshot.oldData)
           Divider()
           ImageDiffPane(side: .after, data: snapshot.newData)
         }
       } else {
-        Image(systemName: store.selectedPreviewIsImage ? "photo" : "doc")
-          .font(.system(size: 48))
-          .foregroundStyle(.secondary)
-
-        Text(store.selectedPreviewIsImage ? "Image diff" : "Binary diff")
-          .font(.title3)
-          .fontWeight(.semibold)
-
-        Text(store.selectedPreviewPath ?? "No file selected")
-          .font(.caption)
-          .foregroundStyle(.secondary)
-          .lineLimit(2)
-          .truncationMode(.middle)
-          .multilineTextAlignment(.center)
-          .help(store.selectedPreviewPath ?? "No file selected")
-
-        if !store.diffText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-          Text(store.diffText)
-            .font(.caption.monospaced())
+        VStack(spacing: 12) {
+          Image(systemName: previewCopy.systemImage)
+            .font(.system(size: 44))
             .foregroundStyle(.secondary)
-            .textSelection(.enabled)
-            .padding()
+
+          Text(previewCopy.title)
+            .font(.title3)
+            .fontWeight(.semibold)
+
+          BinaryPreviewHeader(store: store)
+            .frame(maxWidth: 520)
+
+          if !store.diffText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            Text(store.diffText)
+              .font(.caption.monospaced())
+              .foregroundStyle(.secondary)
+              .textSelection(.enabled)
+              .padding()
+          }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 
+  private var previewCopy: BinaryPreviewCopy {
+    BinaryPreviewCopy(isImage: store.selectedPreviewIsImage, statusTitle: store.selectedPreviewStatusTitle)
+  }
+}
+
+private struct BinaryPreviewHeader: View {
+  let store: RepositoryStore
+
+  var body: some View {
+    VStack(spacing: 5) {
+      HStack(spacing: 8) {
+        statusBadge
+        Text(previewCopy.statusLine)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .lineLimit(1)
+      }
+      .frame(maxWidth: .infinity, alignment: .center)
+
+      Text(previewPath)
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .lineLimit(2)
+        .truncationMode(.middle)
+        .multilineTextAlignment(.center)
+        .help(previewPath)
+    }
+  }
+
+  @ViewBuilder
+  private var statusBadge: some View {
+    if let entry = store.selectedStatusEntry {
+      ChangeStatusBadge(statusEntry: entry)
+    } else if let file = store.selectedChangedFile {
+      ChangeStatusBadge(changedFile: file)
+    }
+  }
+
+  private var previewCopy: BinaryPreviewCopy {
+    BinaryPreviewCopy(isImage: store.selectedPreviewIsImage, statusTitle: store.selectedPreviewStatusTitle)
+  }
+
+  private var previewPath: String {
+    store.selectedPreviewPath ?? "No file selected"
+  }
 }
 
 private struct ImageDiffPane: View {
