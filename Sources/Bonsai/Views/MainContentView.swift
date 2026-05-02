@@ -11,6 +11,8 @@ struct MainContentView: View {
         }
       }
       .pickerStyle(.segmented)
+      .labelsHidden()
+      .accessibilityLabel("Main mode")
       .padding([.horizontal, .top], 12)
       .padding(.bottom, 8)
 

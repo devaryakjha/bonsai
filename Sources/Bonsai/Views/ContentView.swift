@@ -795,6 +795,8 @@ private struct ResetSheet: View {
         }
       }
       .pickerStyle(.segmented)
+      .labelsHidden()
+      .accessibilityLabel("Reset mode")
 
       HStack {
         Spacer()
@@ -834,6 +836,8 @@ private struct ReflogResetSheet: View {
         }
       }
       .pickerStyle(.segmented)
+      .labelsHidden()
+      .accessibilityLabel("Reset mode")
 
       HStack {
         Spacer()
