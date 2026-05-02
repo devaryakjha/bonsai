@@ -36,6 +36,13 @@ final class GitClientCommandArgumentsTests: XCTestCase {
     )
   }
 
+  func testLFSPullArgumentsUseGitLFSPull() {
+    XCTAssertEqual(
+      GitClient.lfsPullArguments(),
+      ["lfs", "pull"]
+    )
+  }
+
   func testLFSCheckoutArgumentsUseGitLFSCheckout() {
     XCTAssertEqual(
       GitClient.lfsCheckoutArguments(),

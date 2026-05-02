@@ -633,7 +633,11 @@ struct GitClient {
   }
 
   func lfsPull(in repository: GitRepository) async throws -> String {
-    try await runRaw(["lfs", "pull"], in: repository)
+    try await runRaw(Self.lfsPullArguments(), in: repository)
+  }
+
+  static func lfsPullArguments() -> [String] {
+    ["lfs", "pull"]
   }
 
   func lfsFetch(in repository: GitRepository) async throws -> String {
