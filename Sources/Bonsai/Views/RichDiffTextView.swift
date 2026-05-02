@@ -3,6 +3,7 @@ import SwiftUI
 
 struct RichDiffTextView: NSViewRepresentable {
   var text: String
+  var searchText: String = ""
 
   func makeCoordinator() -> Coordinator {
     Coordinator()
@@ -40,17 +41,19 @@ struct RichDiffTextView: NSViewRepresentable {
   }
 
   func updateNSView(_ scrollView: NSScrollView, context: Context) {
-    guard context.coordinator.lastText != text else { return }
+    guard context.coordinator.lastText != text || context.coordinator.lastSearchText != searchText else { return }
     context.coordinator.lastText = text
-    context.coordinator.textView?.textStorage?.setAttributedString(Self.attributedDiff(text))
+    context.coordinator.lastSearchText = searchText
+    context.coordinator.textView?.textStorage?.setAttributedString(Self.attributedDiff(text, searchText: searchText))
   }
 
   final class Coordinator {
     weak var textView: NSTextView?
     var lastText: String?
+    var lastSearchText: String?
   }
 
-  private static func attributedDiff(_ text: String) -> NSAttributedString {
+  private static func attributedDiff(_ text: String, searchText: String) -> NSAttributedString {
     let result = NSMutableAttributedString()
     let baseFont = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
     let paragraph = NSMutableParagraphStyle()
@@ -86,17 +89,14 @@ struct RichDiffTextView: NSViewRepresentable {
           : NSColor.systemRed.withAlphaComponent(0.24)
         lineString.addAttribute(.backgroundColor, value: highlightColor, range: inlineRange)
       }
+      applySearchHighlights(to: lineString, line: line, searchText: searchText, lineCount: lines.count)
       result.append(lineString)
     }
     return result
   }
 
   private static func isHiddenPatchMetadata(_ line: String, inGitDiff: Bool) -> Bool {
-    guard inGitDiff else { return false }
-    return line.hasPrefix("diff --git ")
-      || line.hasPrefix("index ")
-      || line.hasPrefix("--- ")
-      || line.hasPrefix("+++ ")
+    DiffSearch.isHiddenPatchMetadata(line, inGitDiff: inGitDiff)
   }
 
   private static func inlineRange(for line: String, at index: Int, in lines: [String], diffLineCount: Int) -> NSRange? {
@@ -126,6 +126,25 @@ struct RichDiffTextView: NSViewRepresentable {
     let lower = content.distance(from: content.startIndex, to: range.lowerBound) + 1
     let length = content.distance(from: range.lowerBound, to: range.upperBound)
     return NSRange(location: lower, length: length)
+  }
+
+  private static func applySearchHighlights(
+    to lineString: NSMutableAttributedString,
+    line: String,
+    searchText: String,
+    lineCount: Int
+  ) {
+    guard lineCount <= DiffRenderPolicy.maxSearchHighlightLineCount else { return }
+    let ranges = DiffSearch.ranges(in: line, query: searchText)
+    guard !ranges.isEmpty else { return }
+
+    let highlightColor = NSColor.systemYellow.withAlphaComponent(0.38)
+    for range in ranges where NSMaxRange(range) <= lineString.length {
+      lineString.addAttributes([
+        .backgroundColor: highlightColor,
+        .underlineStyle: NSUnderlineStyle.single.rawValue
+      ], range: range)
+    }
   }
 
 }

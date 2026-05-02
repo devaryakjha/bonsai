@@ -3,6 +3,7 @@ import Foundation
 enum DiffRenderPolicy {
   static let maxInlineComparableLength = 4_000
   static let maxInlineHighlightLineCount = 20_000
+  static let maxSearchHighlightLineCount = 20_000
   static let minPlaceholderColumns = 24
   static let maxPlaceholderColumns = 160
 

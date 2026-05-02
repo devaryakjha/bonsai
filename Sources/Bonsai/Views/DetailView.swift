@@ -3,12 +3,18 @@ import SwiftUI
 
 struct DetailView: View {
   let store: RepositoryStore
+  @State private var diffSearchText = ""
+  @State private var isDiffSearchVisible = false
 
   var body: some View {
     VStack(spacing: 0) {
-      DetailHeaderView(store: store)
+      DetailHeaderView(
+        store: store,
+        diffSearchText: $diffSearchText,
+        isDiffSearchVisible: $isDiffSearchVisible
+      )
       Divider()
-      DiffView(store: store)
+      DiffView(store: store, searchText: diffSearchText)
       if let result = store.commandResult {
         Divider()
         CommandResultView(result: result) {
@@ -22,6 +28,8 @@ struct DetailView: View {
 
 private struct DetailHeaderView: View {
   let store: RepositoryStore
+  @Binding var diffSearchText: String
+  @Binding var isDiffSearchVisible: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
@@ -32,7 +40,11 @@ private struct DetailHeaderView: View {
 
         Spacer(minLength: 16)
 
-        DiffHeaderControls(store: store)
+        DiffHeaderControls(
+          store: store,
+          searchText: $diffSearchText,
+          isSearchVisible: $isDiffSearchVisible
+        )
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
@@ -135,9 +147,42 @@ private struct DetailHeaderView: View {
 
 private struct DiffHeaderControls: View {
   let store: RepositoryStore
+  @Binding var searchText: String
+  @Binding var isSearchVisible: Bool
 
   var body: some View {
     HStack(spacing: 8) {
+      Button {
+        if isSearchVisible {
+          searchText = ""
+        }
+        isSearchVisible.toggle()
+      } label: {
+        Label("Find", systemImage: "magnifyingglass")
+          .labelStyle(.iconOnly)
+      }
+      .controlSize(.small)
+      .help(isSearchVisible ? "Hide find" : "Find in diff")
+      .accessibilityLabel(isSearchVisible ? "Hide find" : "Find in diff")
+      .disabled(!canFindDiff)
+
+      if isSearchVisible {
+        TextField("Find", text: $searchText)
+          .textFieldStyle(.roundedBorder)
+          .controlSize(.small)
+          .frame(width: 180)
+          .accessibilityLabel("Find in diff")
+
+        if let matchLabel {
+          Text(matchLabel)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .monospacedDigit()
+            .lineLimit(1)
+            .frame(minWidth: 72, alignment: .leading)
+        }
+      }
+
       Picker("Diff view", selection: Binding(
         get: { store.diffDisplayMode },
         set: { store.diffDisplayMode = $0 }
@@ -201,10 +246,31 @@ private struct DiffHeaderControls: View {
     guard !diffText.isEmpty else { return nil }
     return DiffSummary(diffText: store.diffText, hunkCount: store.diffHunks.count)
   }
+
+  private var canFindDiff: Bool {
+    !store.diffText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+  }
+
+  private var matchLabel: String? {
+    DiffSearch.matchLabel(
+      for: DiffSearch.matchCount(in: searchableText, query: searchText),
+      query: searchText
+    )
+  }
+
+  private var searchableText: String {
+    switch store.diffDisplayMode {
+    case .unified:
+      return DiffSearch.visibleUnifiedText(from: store.diffText)
+    case .split:
+      return DiffSearch.visibleSplitText(from: store.splitDiff)
+    }
+  }
 }
 
 private struct DiffView: View {
   let store: RepositoryStore
+  var searchText: String
 
   var body: some View {
     VStack(spacing: 0) {
@@ -259,9 +325,9 @@ private struct DiffView: View {
         } else {
           switch store.diffDisplayMode {
           case .unified:
-            RichDiffTextView(text: store.diffText)
+            RichDiffTextView(text: store.diffText, searchText: searchText)
           case .split:
-            SplitDiffViewer(splitDiff: store.splitDiff, paneContext: splitPaneContext)
+            SplitDiffViewer(splitDiff: store.splitDiff, paneContext: splitPaneContext, searchText: searchText)
           }
         }
       }
@@ -292,9 +358,10 @@ private struct DiffView: View {
 private struct SplitDiffViewer: View {
   var splitDiff: SplitDiff
   var paneContext: SplitDiffPaneContext
+  var searchText: String
 
   var body: some View {
-    SplitDiffTextView(splitDiff: splitDiff, paneContext: paneContext)
+    SplitDiffTextView(splitDiff: splitDiff, paneContext: paneContext, searchText: searchText)
   }
 }
 

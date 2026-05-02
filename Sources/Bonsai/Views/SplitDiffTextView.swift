@@ -4,6 +4,7 @@ import SwiftUI
 struct SplitDiffTextView: NSViewRepresentable {
   var splitDiff: SplitDiff
   var paneContext: SplitDiffPaneContext = .fallback
+  var searchText: String = ""
 
   func makeCoordinator() -> Coordinator {
     Coordinator()
@@ -36,19 +37,22 @@ struct SplitDiffTextView: NSViewRepresentable {
   func updateNSView(_ splitView: NSSplitView, context: Context) {
     context.coordinator.setInitialDividerPositionIfNeeded(in: splitView)
     context.coordinator.updatePaneContextIfNeeded(paneContext)
-    guard context.coordinator.lastDiff != splitDiff else { return }
+    guard context.coordinator.lastDiff != splitDiff || context.coordinator.lastSearchText != searchText else { return }
     context.coordinator.lastDiff = splitDiff
+    context.coordinator.lastSearchText = searchText
     context.coordinator.oldTextView?.textStorage?.setAttributedString(Self.attributedDiff(
       splitDiff.oldLines,
       counterpart: splitDiff.newLines,
       side: .old,
-      numberWidth: splitDiff.gutterNumberWidth
+      numberWidth: splitDiff.gutterNumberWidth,
+      searchText: searchText
     ))
     context.coordinator.newTextView?.textStorage?.setAttributedString(Self.attributedDiff(
       splitDiff.newLines,
       counterpart: splitDiff.oldLines,
       side: .new,
-      numberWidth: splitDiff.gutterNumberWidth
+      numberWidth: splitDiff.gutterNumberWidth,
+      searchText: searchText
     ))
   }
 
@@ -62,6 +66,7 @@ struct SplitDiffTextView: NSViewRepresentable {
     weak var newTitleLabel: NSTextField?
     weak var newDetailLabel: NSTextField?
     var lastDiff: SplitDiff?
+    var lastSearchText: String?
     private var lastPaneContext: SplitDiffPaneContext?
     private var didSetInitialDividerPosition = false
     private var isSyncing = false
@@ -243,7 +248,8 @@ struct SplitDiffTextView: NSViewRepresentable {
     _ lines: [SplitDiffLine],
     counterpart: [SplitDiffLine],
     side: SplitSide,
-    numberWidth: Int
+    numberWidth: Int,
+    searchText: String
   ) -> NSAttributedString {
     let result = NSMutableAttributedString()
     let baseFont = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
@@ -293,6 +299,7 @@ struct SplitDiffTextView: NSViewRepresentable {
           : NSColor.systemRed.withAlphaComponent(0.24)
         lineString.addAttribute(.backgroundColor, value: highlightColor, range: inlineRange)
       }
+      applySearchHighlights(to: lineString, line: renderedLine.text, searchText: searchText, lineCount: lines.count)
       result.append(lineString)
     }
     return result
@@ -348,6 +355,25 @@ struct SplitDiffTextView: NSViewRepresentable {
     let lower = line.distance(from: line.startIndex, to: range.lowerBound) + markerOffset
     let length = line.distance(from: range.lowerBound, to: range.upperBound)
     return NSRange(location: lower, length: length)
+  }
+
+  private static func applySearchHighlights(
+    to lineString: NSMutableAttributedString,
+    line: String,
+    searchText: String,
+    lineCount: Int
+  ) {
+    guard lineCount <= DiffRenderPolicy.maxSearchHighlightLineCount else { return }
+    let ranges = DiffSearch.ranges(in: line, query: searchText)
+    guard !ranges.isEmpty else { return }
+
+    let highlightColor = NSColor.systemYellow.withAlphaComponent(0.38)
+    for range in ranges where NSMaxRange(range) <= lineString.length {
+      lineString.addAttributes([
+        .backgroundColor: highlightColor,
+        .underlineStyle: NSUnderlineStyle.single.rawValue
+      ], range: range)
+    }
   }
 }
 
