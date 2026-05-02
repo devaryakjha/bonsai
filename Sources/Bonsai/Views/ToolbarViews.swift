@@ -138,6 +138,10 @@ struct RepositoryToolbarActionsMenu: View {
         Button("Create Worktree...") {
           store.presentCreateWorktree()
         }
+        Button("Prune Worktrees") {
+          Task { await store.pruneWorktrees() }
+        }
+        .disabled(store.selectedRepository == nil)
         Divider()
         Button("Add Remote...") {
           store.presentAddRemote()

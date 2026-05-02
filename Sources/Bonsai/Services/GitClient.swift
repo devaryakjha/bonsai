@@ -517,6 +517,10 @@ struct GitClient {
     return try await runRaw(args, in: repository)
   }
 
+  func pruneWorktrees(in repository: GitRepository) async throws -> String {
+    try await runRaw(["worktree", "prune"], in: repository)
+  }
+
   func stashPush(message: String?, includeUntracked: Bool = false, in repository: GitRepository) async throws -> String {
     var args = ["stash", "push"]
     if includeUntracked {

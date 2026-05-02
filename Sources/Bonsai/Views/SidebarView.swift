@@ -238,6 +238,12 @@ struct SidebarView: View {
         } label: {
           SidebarDisclosureLabel(title: "Worktrees", count: store.snapshot.worktrees.count, systemImage: "square.stack.3d.up")
         }
+        .contextMenu {
+          Button("Prune Worktrees") {
+            Task { await store.pruneWorktrees() }
+          }
+          .disabled(store.selectedRepository == nil)
+        }
 
         DisclosureGroup(isExpanded: $remotesExpanded) {
           remoteRows

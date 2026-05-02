@@ -124,6 +124,16 @@ struct BonsaiCommands: Commands {
       }
       .disabled(store.selectedRepository == nil)
 
+      Button("Create Worktree...") {
+        store.presentCreateWorktree()
+      }
+      .disabled(store.selectedRepository == nil)
+
+      Button("Prune Worktrees") {
+        Task { await store.pruneWorktrees() }
+      }
+      .disabled(store.selectedRepository == nil)
+
       Divider()
 
       Button("Create Stash...") {

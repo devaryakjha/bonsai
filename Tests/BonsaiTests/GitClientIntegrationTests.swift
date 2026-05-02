@@ -1718,6 +1718,28 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertFalse(worktrees.contains { canonicalPath($0.path) == dirtyWorktreePath })
   }
 
+  func testPruneWorktreesRemovesMissingWorktreeAdministrativeEntry() async throws {
+    let repo = try await makeRepository()
+    try write("root\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Initial")
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let worktreeURL = temporaryDirectory()
+    let worktreeName = worktreeURL.lastPathComponent
+    _ = try await client.createWorktree(at: worktreeURL.path(percentEncoded: false), startPoint: "HEAD", in: repository)
+
+    try FileManager.default.removeItem(at: worktreeURL)
+
+    var worktrees = try await client.worktrees(in: repository)
+    let staleWorktree = try XCTUnwrap(worktrees.first { $0.path.hasSuffix("/\(worktreeName)") })
+    XCTAssertTrue(staleWorktree.isPrunable)
+
+    _ = try await client.pruneWorktrees(in: repository)
+
+    worktrees = try await client.worktrees(in: repository)
+    XCTAssertFalse(worktrees.contains { $0.path.hasSuffix("/\(worktreeName)") })
+  }
+
   func testStoreCreatesBranchWorktreeAndRefreshesSnapshot() async throws {
     let repo = try await makeRepository()
     try write("root\n", to: repo.appending(path: "README.md"))

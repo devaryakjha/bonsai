@@ -1362,6 +1362,12 @@ final class RepositoryStore {
     }
   }
 
+  func pruneWorktrees() async {
+    await runMutation(title: "Prune worktrees") {
+      try await gitClient.pruneWorktrees(in: requiredRepository())
+    }
+  }
+
   func presentRevisionCommand(_ command: GitRevisionCommand) {
     guard let selectedCommit else { return }
     revisionCommandRequest = RevisionCommandRequest(command: command, commit: selectedCommit)
