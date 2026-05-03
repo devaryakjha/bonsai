@@ -5,11 +5,14 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 DURATION="${BONSAI_UI_SAMPLE_SECONDS:-8}"
+WARMUP="${BONSAI_UI_SAMPLE_WARMUP_SECONDS:-2}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 SAMPLE_FILE="${BONSAI_UI_SAMPLE_FILE:-/tmp/bonsai-ui-$STAMP.sample.txt}"
 
 ./script/build_and_run.sh --verify >/dev/null
 PID="$(pgrep -x Bonsai | tail -1)"
+
+sleep "$WARMUP"
 
 osascript <<'OSA' >/dev/null 2>&1 &
 tell application "Bonsai" to activate

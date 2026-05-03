@@ -15,6 +15,9 @@ current patch unless the diff content or find query actually changed.
   instead of being recomputed by header/body layout passes.
 - Existing text-only previews that do not have a store revision keep their
   value-based fallback rendering behavior.
+- UI sampling warms up the freshly launched app before sidebar-toggle sampling
+  so the resize metric does not count normal startup history loading as
+  interaction jank.
 
 ## Acceptance
 
@@ -22,3 +25,5 @@ current patch unless the diff content or find query actually changed.
   the cached summary stays in sync.
 - Existing diff parse, split diff, and search behavior remains green.
 - A local app build/verify succeeds after the resize hot-path cleanup.
+- `make perf-ui` samples sidebar toggles after warm-up and fails if known
+  diff/header/parser hot frames appear during the interaction window.
