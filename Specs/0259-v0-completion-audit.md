@@ -38,10 +38,11 @@ development, regular checkpoint commits, and OSS-ready project structure.
 | Release credential diagnosis | `script/package_release.sh --doctor` reports Developer ID identity, configured signing identity, and notary profile readiness without mutating artifacts | Covered |
 | GitHub release setup diagnosis | `script/package_release.sh --github-doctor` reports the protected environment, reviewer rule, Jarvis runner labels, required environment secret names, and repository-level secret leakage without printing secret values | Covered |
 | GitHub release secret handoff | `script/configure_github_release_secrets.sh` validates local Apple release credential inputs, uploads the six required secret names to the protected environment, and reruns the GitHub release doctor without printing secret values | Covered pending secret values |
+| GitHub release secret template | `script/configure_github_release_secrets.sh --print-template` prints the required local release credential exports with placeholders and no GitHub CLI dependency | Covered pending secret values |
 | Jarvis release runner preflight | `script/check_release_runner.sh` checks the SSH runner host, toolchain versions, Developer ID Application identities, a harmless signing smoke, and notary profile state without changing secrets or keychains; it exits non-zero when the runner is not release-ready | Covered |
 | Release artifact evidence | `script/package_release.sh` writes `dist/release/Bonsai.release.plist` for archive-producing modes with version, build, commit, zip hash, signature kind, team, and notarization state | Covered |
 | Release artifact verification | `script/package_release.sh --verify-artifacts` validates the zip, manifest shape, archive name, byte size, and SHA-256 after packaging or download | Covered |
-| Release guardrail tests | `Tests/BonsaiTests/ReleaseScriptTests.swift` covers credential rejection, doctor output, artifact verifier wiring, manifest upload, and temporary keychain cleanup wiring without running release builds or notarization | Covered |
+| Release guardrail tests | `Tests/BonsaiTests/ReleaseScriptTests.swift` covers credential rejection, doctor output, artifact verifier wiring, manifest upload, draft release upload/cleanup, release secret template output, and temporary keychain cleanup wiring without running release builds or notarization | Covered |
 | Credentialed GitHub release path | `.github/workflows/release.yml` is manual-only, targets the Jarvis self-hosted macOS ARM64 runner, uses the protected `release` environment, imports the Developer ID certificate, stores notarytool credentials in a temporary keychain, runs `--notarize`, uploads zip plus manifest, creates a draft GitHub Release from the audited commit through `script/create_github_draft_release.sh`, and cleans up the temporary keychain | Covered pending environment secrets |
 
 ## Current Blocking Evidence
@@ -85,6 +86,8 @@ development, regular checkpoint commits, and OSS-ready project structure.
   `script/package_release.sh --github-doctor`.
 - A maintainer-only protected environment secret upload helper exists:
   `script/configure_github_release_secrets.sh`.
+- A no-secret release credential template exists:
+  `script/configure_github_release_secrets.sh --print-template`.
 - A read-only Jarvis release runner preflight exists:
   `script/check_release_runner.sh`.
 - A post-build artifact verifier exists:
