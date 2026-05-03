@@ -8,7 +8,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 usage() {
   cat >&2 <<USAGE
-usage: script/configure_github_release_secrets.sh [--dry-run]
+usage: script/configure_github_release_secrets.sh [--dry-run|--print-template]
 
 Uploads Bonsai release secrets to the protected GitHub Actions environment.
 Secret values are read from environment variables and are never printed.
@@ -141,7 +141,26 @@ upload_secrets() {
   "$ROOT_DIR/script/package_release.sh" --github-doctor
 }
 
+print_template() {
+  cat <<'TEMPLATE'
+# Fill these values in locally. Do not commit this output.
+export BONSAI_CODESIGN_IDENTITY="Developer ID Application: Example, Inc. (TEAMID)"
+export BONSAI_DEVELOPER_ID_CERTIFICATE_PATH="/absolute/path/to/DeveloperID.p12"
+export BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD="replace-with-p12-export-password"
+export BONSAI_NOTARY_APPLE_ID="developer@example.com"
+export BONSAI_NOTARY_APP_PASSWORD="replace-with-app-specific-password"
+export BONSAI_NOTARY_TEAM_ID="TEAMID"
+
+./script/configure_github_release_secrets.sh --dry-run
+./script/configure_github_release_secrets.sh
+./script/package_release.sh --github-doctor
+TEMPLATE
+}
+
 case "$MODE" in
+  --print-template|print-template)
+    print_template
+    ;;
   --dry-run|dry-run)
     validate_inputs
     echo "Dry run complete; no GitHub secrets were changed"

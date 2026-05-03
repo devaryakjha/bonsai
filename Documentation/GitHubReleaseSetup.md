@@ -52,6 +52,8 @@ Check the GitHub-side release setup without printing secret values:
 Maintainers can validate and upload the required environment secrets with:
 
 ```sh
+./script/configure_github_release_secrets.sh --print-template
+
 export BONSAI_CODESIGN_IDENTITY="Developer ID Application: Example, Inc. (TEAMID)"
 export BONSAI_DEVELOPER_ID_CERTIFICATE_PATH="/path/to/DeveloperID.p12"
 export BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD="p12 export password"

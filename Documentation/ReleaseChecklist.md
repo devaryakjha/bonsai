@@ -95,8 +95,9 @@ that final zip.
   ./script/package_release.sh --github-doctor
   ```
 - If configuring the secrets from a local Developer ID `.p12`, run the helper
-  dry run before upload:
+  template and dry run before upload:
   ```sh
+  ./script/configure_github_release_secrets.sh --print-template
   ./script/configure_github_release_secrets.sh --dry-run
   ./script/configure_github_release_secrets.sh
   ```

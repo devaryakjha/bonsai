@@ -117,6 +117,38 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertFalse(result.output.contains("notary-password-secret"), result.output)
   }
 
+  func testGitHubSecretConfiguratorPrintsNoSecretTemplateWithoutGh() throws {
+    let fakeBin = try makeFakeGitHubSecretConfiguratorCLI(
+      log: nil,
+      failOnSecretSet: true
+    )
+    let result = try runScript(
+      "script/configure_github_release_secrets.sh",
+      arguments: ["--print-template"],
+      environment: [
+        "PATH": [
+          fakeBin.path(percentEncoded: false),
+          "/usr/bin",
+          "/bin",
+          "/usr/sbin",
+          "/sbin"
+        ].joined(separator: ":")
+      ]
+    )
+
+    XCTAssertEqual(result.status, 0, result.output)
+    XCTAssertTrue(result.output.contains("Do not commit this output"), result.output)
+    XCTAssertTrue(result.output.contains("BONSAI_CODESIGN_IDENTITY"), result.output)
+    XCTAssertTrue(result.output.contains("BONSAI_DEVELOPER_ID_CERTIFICATE_PATH"), result.output)
+    XCTAssertTrue(result.output.contains("BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD"), result.output)
+    XCTAssertTrue(result.output.contains("BONSAI_NOTARY_APPLE_ID"), result.output)
+    XCTAssertTrue(result.output.contains("BONSAI_NOTARY_APP_PASSWORD"), result.output)
+    XCTAssertTrue(result.output.contains("BONSAI_NOTARY_TEAM_ID"), result.output)
+    XCTAssertTrue(result.output.contains("./script/configure_github_release_secrets.sh --dry-run"), result.output)
+    XCTAssertTrue(result.output.contains("./script/package_release.sh --github-doctor"), result.output)
+    XCTAssertFalse(result.output.contains("GitHub CLI: missing"), result.output)
+  }
+
   func testGitHubSecretConfiguratorUploadsOnlyEnvironmentSecretsWithMockedGh() throws {
     let log = FileManager.default.temporaryDirectory
       .appending(path: "bonsai-gh-secret-log-\(UUID().uuidString)")
