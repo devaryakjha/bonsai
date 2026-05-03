@@ -8,8 +8,8 @@ so they belong in normal macOS CI instead of living as optional local checks.
 
 ## Requirements
 
-- Run the deterministic large-repository performance smoke in the GitHub Actions
-  macOS validation job.
+- Run the deterministic large-repository performance smoke in the Jarvis macOS
+  validation job.
 - Keep the interactive UI sample as a local release-app diagnostic because it
   depends on the launched app process and macOS accessibility-driven sidebar
   toggling.

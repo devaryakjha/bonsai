@@ -118,9 +118,9 @@ swift test
 
 Bonsai is developed spec-first. Start with the relevant document in `Specs/`,
 keep implementation slices small, and commit checkpoints as work lands.
-Pull requests run macOS CI for shell syntax, `swift test`, the large-repository
-performance smoke, and the credential-free release bundle, archive, and artifact
-verifiers.
+Pull requests run on the Jarvis self-hosted macOS ARM64 runner for shell syntax,
+`swift test`, the large-repository performance smoke, and the credential-free
+release bundle, archive, and artifact verifiers.
 
 Useful project paths:
 

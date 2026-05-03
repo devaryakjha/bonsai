@@ -14,8 +14,9 @@ labels:
 - `jarvis`
 
 Jarvis should be online and available to the `devaryakjha/bonsai` repository
-before starting the workflow. Regular pull request and push validation stays on
-GitHub-hosted macOS runners and does not receive release credentials.
+before starting the workflow. Regular pull request and push validation also runs
+on Jarvis with the same labels, but it stays outside the protected `release`
+environment and does not receive release credentials.
 
 The release workflow uses `script/create_github_draft_release.sh`, backed by
 `curl` and `jq`, to create the draft GitHub Release via the GitHub API. It does

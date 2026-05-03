@@ -67,7 +67,9 @@ jobs:
           bash -n script/create_github_draft_release.sh
           bash -n script/package_release.sh
           bash -n script/perf_large_repo.sh
+          bash -n script/perf_ui_sample.sh
           swift test
+          ./script/perf_large_repo.sh
 
       - name: Build dry-run archive
         run: ./script/package_release.sh --verify-archive
@@ -137,7 +139,9 @@ jobs:
           bash -n script/create_github_draft_release.sh
           bash -n script/package_release.sh
           bash -n script/perf_large_repo.sh
+          bash -n script/perf_ui_sample.sh
           swift test
+          ./script/perf_large_repo.sh
 
       - name: Check release secrets
         env:

@@ -11,8 +11,12 @@ permissions:
 
 jobs:
   macos:
-    name: macOS validation
-    runs-on: macos-14
+    name: Jarvis macOS validation
+    runs-on:
+      - self-hosted
+      - macOS
+      - ARM64
+      - jarvis
 
     steps:
       - name: Check out repository

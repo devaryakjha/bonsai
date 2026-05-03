@@ -8,8 +8,9 @@ maintainers do not depend only on local manual checks.
 ## Requirements
 
 - Add a GitHub Actions workflow for pull requests and pushes to `main`.
-- Run on macOS because Bonsai is a native macOS app and packaging depends on
-  Apple tooling.
+- Run on the Jarvis self-hosted macOS ARM64 runner because Bonsai is a native
+  macOS app, packaging depends on Apple tooling, and routine validation should
+  not spend GitHub-hosted macOS minutes.
 - Validate shell syntax for project scripts.
 - Run the Swift test suite.
 - Run the deterministic large-repository performance smoke.
@@ -22,6 +23,8 @@ maintainers do not depend only on local manual checks.
 
 - `.github/workflows/ci.yml` exists and is narrow enough for OSS contributors to
   understand.
+- The workflow uses the `self-hosted`, `macOS`, `ARM64`, and `jarvis` runner
+  labels.
 - The workflow runs `bash -n` for `script/build_and_run.sh`,
   `script/package_release.sh`, `script/perf_large_repo.sh`, and
   `script/perf_ui_sample.sh`.
