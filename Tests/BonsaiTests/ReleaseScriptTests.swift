@@ -60,6 +60,7 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(runnerHelp.contains("--workflow-local"), runnerHelp)
     XCTAssertTrue(script.contains("verify_release_artifacts()"))
     XCTAssertTrue(script.contains("github_release_doctor()"))
+    XCTAssertTrue(script.contains("print_github_release_remediation()"))
     XCTAssertTrue(script.contains("manifest archiveSHA256 mismatch"))
     XCTAssertTrue(script.contains("plutil -extract archiveSHA256 raw"))
     XCTAssertTrue(runnerScript.contains("Release workflow runner: ready"), runnerScript)
@@ -97,8 +98,40 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(result.output.contains("BONSAI_CODESIGN_IDENTITY: configured"), result.output)
     XCTAssertTrue(result.output.contains("BONSAI_NOTARY_TEAM_ID: missing"), result.output)
     XCTAssertTrue(result.output.contains("repository-level release secrets: none"), result.output)
+    XCTAssertTrue(result.output.contains("Next steps:"), result.output)
+    XCTAssertTrue(result.output.contains("./script/configure_github_release_secrets.sh --print-template"), result.output)
+    XCTAssertTrue(result.output.contains("./script/configure_github_release_secrets.sh --dry-run"), result.output)
+    XCTAssertTrue(result.output.contains("gh workflow run Release --repo devaryakjha/bonsai --ref main -f dry_run=true"), result.output)
+    XCTAssertTrue(result.output.contains("gh workflow run Release --repo devaryakjha/bonsai --ref main -f dry_run=false"), result.output)
     XCTAssertTrue(result.output.contains("GitHub release configuration: not ready"), result.output)
     XCTAssertFalse(result.output.contains("Packaged "), result.output)
+  }
+
+  func testGitHubDoctorOmitsRemediationWhenReady() throws {
+    let fakeBin = try makeFakeGitHubCLI(
+      environmentSecrets: [
+        "BONSAI_CODESIGN_IDENTITY",
+        "BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64",
+        "BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD",
+        "BONSAI_NOTARY_APPLE_ID",
+        "BONSAI_NOTARY_APP_PASSWORD",
+        "BONSAI_NOTARY_TEAM_ID"
+      ],
+      repositorySecrets: []
+    )
+    let path = [
+      fakeBin.path(percentEncoded: false),
+      ProcessInfo.processInfo.environment["PATH"] ?? ""
+    ].joined(separator: ":")
+    let result = try runPackageRelease(
+      arguments: ["--github-doctor"],
+      environment: ["PATH": path]
+    )
+
+    XCTAssertEqual(result.status, 0, result.output)
+    XCTAssertTrue(result.output.contains("GitHub release configuration: ready"), result.output)
+    XCTAssertFalse(result.output.contains("Next steps:"), result.output)
+    XCTAssertFalse(result.output.contains("--print-template"), result.output)
   }
 
   func testGitHubSecretConfiguratorDryRunDoesNotUploadOrPrintSecrets() throws {

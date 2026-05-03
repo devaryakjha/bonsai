@@ -586,8 +586,27 @@ github_release_doctor() {
     return 0
   fi
 
+  print_github_release_remediation
   echo "GitHub release configuration: not ready"
   return 1
+}
+
+print_github_release_remediation() {
+  cat <<REMEDIATION
+Next steps:
+  1. Print the local secret template:
+     ./script/configure_github_release_secrets.sh --print-template
+  2. Fill the exports locally, then validate without uploading:
+     ./script/configure_github_release_secrets.sh --dry-run
+  3. Upload only to the protected $GITHUB_RELEASE_ENVIRONMENT environment:
+     ./script/configure_github_release_secrets.sh
+  4. Re-run this doctor:
+     ./script/package_release.sh --github-doctor
+  5. Re-run the Jarvis dry run:
+     gh workflow run Release --repo $GITHUB_RELEASE_REPOSITORY --ref main -f dry_run=true
+  6. After the doctor passes, dispatch the protected release:
+     gh workflow run Release --repo $GITHUB_RELEASE_REPOSITORY --ref main -f dry_run=false
+REMEDIATION
 }
 
 package_with_identity() {
