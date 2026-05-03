@@ -46,15 +46,25 @@ final class ReleaseScriptTests: XCTestCase {
       contentsOf: root.appending(path: "script/create_github_draft_release.sh"),
       encoding: .utf8
     )
+    let runnerScript = try String(
+      contentsOf: root.appending(path: "script/check_release_runner.sh"),
+      encoding: .utf8
+    )
     let help = try runPackageRelease(arguments: ["--help"]).output
+    let runnerHelp = try runScript("script/check_release_runner.sh", arguments: ["--help"]).output
 
     XCTAssertTrue(help.contains("--verify-artifacts"), help)
     XCTAssertTrue(help.contains("--github-doctor"), help)
     XCTAssertTrue(help.contains("BONSAI_NOTARY_KEYCHAIN"), help)
+    XCTAssertTrue(runnerHelp.contains("--workflow"), runnerHelp)
+    XCTAssertTrue(runnerHelp.contains("--workflow-local"), runnerHelp)
     XCTAssertTrue(script.contains("verify_release_artifacts()"))
     XCTAssertTrue(script.contains("github_release_doctor()"))
     XCTAssertTrue(script.contains("manifest archiveSHA256 mismatch"))
     XCTAssertTrue(script.contains("plutil -extract archiveSHA256 raw"))
+    XCTAssertTrue(runnerScript.contains("Release workflow runner: ready"), runnerScript)
+    XCTAssertTrue(runnerScript.contains("notarytool: available"), runnerScript)
+    XCTAssertTrue(runnerScript.contains("Developer ID signing smoke: valid"), runnerScript)
     XCTAssertTrue(draftReleaseScript.contains("Draft GitHub release created for"), draftReleaseScript)
     XCTAssertTrue(draftReleaseScript.contains("cleanup_release()"), draftReleaseScript)
     XCTAssertTrue(draftReleaseScript.contains("$API_BASE/releases/tags/$RELEASE_TAG"), draftReleaseScript)

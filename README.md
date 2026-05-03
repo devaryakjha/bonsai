@@ -89,12 +89,14 @@ Check local distribution credential readiness:
 ./script/package_release.sh --github-doctor
 ./script/configure_github_release_secrets.sh --print-template
 ./script/configure_github_release_secrets.sh --dry-run
+./script/check_release_runner.sh --workflow
 ./script/check_release_runner.sh
 ```
 
 The credential checks are expected to fail on machines without a Developer ID
-Application certificate and a valid notarytool profile. Maintainer release setup
-is documented in `Documentation/ReleaseChecklist.md`,
+Application certificate and a valid notarytool profile. The workflow runner
+check only verifies the no-secret Jarvis toolchain required by GitHub Actions.
+Maintainer release setup is documented in `Documentation/ReleaseChecklist.md`,
 `Documentation/ReleasePackaging.md`, and `Documentation/GitHubReleaseSetup.md`.
 The manual GitHub `Release` workflow defaults to a Jarvis dry run that builds
 and verifies the credential-free archive without entering the protected release

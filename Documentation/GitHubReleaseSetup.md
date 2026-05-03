@@ -21,17 +21,29 @@ The release workflow uses `script/create_github_draft_release.sh`, backed by
 `curl` and `jq`, to create the draft GitHub Release via the GitHub API. It does
 not require the GitHub CLI to be installed on Jarvis.
 
-Check the configured runner without changing keychains or secrets:
+Check the configured runner can execute the GitHub release workflow without
+changing keychains or reading Apple release secrets:
+
+```sh
+./script/check_release_runner.sh --workflow
+```
+
+The script defaults to `ssh jarvis` and checks the no-secret toolchain required
+by the workflow, including Swift, Xcode, Git, `curl`, `jq`, `codesign`,
+`notarytool`, and archive/plist utilities. Use `BONSAI_RELEASE_RUNNER_HOST` to
+point it at another runner host.
+
+For a runner-local release that uses identities and notary profiles already
+stored on Jarvis instead of GitHub environment secrets, use the stricter
+credential preflight:
 
 ```sh
 ./script/check_release_runner.sh
 ```
 
-The script defaults to `ssh jarvis` and checks toolchain versions, visible
-Developer ID Application identities, a harmless Developer ID signing smoke, and
-the configured notarytool profile. Use `BONSAI_RELEASE_RUNNER_HOST` to point it
-at another runner host. The script exits non-zero until signing and notary
-checks both pass.
+The strict mode checks visible Developer ID Application identities, runs a
+harmless Developer ID signing smoke, and validates the configured notarytool
+profile. It exits non-zero until signing and notary checks both pass.
 
 ## Protected Environment
 

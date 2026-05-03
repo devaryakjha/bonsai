@@ -15,6 +15,10 @@ commands or accidental secret exposure.
 - Run a harmless Developer ID signing smoke when an identity is visible.
 - Check a notarytool keychain profile and classify locked-keychain and missing
   profile states.
+- Add a no-secret workflow mode for GitHub Actions releases that import signing
+  credentials from protected environment secrets into a temporary keychain.
+- Workflow mode checks required host/toolchain commands without inspecting
+  Developer ID identities or notarytool keychain profiles.
 - Avoid changing keychains, storing credentials, uploading secrets, or building
   release artifacts.
 - Exit non-zero when the checked runner cannot sign with Developer ID or cannot
@@ -30,6 +34,11 @@ commands or accidental secret exposure.
   both pass; otherwise it prints `Release runner: not ready` and exits non-zero.
 - `./script/check_release_runner.sh --local` runs the same read-only checks on
   the current machine.
+- `./script/check_release_runner.sh --workflow` runs the no-secret workflow
+  preflight over SSH and prints `Release workflow runner: ready` when Jarvis has
+  the required toolchain.
+- `./script/check_release_runner.sh --workflow-local` runs the no-secret
+  workflow preflight on the current machine.
 - `BONSAI_RELEASE_RUNNER_HOST` overrides the default SSH host.
 - `BONSAI_NOTARY_PROFILE` overrides the checked notarytool profile.
 - `bash -n script/check_release_runner.sh` passes locally and in CI.

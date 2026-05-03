@@ -7,10 +7,15 @@ NOTARY_PROFILE="${BONSAI_NOTARY_PROFILE:-bonsai-ci-notary}"
 
 usage() {
   cat >&2 <<USAGE
-usage: script/check_release_runner.sh [--local]
+usage: script/check_release_runner.sh [--local|--workflow|--workflow-local]
 
 Runs a read-only release runner preflight. By default this checks the configured
-runner over SSH. Use --local to run the same checks on the current machine.
+runner-local signing and notarization credentials over SSH. Use --local to run
+the same strict checks on the current machine.
+
+Use --workflow to check whether the configured runner has the no-secret
+toolchain required by the GitHub release workflow. Use --workflow-local to run
+those workflow checks on the current machine.
 
 Environment:
   BONSAI_RELEASE_RUNNER_HOST  Optional SSH host override. Defaults to jarvis.
@@ -21,6 +26,7 @@ USAGE
 remote_script='
 set -euo pipefail
 profile="$1"
+check_mode="$2"
 failures=0
 
 echo "Bonsai release runner preflight"
@@ -28,6 +34,46 @@ echo "Host: $(hostname)"
 sw_vers
 xcodebuild -version
 swift --version
+
+if [[ "$check_mode" == "workflow" ]]; then
+  required_commands=(
+    sw_vers
+    xcodebuild
+    swift
+    git
+    curl
+    jq
+    codesign
+    xcrun
+    security
+    ditto
+    plutil
+    shasum
+    stat
+  )
+  for command_name in "${required_commands[@]}"; do
+    if command -v "$command_name" >/dev/null; then
+      echo "$command_name: available"
+    else
+      echo "$command_name: missing"
+      failures=1
+    fi
+  done
+
+  if xcrun notarytool --version >/dev/null 2>&1; then
+    echo "notarytool: available"
+  else
+    echo "notarytool: missing"
+    failures=1
+  fi
+
+  if [[ "$failures" == "0" ]]; then
+    echo "Release workflow runner: ready"
+  else
+    echo "Release workflow runner: not ready"
+  fi
+  exit "$failures"
+fi
 
 developer_id_output="$(security find-identity -p codesigning -v 2>&1 || true)"
 developer_id_count="$(printf "%s\n" "$developer_id_output" | grep -c "Developer ID Application" || true)"
@@ -80,10 +126,16 @@ exit "$failures"
 
 case "$MODE" in
   --local|local)
-    bash -c "$remote_script" -- "$NOTARY_PROFILE"
+    bash -c "$remote_script" -- "$NOTARY_PROFILE" credentials
+    ;;
+  --workflow-local|workflow-local)
+    bash -c "$remote_script" -- "$NOTARY_PROFILE" workflow
+    ;;
+  --workflow|workflow)
+    ssh "$RUNNER_HOST" bash -s -- "$NOTARY_PROFILE" workflow <<<"$remote_script"
     ;;
   ""|--ssh|ssh)
-    ssh "$RUNNER_HOST" bash -s -- "$NOTARY_PROFILE" <<<"$remote_script"
+    ssh "$RUNNER_HOST" bash -s -- "$NOTARY_PROFILE" credentials <<<"$remote_script"
     ;;
   --help|-h|help)
     usage

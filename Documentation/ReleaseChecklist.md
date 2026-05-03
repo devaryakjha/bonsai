@@ -84,8 +84,13 @@ that final zip.
 - Follow `Documentation/GitHubReleaseSetup.md` when configuring GitHub Actions
   release credentials for the first time.
 - Confirm the Jarvis runner machine is reachable and has the expected release
-  toolchain state. This command must exit zero before relying on runner-local
-  release credentials:
+  workflow toolchain state. This command must exit zero before relying on the
+  GitHub Actions release workflow:
+  ```sh
+  ./script/check_release_runner.sh --workflow
+  ```
+- If using runner-local signing credentials instead of GitHub environment
+  secrets, also run the stricter credential preflight:
   ```sh
   ./script/check_release_runner.sh
   ```
