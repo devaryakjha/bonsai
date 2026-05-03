@@ -73,13 +73,21 @@ final class DiffPerformanceSmokeTests: XCTestCase {
       """
     )
 
-    XCTAssertLessThan(historyMilliseconds, 5_000)
-    XCTAssertLessThan(parseMilliseconds, 5_000)
-    XCTAssertLessThan(imageMilliseconds, 5_000)
+    XCTAssertLessThan(historyMilliseconds, budget(named: "BONSAI_PERF_HISTORY_MS", defaultValue: 1_000))
+    XCTAssertLessThan(parseMilliseconds, budget(named: "BONSAI_PERF_DIFF_PARSE_MS", defaultValue: 500))
+    XCTAssertLessThan(imageMilliseconds, budget(named: "BONSAI_PERF_IMAGE_MS", defaultValue: 1_000))
   }
 
   private func elapsedMilliseconds(since start: Date) -> Int {
     Int(Date().timeIntervalSince(start) * 1_000)
+  }
+
+  private func budget(named name: String, defaultValue: Int) -> Int {
+    guard let value = ProcessInfo.processInfo.environment[name],
+          let budget = Int(value) else {
+      return defaultValue
+    }
+    return budget
   }
 
   private static func largeReplacementDiff(lineCount: Int) -> String {

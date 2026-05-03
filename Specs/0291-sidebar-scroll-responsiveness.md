@@ -19,10 +19,17 @@ debug SwiftUI binaries as the normal app run path.
 - Split diff scroll synchronization skips redundant pane updates when both panes
   are already aligned.
 - The optimized controls keep the same selections and accessibility labels.
+- Local performance scripts provide repeatable timing and sample evidence for
+  large diff parsing and sidebar toggling.
 
 ## Acceptance
 
 - A release app build/verify succeeds through `script/build_and_run.sh --verify`.
 - Swift tests remain green after the control bridge and runner changes.
+- `script/perf_large_repo.sh` enforces sub-second default budgets for history,
+  large diff parsing, and image diff setup.
+- `script/perf_ui_sample.sh` launches the release app, toggles the sidebar,
+  records a sample, and fails if the sampled hot path contains known expensive
+  diff rendering or SwiftUI segmented-control frames.
 - A sidebar-toggle sample against the release app does not show Bonsai diff
   rendering work as the dominant path.
