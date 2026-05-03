@@ -30,6 +30,7 @@ jobs:
             script/build_and_run.sh \
             script/check_release_runner.sh \
             script/configure_github_release_secrets.sh \
+            script/create_github_draft_release.sh \
             script/package_release.sh \
             script/perf_large_repo.sh; do
             bash -n "$script"

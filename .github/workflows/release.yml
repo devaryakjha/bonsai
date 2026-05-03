@@ -63,6 +63,7 @@ jobs:
           bash -n script/build_and_run.sh
           bash -n script/check_release_runner.sh
           bash -n script/configure_github_release_secrets.sh
+          bash -n script/create_github_draft_release.sh
           bash -n script/package_release.sh
           bash -n script/perf_large_repo.sh
           swift test
@@ -153,103 +154,7 @@ jobs:
       - name: Create draft GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          api_base="https://api.github.com/repos/$GITHUB_REPOSITORY"
-          auth_headers=(
-            -H "Authorization: Bearer $GH_TOKEN"
-            -H "Accept: application/vnd.github+json"
-            -H "X-GitHub-Api-Version: 2022-11-28"
-          )
-          release_tag="v$BONSAI_VERSION"
-          notes_path="$RUNNER_TEMP/bonsai-release-notes.md"
-          lookup_response="$RUNNER_TEMP/bonsai-release-lookup.json"
-          lookup_status="$(
-            curl -sS \
-              -o "$lookup_response" \
-              -w "%{http_code}" \
-              "${auth_headers[@]}" \
-              "$api_base/releases/tags/$release_tag"
-          )"
-          if [[ "$lookup_status" == "200" ]]; then
-            echo "GitHub release already exists for $release_tag"
-            exit 1
-          fi
-          if [[ "$lookup_status" != "404" ]]; then
-            echo "GitHub release lookup failed with status $lookup_status"
-            cat "$lookup_response"
-            exit 1
-          fi
-
-          cat > "$notes_path" <<NOTES
-          Bonsai $BONSAI_VERSION ($BONSAI_BUILD_NUMBER)
-
-          Native macOS Git client v0 release candidate.
-
-          Evidence:
-          - Fork-parity matrix: Specs/0242-v0-parity-evidence.md
-          - Completion audit: Specs/0259-v0-completion-audit.md
-          - Release checklist: Documentation/ReleaseChecklist.md
-
-          Attachments:
-          - Bonsai.zip
-          - Bonsai.release.plist
-
-          Keep this release as a draft until the downloaded artifact passes the post-release Gatekeeper and smoke checks.
-          NOTES
-
-          create_payload="$RUNNER_TEMP/bonsai-release-payload.json"
-          create_response="$RUNNER_TEMP/bonsai-release-response.json"
-          jq -n \
-            --arg tag_name "$release_tag" \
-            --arg target_commitish "$GITHUB_SHA" \
-            --arg name "Bonsai $BONSAI_VERSION" \
-            --arg body "$(cat "$notes_path")" \
-            '{tag_name: $tag_name, target_commitish: $target_commitish, name: $name, body: $body, draft: true, prerelease: false}' \
-            > "$create_payload"
-
-          create_status="$(
-            curl -sS \
-              -X POST \
-              -o "$create_response" \
-              -w "%{http_code}" \
-              "${auth_headers[@]}" \
-              -H "Content-Type: application/json" \
-              --data-binary "@$create_payload" \
-              "$api_base/releases"
-          )"
-          if [[ "$create_status" != "201" ]]; then
-            echo "GitHub draft release creation failed with status $create_status"
-            cat "$create_response"
-            exit 1
-          fi
-
-          release_id="$(jq -r '.id' "$create_response")"
-          upload_url="https://uploads.github.com/repos/$GITHUB_REPOSITORY/releases/$release_id/assets"
-          for asset in dist/release/Bonsai.zip dist/release/Bonsai.release.plist; do
-            asset_name="$(basename "$asset")"
-            upload_response="$RUNNER_TEMP/bonsai-release-upload-$asset_name.json"
-            upload_status="$(
-              curl -sS \
-                -X POST \
-                -o "$upload_response" \
-                -w "%{http_code}" \
-                "${auth_headers[@]}" \
-                -H "Content-Type: application/octet-stream" \
-                --data-binary "@$asset" \
-                "$upload_url?name=$asset_name"
-            )"
-            if [[ "$upload_status" != "201" ]]; then
-              echo "GitHub release asset upload failed for $asset_name with status $upload_status"
-              cat "$upload_response"
-              curl -sS \
-                -X DELETE \
-                "${auth_headers[@]}" \
-                "$api_base/releases/$release_id" \
-                >/dev/null \
-                || true
-              exit 1
-            fi
-          done
+        run: ./script/create_github_draft_release.sh
 
       - name: Clean up signing keychain
         if: always()

@@ -42,6 +42,10 @@ final class ReleaseScriptTests: XCTestCase {
       contentsOf: root.appending(path: "script/package_release.sh"),
       encoding: .utf8
     )
+    let draftReleaseScript = try String(
+      contentsOf: root.appending(path: "script/create_github_draft_release.sh"),
+      encoding: .utf8
+    )
     let help = try runPackageRelease(arguments: ["--help"]).output
 
     XCTAssertTrue(help.contains("--verify-artifacts"), help)
@@ -51,6 +55,10 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(script.contains("github_release_doctor()"))
     XCTAssertTrue(script.contains("manifest archiveSHA256 mismatch"))
     XCTAssertTrue(script.contains("plutil -extract archiveSHA256 raw"))
+    XCTAssertTrue(draftReleaseScript.contains("Draft GitHub release created for"), draftReleaseScript)
+    XCTAssertTrue(draftReleaseScript.contains("cleanup_release()"), draftReleaseScript)
+    XCTAssertTrue(draftReleaseScript.contains("$API_BASE/releases/tags/$RELEASE_TAG"), draftReleaseScript)
+    XCTAssertTrue(draftReleaseScript.contains("$UPLOADS_BASE/releases/$release_id/assets"), draftReleaseScript)
   }
 
   func testGitHubDoctorReportsMissingEnvironmentSecretsWithMockedGh() throws {
@@ -160,6 +168,7 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(workflow.contains("uses: actions/checkout@v6"))
     XCTAssertTrue(workflow.contains("script/check_release_runner.sh"))
     XCTAssertTrue(workflow.contains("script/configure_github_release_secrets.sh"))
+    XCTAssertTrue(workflow.contains("script/create_github_draft_release.sh"))
   }
 
   func testReleaseWorkflowVerifiesArtifactsBeforeUploadAndCleansTemporaryKeychain() throws {
@@ -170,7 +179,7 @@ final class ReleaseScriptTests: XCTestCase {
     )
     let verifyRange = workflow.range(of: "name: Verify release artifacts")
     let uploadRange = workflow.range(of: "uses: actions/upload-artifact@v7")
-    let releaseRange = workflow.range(of: "$api_base/releases")
+    let releaseRange = workflow.range(of: "./script/create_github_draft_release.sh")
 
     XCTAssertTrue(workflow.contains("contents: write"))
     XCTAssertTrue(workflow.contains("environment: release"))
@@ -192,16 +201,52 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(workflow.contains("GH_TOKEN: ${{ github.token }}"))
     XCTAssertTrue(workflow.contains("curl --version | sed -n '1p'"))
     XCTAssertTrue(workflow.contains("jq --version"))
-    XCTAssertTrue(workflow.contains("$api_base/releases/tags/$release_tag"))
-    XCTAssertTrue(workflow.contains("target_commitish: $target_commitish"))
-    XCTAssertTrue(workflow.contains("draft: true"))
-    XCTAssertTrue(workflow.contains("https://uploads.github.com/repos/$GITHUB_REPOSITORY/releases/$release_id/assets"))
-    XCTAssertTrue(workflow.contains("dist/release/Bonsai.zip dist/release/Bonsai.release.plist"))
-    XCTAssertTrue(workflow.contains("-X DELETE"))
-    XCTAssertTrue(workflow.contains("$api_base/releases/$release_id"))
+    XCTAssertTrue(workflow.contains("bash -n script/create_github_draft_release.sh"))
+    XCTAssertTrue(workflow.contains("run: ./script/create_github_draft_release.sh"))
     XCTAssertFalse(workflow.contains("gh release create"))
     XCTAssertTrue(workflow.contains("if: always()"))
     XCTAssertTrue(workflow.contains("security delete-keychain \"$BONSAI_NOTARY_KEYCHAIN\""))
+  }
+
+  func testDraftReleaseScriptCreatesDraftAndUploadsAssetsWithMockedCurl() throws {
+    try requireExecutable("jq")
+    let root = try packageRoot()
+    let fixture = try makeDraftReleaseFixture(failManifestUpload: false)
+    let result = try runScript(
+      "script/create_github_draft_release.sh",
+      environment: draftReleaseEnvironment(root: root, fixture: fixture)
+    )
+
+    XCTAssertEqual(result.status, 0, result.output)
+    XCTAssertTrue(result.output.contains("Draft GitHub release created for v9.8.7"), result.output)
+
+    let logText = try String(contentsOf: fixture.log, encoding: .utf8)
+    XCTAssertTrue(logText.contains("GET|https://api.github.com/repos/devaryakjha/bonsai/releases/tags/v9.8.7"), logText)
+    XCTAssertTrue(logText.contains("GET|https://api.github.com/repos/devaryakjha/bonsai/git/ref/tags/v9.8.7"), logText)
+    XCTAssertTrue(logText.contains("POST|https://api.github.com/repos/devaryakjha/bonsai/releases"), logText)
+    XCTAssertTrue(logText.contains("POST|https://uploads.github.com/repos/devaryakjha/bonsai/releases/42/assets?name=Bonsai.zip"), logText)
+    XCTAssertTrue(logText.contains("POST|https://uploads.github.com/repos/devaryakjha/bonsai/releases/42/assets?name=Bonsai.release.plist"), logText)
+    XCTAssertFalse(logText.contains("DELETE|"), logText)
+  }
+
+  func testDraftReleaseScriptCleansPartialReleaseAndGeneratedTagOnAssetFailure() throws {
+    try requireExecutable("jq")
+    let root = try packageRoot()
+    let fixture = try makeDraftReleaseFixture(failManifestUpload: true)
+    let result = try runScript(
+      "script/create_github_draft_release.sh",
+      environment: draftReleaseEnvironment(root: root, fixture: fixture)
+    )
+
+    XCTAssertNotEqual(result.status, 0)
+    XCTAssertTrue(
+      result.output.contains("GitHub release asset upload failed for Bonsai.release.plist"),
+      result.output
+    )
+
+    let logText = try String(contentsOf: fixture.log, encoding: .utf8)
+    XCTAssertTrue(logText.contains("DELETE|https://api.github.com/repos/devaryakjha/bonsai/releases/42"), logText)
+    XCTAssertTrue(logText.contains("DELETE|https://api.github.com/repos/devaryakjha/bonsai/git/refs/tags/v9.8.7"), logText)
   }
 
   private func runPackageRelease(
@@ -235,6 +280,18 @@ final class ReleaseScriptTests: XCTestCase {
     return ProcessResult(status: process.terminationStatus, output: output)
   }
 
+  private func requireExecutable(_ name: String) throws {
+    let process = Process()
+    process.executableURL = URL(filePath: "/bin/bash")
+    process.arguments = ["-lc", "command -v \(name) >/dev/null"]
+    try process.run()
+    process.waitUntilExit()
+
+    if process.terminationStatus != 0 {
+      throw XCTSkip("\(name) is not available")
+    }
+  }
+
   private func releaseSecretEnvironment(path: String, certificate: URL) -> [String: String] {
     [
       "PATH": path,
@@ -252,6 +309,132 @@ final class ReleaseScriptTests: XCTestCase {
       .appending(path: "bonsai-developer-id-\(UUID().uuidString).p12")
     try contents.write(to: certificate, atomically: true, encoding: .utf8)
     return certificate
+  }
+
+  private func draftReleaseEnvironment(root: URL, fixture: DraftReleaseFixture) -> [String: String] {
+    let path = [
+      fixture.fakeBin.path(percentEncoded: false),
+      ProcessInfo.processInfo.environment["PATH"] ?? ""
+    ].joined(separator: ":")
+    return [
+      "PATH": path,
+      "GH_TOKEN": "test-token",
+      "GITHUB_REPOSITORY": "devaryakjha/bonsai",
+      "GITHUB_SHA": "0123456789abcdef",
+      "BONSAI_VERSION": "9.8.7",
+      "BONSAI_BUILD_NUMBER": "123",
+      "BONSAI_RELEASE_ARCHIVE": fixture.archive.path(percentEncoded: false),
+      "BONSAI_RELEASE_MANIFEST": fixture.manifest.path(percentEncoded: false),
+      "RUNNER_TEMP": fixture.runnerTemp.path(percentEncoded: false)
+    ]
+  }
+
+  private func makeDraftReleaseFixture(failManifestUpload: Bool) throws -> DraftReleaseFixture {
+    let directory = FileManager.default.temporaryDirectory
+      .appending(path: "bonsai-draft-release-\(UUID().uuidString)", directoryHint: .isDirectory)
+    let fakeBin = directory.appending(path: "bin", directoryHint: .isDirectory)
+    let runnerTemp = directory.appending(path: "runner", directoryHint: .isDirectory)
+    try FileManager.default.createDirectory(at: fakeBin, withIntermediateDirectories: true)
+    try FileManager.default.createDirectory(at: runnerTemp, withIntermediateDirectories: true)
+
+    let archive = directory.appending(path: "Bonsai.zip")
+    let manifest = directory.appending(path: "Bonsai.release.plist")
+    let log = directory.appending(path: "curl.log")
+    try "zip-bytes".write(to: archive, atomically: true, encoding: .utf8)
+    try "manifest-bytes".write(to: manifest, atomically: true, encoding: .utf8)
+
+    let curl = fakeBin.appending(path: "curl")
+    let manifestStatus = failManifestUpload ? "500" : "201"
+    let manifestBody = failManifestUpload ? #"{"message":"upload failed"}"# : #"{"name":"Bonsai.release.plist"}"#
+    let script = """
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    log="\(log.path(percentEncoded: false))"
+    method="GET"
+    output="/dev/null"
+    url=""
+
+    while [[ "$#" -gt 0 ]]; do
+      case "$1" in
+        -X)
+          method="$2"
+          shift 2
+          ;;
+        -o)
+          output="$2"
+          shift 2
+          ;;
+        -w)
+          shift 2
+          ;;
+        -H)
+          shift 2
+          ;;
+        --data-binary)
+          shift 2
+          ;;
+        -sS)
+          shift
+          ;;
+        *)
+          url="$1"
+          shift
+          ;;
+      esac
+    done
+
+    printf '%s|%s\\n' "$method" "$url" >> "$log"
+
+    status="500"
+    body='{"message":"unexpected"}'
+    case "$method|$url" in
+      "GET|https://api.github.com/repos/devaryakjha/bonsai/releases/tags/v9.8.7")
+        status="404"
+        body='{"message":"Not Found"}'
+        ;;
+      "GET|https://api.github.com/repos/devaryakjha/bonsai/git/ref/tags/v9.8.7")
+        status="404"
+        body='{"message":"Not Found"}'
+        ;;
+      "POST|https://api.github.com/repos/devaryakjha/bonsai/releases")
+        status="201"
+        body='{"id":42}'
+        ;;
+      "POST|https://uploads.github.com/repos/devaryakjha/bonsai/releases/42/assets?name=Bonsai.zip")
+        status="201"
+        body='{"name":"Bonsai.zip"}'
+        ;;
+      "POST|https://uploads.github.com/repos/devaryakjha/bonsai/releases/42/assets?name=Bonsai.release.plist")
+        status="\(manifestStatus)"
+        body='\(manifestBody)'
+        ;;
+      "DELETE|https://api.github.com/repos/devaryakjha/bonsai/releases/42")
+        status="204"
+        body='{}'
+        ;;
+      "DELETE|https://api.github.com/repos/devaryakjha/bonsai/git/refs/tags/v9.8.7")
+        status="204"
+        body='{}'
+        ;;
+    esac
+
+    printf '%s' "$body" > "$output"
+    printf '%s' "$status"
+    """
+    try script.write(to: curl, atomically: true, encoding: .utf8)
+    try FileManager.default.setAttributes(
+      [.posixPermissions: 0o755],
+      ofItemAtPath: curl.path(percentEncoded: false)
+    )
+
+    return DraftReleaseFixture(
+      fakeBin: fakeBin,
+      runnerTemp: runnerTemp,
+      archive: archive,
+      manifest: manifest,
+      log: log
+    )
   }
 
   private func packageRoot() throws -> URL {
@@ -387,4 +570,12 @@ final class ReleaseScriptTests: XCTestCase {
 private struct ProcessResult {
   var status: Int32
   var output: String
+}
+
+private struct DraftReleaseFixture {
+  var fakeBin: URL
+  var runnerTemp: URL
+  var archive: URL
+  var manifest: URL
+  var log: URL
 }
