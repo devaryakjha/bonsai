@@ -45,6 +45,7 @@ development, regular checkpoint commits, and OSS-ready project structure.
 | Release artifact verification | `script/package_release.sh --verify-artifacts` validates the zip, manifest shape, archive name, byte size, and SHA-256 after packaging or download | Covered |
 | Release guardrail tests | `Tests/BonsaiTests/ReleaseScriptTests.swift` covers credential rejection, doctor output, artifact verifier wiring, manifest upload, draft release upload/cleanup, release secret template output, and temporary keychain cleanup wiring without running release builds or notarization | Covered |
 | Credentialed GitHub release path | `.github/workflows/release.yml` is manual-only, targets Jarvis, uses the protected `release` environment, imports the Developer ID certificate, stores notarytool credentials in a temporary keychain, runs `--notarize`, uploads zip plus manifest, creates a draft GitHub Release from the audited commit, and cleans up the temporary keychain; run `25278300708` passed | Covered |
+| Downloaded release app walkthrough | `Specs/0299-released-app-walkthrough.md` verifies the published `v0.1.0` zip after download, stapler, Gatekeeper, launch, repository open, history, working-tree, split diff, and released-app sidebar sampling | Covered |
 
 ## Current Release Evidence
 
@@ -95,6 +96,11 @@ development, regular checkpoint commits, and OSS-ready project structure.
 - `make release-github-doctor` reports the `release` environment, required
   reviewer, Jarvis runner labels, all six protected environment secrets, and no
   repository-level release secret leakage as ready.
+- `Specs/0299-released-app-walkthrough.md` records a published-release
+  walkthrough using the downloaded `v0.1.0` app bundle. The expanded app passed
+  stapler and Gatekeeper checks, opened an audit Git repository, rendered
+  history and working-tree split diff screenshots, and sampled sidebar toggling
+  with `hot_frames=0` for known diff/header/parser hot frames.
 
 ## Acceptance
 
@@ -122,3 +128,5 @@ development, regular checkpoint commits, and OSS-ready project structure.
 - A manual GitHub release workflow and protected `release` environment exist,
   and the current protected release run produced a published GitHub Release with
   notarized macOS binaries attached.
+- The downloaded published app has a recorded smoke walkthrough that opens a
+  real repository and renders history, working-tree, and split diff surfaces.
