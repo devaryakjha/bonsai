@@ -125,11 +125,19 @@ failure paths.
 
 ## Workflow Run
 
-Run the manual `Release` workflow from the audited commit. The workflow validates
-source, imports the certificate, stores notarytool credentials, runs the release
-doctor and credential preflight, builds the notarized archive, uploads the
-artifact pair to the workflow run, and creates a draft GitHub Release tagged
-from the audited commit with:
+Run the manual `Release` workflow from the audited commit first with its default
+`dry_run` input enabled. The dry run targets Jarvis, validates source, builds the
+credential-free archive with `script/package_release.sh --verify-archive`,
+verifies the generated artifact pair, and uploads it to the workflow run. It
+does not read release secrets, create a signing keychain, notarize, or create a
+draft GitHub Release.
+
+For a public release, run the same workflow again with `dry_run` disabled after
+`./script/package_release.sh --github-doctor` reports the protected environment
+is ready. The credentialed run imports the certificate, stores notarytool
+credentials, runs the release doctor and credential preflight, builds the
+notarized archive, uploads the artifact pair to the workflow run, and creates a
+draft GitHub Release tagged from the audited commit with:
 
 - `Bonsai.zip`
 - `Bonsai.release.plist`

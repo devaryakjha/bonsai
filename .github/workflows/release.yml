@@ -11,6 +11,11 @@ on:
         description: Build number. Defaults to the GitHub run number.
         required: false
         type: string
+      dry_run:
+        description: Build and verify on Jarvis without signing secrets, notarization, or draft release creation.
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   contents: write
@@ -45,15 +50,20 @@ jobs:
         run: |
           version="${{ inputs.version }}"
           build_number="${{ inputs.build_number }}"
+          dry_run="${{ inputs.dry_run }}"
           if [[ -z "$version" ]]; then
             version="$(tr -d '[:space:]' < VERSION)"
           fi
           if [[ -z "$build_number" ]]; then
             build_number="${{ github.run_number }}"
           fi
+          if [[ -z "$dry_run" ]]; then
+            dry_run="true"
+          fi
           {
             echo "BONSAI_VERSION=$version"
             echo "BONSAI_BUILD_NUMBER=$build_number"
+            echo "BONSAI_RELEASE_DRY_RUN=$dry_run"
             echo "BONSAI_NOTARY_KEYCHAIN=$RUNNER_TEMP/bonsai-signing.keychain-db"
           } >> "$GITHUB_ENV"
 
@@ -69,6 +79,7 @@ jobs:
           swift test
 
       - name: Check release secrets
+        if: ${{ inputs.dry_run != true }}
         env:
           BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64: ${{ secrets.BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64 }}
           BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD }}
@@ -92,6 +103,7 @@ jobs:
           exit "$missing"
 
       - name: Create signing keychain
+        if: ${{ inputs.dry_run != true }}
         env:
           BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64: ${{ secrets.BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64 }}
           BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD }}
@@ -119,6 +131,7 @@ jobs:
           rm -f "$certificate_path"
 
       - name: Store notarization credentials
+        if: ${{ inputs.dry_run != true }}
         env:
           BONSAI_NOTARY_APPLE_ID: ${{ secrets.BONSAI_NOTARY_APPLE_ID }}
           BONSAI_NOTARY_APP_PASSWORD: ${{ secrets.BONSAI_NOTARY_APP_PASSWORD }}
@@ -131,12 +144,18 @@ jobs:
             --keychain "$BONSAI_NOTARY_KEYCHAIN"
 
       - name: Check release credentials
+        if: ${{ inputs.dry_run != true }}
         run: |
           ./script/package_release.sh --doctor
           ./script/package_release.sh --check-credentials
 
       - name: Build signed and notarized archive
+        if: ${{ inputs.dry_run != true }}
         run: ./script/package_release.sh --notarize
+
+      - name: Build dry-run archive
+        if: ${{ inputs.dry_run == true }}
+        run: ./script/package_release.sh --verify-archive
 
       - name: Verify release artifacts
         run: ./script/package_release.sh --verify-artifacts
@@ -152,6 +171,7 @@ jobs:
           retention-days: 30
 
       - name: Create draft GitHub release
+        if: ${{ inputs.dry_run != true }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: ./script/create_github_draft_release.sh

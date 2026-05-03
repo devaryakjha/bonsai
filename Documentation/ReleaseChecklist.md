@@ -108,10 +108,16 @@ that final zip.
   `BONSAI_NOTARY_APPLE_ID`,
   `BONSAI_NOTARY_APP_PASSWORD`, and
   `BONSAI_NOTARY_TEAM_ID`.
+- Run the manual `Release` workflow once with the default `dry_run` input before
+  attempting a credentialed release. This exercises the Jarvis runner, source
+  validation, release archive creation, artifact verification, and workflow
+  artifact upload without reading Apple signing secrets or creating a draft
+  GitHub Release.
 - Run the manual `Release` workflow if the artifact should be produced by
-  GitHub Actions. The workflow targets the Jarvis self-hosted macOS ARM64
-  runner, uploads the notarized artifact pair to the workflow run, and creates a
-  draft GitHub Release tagged from the audited commit.
+  GitHub Actions, with `dry_run` disabled for the public artifact. The workflow
+  targets the Jarvis self-hosted macOS ARM64 runner, uploads the notarized
+  artifact pair to the workflow run, and creates a draft GitHub Release tagged
+  from the audited commit.
 - If using a local notarization run instead of the workflow, tag the audited
   commit and attach `dist/release/Bonsai.zip` plus
   `dist/release/Bonsai.release.plist` manually.
