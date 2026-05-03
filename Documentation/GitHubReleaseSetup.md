@@ -79,7 +79,10 @@ export BONSAI_NOTARY_TEAM_ID="TEAMID"
 
 The helper uploads only to the protected environment and runs
 `./script/package_release.sh --github-doctor` after upload. It does not print
-secret values.
+secret values. Both `--dry-run` and upload mode first import the configured
+Developer ID `.p12` into a temporary keychain and confirm it exposes
+`BONSAI_CODESIGN_IDENTITY`; the temporary keychain is deleted before the helper
+exits.
 
 The workflow consumes these secrets:
 

@@ -121,6 +121,8 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(result.output.contains("Bonsai GitHub release secret configurator"), result.output)
     XCTAssertTrue(result.output.contains("release environment: available"), result.output)
     XCTAssertTrue(result.output.contains("BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64: ready from certificate file"), result.output)
+    XCTAssertTrue(result.output.contains("Developer ID certificate: importable"), result.output)
+    XCTAssertTrue(result.output.contains("Developer ID certificate identity: matches configured identity"), result.output)
     XCTAssertTrue(result.output.contains("BONSAI_NOTARY_APP_PASSWORD: ready"), result.output)
     XCTAssertTrue(result.output.contains("Dry run complete; no GitHub secrets were changed"), result.output)
     XCTAssertFalse(result.output.contains("certificate-private-bytes"), result.output)
@@ -177,6 +179,7 @@ final class ReleaseScriptTests: XCTestCase {
     )
 
     XCTAssertEqual(result.status, 0, result.output)
+    XCTAssertTrue(result.output.contains("Developer ID certificate: importable"), result.output)
     XCTAssertTrue(result.output.contains("BONSAI_CODESIGN_IDENTITY: uploaded to release"), result.output)
     XCTAssertTrue(result.output.contains("BONSAI_NOTARY_TEAM_ID: uploaded to release"), result.output)
     XCTAssertTrue(result.output.contains("GitHub release configuration: ready"), result.output)
@@ -193,6 +196,33 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(logText.contains("set|BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64|"), logText)
     XCTAssertFalse(logText.contains("certificate-private-bytes"), logText)
     XCTAssertFalse(logText.contains("notary-password-secret"), logText)
+  }
+
+  func testGitHubSecretConfiguratorRejectsCertificateWithoutConfiguredIdentity() throws {
+    let fakeBin = try makeFakeGitHubSecretConfiguratorCLI(
+      log: nil,
+      failOnSecretSet: true,
+      certificateIdentity: "Developer ID Application: Other, Inc. (OTHERID)"
+    )
+    let certificate = try makeTemporaryCertificate(contents: "certificate-private-bytes")
+    let path = [
+      fakeBin.path(percentEncoded: false),
+      ProcessInfo.processInfo.environment["PATH"] ?? ""
+    ].joined(separator: ":")
+    let result = try runScript(
+      "script/configure_github_release_secrets.sh",
+      arguments: ["--dry-run"],
+      environment: releaseSecretEnvironment(path: path, certificate: certificate)
+    )
+
+    XCTAssertNotEqual(result.status, 0)
+    XCTAssertTrue(
+      result.output.contains("Developer ID certificate identity: configured identity not found in .p12"),
+      result.output
+    )
+    XCTAssertTrue(result.output.contains("GitHub release secrets: not ready"), result.output)
+    XCTAssertFalse(result.output.contains("certificate-private-bytes"), result.output)
+    XCTAssertFalse(result.output.contains("notary-password-secret"), result.output)
   }
 
   func testCIWorkflowRunsArtifactVerifierAfterArchiveVerifier() throws {
@@ -599,7 +629,8 @@ final class ReleaseScriptTests: XCTestCase {
 
   private func makeFakeGitHubSecretConfiguratorCLI(
     log: URL?,
-    failOnSecretSet: Bool
+    failOnSecretSet: Bool,
+    certificateIdentity: String = "Developer ID Application: Example, Inc. (TEAMID)"
   ) throws -> URL {
     let directory = FileManager.default.temporaryDirectory
       .appending(path: "bonsai-gh-secrets-\(UUID().uuidString)", directoryHint: .isDirectory)
@@ -656,6 +687,39 @@ final class ReleaseScriptTests: XCTestCase {
     try FileManager.default.setAttributes(
       [.posixPermissions: 0o755],
       ofItemAtPath: executable.path(percentEncoded: false)
+    )
+    let security = directory.appending(path: "security")
+    let securityScript = """
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    case "$1" in
+      create-keychain)
+        last=""
+        for argument in "$@"; do
+          last="$argument"
+        done
+        : > "$last"
+        ;;
+      unlock-keychain)
+        ;;
+      import)
+        ;;
+      find-identity)
+        printf '%s\\n' '  1) ABCDEF1234567890 "\(certificateIdentity)"'
+        ;;
+      delete-keychain)
+        ;;
+      *)
+        printf 'unexpected security invocation: %s\\n' "$*" >&2
+        exit 2
+        ;;
+    esac
+    """
+    try securityScript.write(to: security, atomically: true, encoding: .utf8)
+    try FileManager.default.setAttributes(
+      [.posixPermissions: 0o755],
+      ofItemAtPath: security.path(percentEncoded: false)
     )
     return directory
   }

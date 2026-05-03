@@ -37,7 +37,7 @@ development, regular checkpoint commits, and OSS-ready project structure.
 | Release archive validation | `script/package_release.sh` extracts each release zip and validates archived bundle metadata after creation | Covered |
 | Release credential diagnosis | `script/package_release.sh --doctor` reports Developer ID identity, configured signing identity, and notary profile readiness without mutating artifacts | Covered |
 | GitHub release setup diagnosis | `script/package_release.sh --github-doctor` reports the protected environment, reviewer rule, Jarvis runner labels, required environment secret names, and repository-level secret leakage without printing secret values | Covered |
-| GitHub release secret handoff | `script/configure_github_release_secrets.sh` validates local Apple release credential inputs, uploads the six required secret names to the protected environment, and reruns the GitHub release doctor without printing secret values | Covered pending secret values |
+| GitHub release secret handoff | `script/configure_github_release_secrets.sh` validates local Apple release credential inputs, imports the Developer ID `.p12` into a temporary keychain to confirm it exposes the configured identity, uploads the six required secret names to the protected environment, and reruns the GitHub release doctor without printing secret values | Covered pending secret values |
 | GitHub release secret template | `script/configure_github_release_secrets.sh --print-template` prints the required local release credential exports with placeholders and no GitHub CLI dependency | Covered pending secret values |
 | Jarvis release runner preflight | `script/check_release_runner.sh --workflow` checks Jarvis' no-secret GitHub Actions release toolchain and now exits zero with `Release workflow runner: ready`; strict `script/check_release_runner.sh` still checks runner-local Developer ID identities, signing smoke, and notary profile state without changing secrets or keychains | Covered |
 | Jarvis release workflow dry run | The manual `Release` workflow defaults to a no-secret dry run on Jarvis outside the protected `release` environment, runs source validation, builds `--verify-archive`, verifies the artifact pair, and skips secret checks, notarization, and draft release creation; run `25270932133` passed and its downloaded artifact pair verified locally | Covered |
@@ -97,7 +97,8 @@ development, regular checkpoint commits, and OSS-ready project structure.
   `script/package_release.sh --doctor`.
 - A read-only GitHub release setup diagnostic exists:
   `script/package_release.sh --github-doctor`.
-- A maintainer-only protected environment secret upload helper exists:
+- A maintainer-only protected environment secret upload helper exists and
+  validates the Developer ID `.p12` in a temporary keychain before upload:
   `script/configure_github_release_secrets.sh`.
 - A no-secret release credential template exists:
   `script/configure_github_release_secrets.sh --print-template`.

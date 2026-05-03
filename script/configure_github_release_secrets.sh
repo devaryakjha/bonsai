@@ -11,7 +11,9 @@ usage() {
 usage: script/configure_github_release_secrets.sh [--dry-run|--print-template]
 
 Uploads Bonsai release secrets to the protected GitHub Actions environment.
-Secret values are read from environment variables and are never printed.
+Secret values are read from environment variables and are never printed. Dry-run
+and upload modes validate the Developer ID .p12 in a temporary keychain before
+any GitHub secrets are changed.
 
 Environment:
   BONSAI_CODESIGN_IDENTITY                    Developer ID Application identity.
@@ -96,6 +98,55 @@ check_github_environment() {
   mark_failure
 }
 
+validate_certificate_import() {
+  local temp_dir keychain keychain_password import_stderr identity_output validation_failed
+  if ! command -v security >/dev/null; then
+    echo "Developer ID certificate: security tool missing"
+    mark_failure
+    return
+  fi
+
+  temp_dir="$(mktemp -d)"
+  keychain="$temp_dir/bonsai-release-secret-validation.keychain-db"
+  keychain_password="bonsai-temporary-validation-password"
+  import_stderr="$temp_dir/security-import.stderr"
+  validation_failed=0
+
+  if ! security create-keychain -p "$keychain_password" "$keychain" >/dev/null 2>"$import_stderr"; then
+    echo "Developer ID certificate: temporary keychain failed"
+    sed -n "1,3p" "$import_stderr"
+    validation_failed=1
+  elif ! security unlock-keychain -p "$keychain_password" "$keychain" >/dev/null 2>"$import_stderr"; then
+    echo "Developer ID certificate: temporary keychain unlock failed"
+    sed -n "1,3p" "$import_stderr"
+    validation_failed=1
+  elif ! security import "$BONSAI_DEVELOPER_ID_CERTIFICATE_PATH" \
+    -k "$keychain" \
+    -P "$BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD" \
+    -T /usr/bin/codesign \
+    >/dev/null 2>"$import_stderr"; then
+    echo "Developer ID certificate: import failed"
+    sed -n "1,3p" "$import_stderr"
+    validation_failed=1
+  else
+    identity_output="$(security find-identity -p codesigning -v "$keychain" 2>"$import_stderr" || true)"
+    if printf '%s\n' "$identity_output" | grep -F -- "$BONSAI_CODESIGN_IDENTITY" >/dev/null; then
+      echo "Developer ID certificate: importable"
+      echo "Developer ID certificate identity: matches configured identity"
+    else
+      echo "Developer ID certificate identity: configured identity not found in .p12"
+      validation_failed=1
+    fi
+  fi
+
+  security delete-keychain "$keychain" >/dev/null 2>&1 || true
+  rm -rf "$temp_dir"
+
+  if [[ "$validation_failed" != "0" ]]; then
+    mark_failure
+  fi
+}
+
 validate_inputs() {
   echo "Bonsai GitHub release secret configurator"
   echo "Repository: $GITHUB_RELEASE_REPOSITORY"
@@ -108,6 +159,10 @@ validate_inputs() {
   check_env BONSAI_NOTARY_APPLE_ID
   check_env BONSAI_NOTARY_APP_PASSWORD
   check_env BONSAI_NOTARY_TEAM_ID
+
+  if [[ "$failures" == "0" ]]; then
+    validate_certificate_import
+  fi
 
   if [[ "$failures" != "0" ]]; then
     echo "GitHub release secrets: not ready"
