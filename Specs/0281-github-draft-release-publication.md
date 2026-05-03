@@ -16,6 +16,8 @@ workflow storage to a GitHub Release.
 - Attach both `dist/release/Bonsai.zip` and
   `dist/release/Bonsai.release.plist` to the draft release.
 - Target the release tag at the audited workflow commit.
+- Use the GitHub API from the workflow so Jarvis does not need the GitHub CLI
+  installed for release publication.
 - Avoid publishing directly; maintainers must still run post-release download
   and Gatekeeper checks before making the release public.
 
@@ -25,6 +27,8 @@ workflow storage to a GitHub Release.
   creation.
 - `.github/workflows/release.yml` creates a draft GitHub Release after artifact
   verification and workflow artifact upload.
+- `.github/workflows/release.yml` checks `curl` and `jq` availability and does
+  not depend on `gh` for draft release creation.
 - Release docs explain that the workflow creates a draft release, and that the
   downloaded assets still need local post-release verification before publish.
 - `ReleaseScriptTests` cover the draft-release workflow wiring.
