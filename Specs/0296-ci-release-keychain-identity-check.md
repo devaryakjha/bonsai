@@ -12,6 +12,9 @@ instead of assuming the identity lives in the login keychain.
   it is set.
 - Preserve the login-keychain behavior for local maintainer checks where no
   release keychain override is provided.
+- Import Apple's Developer ID G2 intermediate certificate into the temporary
+  CI keychain before importing the Developer ID `.p12`, so
+  `security find-identity -v` can validate the identity chain on Jarvis.
 - Apply the same keychain selection to `--doctor`, `--check-credentials`,
   `--archive`, and `--notarize` credential gates.
 - Keep diagnostic output secret-free.
@@ -22,3 +25,5 @@ instead of assuming the identity lives in the login keychain.
   having the configured Developer ID identity.
 - Missing notary profile validation remains a separate failure, proving the
   identity check no longer blocks before the notarization credential check.
+- `ReleaseScriptTests` assert that the protected release workflow imports the
+  Developer ID G2 intermediate certificate in the signing keychain setup.

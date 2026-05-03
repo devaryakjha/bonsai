@@ -179,6 +179,16 @@ jobs:
           security list-keychains -d user -s "$BONSAI_NOTARY_KEYCHAIN"
           security default-keychain -s "$BONSAI_NOTARY_KEYCHAIN"
 
+          developer_id_g2_path="$RUNNER_TEMP/DeveloperIDG2CA.cer"
+          curl --fail --show-error --silent --location \
+            --retry 3 \
+            --output "$developer_id_g2_path" \
+            https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer
+          security import "$developer_id_g2_path" \
+            -k "$BONSAI_NOTARY_KEYCHAIN" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security
+
           certificate_path="$RUNNER_TEMP/bonsai-developer-id.p12"
           printf '%s' "$BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64" | base64 --decode > "$certificate_path"
           security import "$certificate_path" \
@@ -191,7 +201,7 @@ jobs:
             -s \
             -k "$keychain_password" \
             "$BONSAI_NOTARY_KEYCHAIN"
-          rm -f "$certificate_path"
+          rm -f "$certificate_path" "$developer_id_g2_path"
 
       - name: Store notarization credentials
         env:

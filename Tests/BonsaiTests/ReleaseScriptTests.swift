@@ -321,6 +321,8 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(notarizeJob.contains("environment: release"), notarizeJob)
     XCTAssertTrue(notarizeJob.contains("BONSAI_RELEASE_DRY_RUN=false"), notarizeJob)
     XCTAssertTrue(notarizeJob.contains("BONSAI_NOTARY_KEYCHAIN=$RUNNER_TEMP/bonsai-signing.keychain-db"), notarizeJob)
+    XCTAssertTrue(notarizeJob.contains("https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer"), notarizeJob)
+    XCTAssertTrue(notarizeJob.contains("security import \"$developer_id_g2_path\""), notarizeJob)
     XCTAssertTrue(notarizeJob.contains("./script/package_release.sh --notarize"), notarizeJob)
     XCTAssertTrue(notarizeJob.contains("./script/package_release.sh --verify-artifacts"), notarizeJob)
     XCTAssertTrue(notarizeJob.contains("GH_TOKEN: ${{ github.token }}"), notarizeJob)
