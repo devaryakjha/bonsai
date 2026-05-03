@@ -26,7 +26,11 @@ jobs:
 
       - name: Validate shell scripts
         run: |
-          for script in script/build_and_run.sh script/package_release.sh script/perf_large_repo.sh; do
+          for script in \
+            script/build_and_run.sh \
+            script/configure_github_release_secrets.sh \
+            script/package_release.sh \
+            script/perf_large_repo.sh; do
             bash -n "$script"
           done
 

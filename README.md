@@ -87,6 +87,7 @@ Check local distribution credential readiness:
 ./script/package_release.sh --doctor
 ./script/package_release.sh --check-credentials
 ./script/package_release.sh --github-doctor
+./script/configure_github_release_secrets.sh --dry-run
 ```
 
 The credential checks are expected to fail on machines without a Developer ID

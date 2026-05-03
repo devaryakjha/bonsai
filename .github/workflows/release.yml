@@ -59,6 +59,7 @@ jobs:
         run: |
           git diff --check
           bash -n script/build_and_run.sh
+          bash -n script/configure_github_release_secrets.sh
           bash -n script/package_release.sh
           bash -n script/perf_large_repo.sh
           swift test

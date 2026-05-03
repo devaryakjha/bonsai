@@ -33,6 +33,24 @@ Check the GitHub-side release setup without printing secret values:
 ./script/package_release.sh --github-doctor
 ```
 
+Maintainers can validate and upload the required environment secrets with:
+
+```sh
+export BONSAI_CODESIGN_IDENTITY="Developer ID Application: Example, Inc. (TEAMID)"
+export BONSAI_DEVELOPER_ID_CERTIFICATE_PATH="/path/to/DeveloperID.p12"
+export BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD="p12 export password"
+export BONSAI_NOTARY_APPLE_ID="developer@example.com"
+export BONSAI_NOTARY_APP_PASSWORD="app-specific password"
+export BONSAI_NOTARY_TEAM_ID="TEAMID"
+
+./script/configure_github_release_secrets.sh --dry-run
+./script/configure_github_release_secrets.sh
+```
+
+The helper uploads only to the protected environment and runs
+`./script/package_release.sh --github-doctor` after upload. It does not print
+secret values.
+
 The workflow consumes these secrets:
 
 - `BONSAI_CODESIGN_IDENTITY`
