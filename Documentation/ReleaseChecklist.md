@@ -83,6 +83,11 @@ that final zip.
 
 - Follow `Documentation/GitHubReleaseSetup.md` when configuring GitHub Actions
   release credentials for the first time.
+- Confirm the Jarvis runner machine is reachable and has the expected release
+  toolchain state:
+  ```sh
+  ./script/check_release_runner.sh
+  ```
 - Confirm the protected environment, Jarvis runner, and required environment
   secret names:
   ```sh

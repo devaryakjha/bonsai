@@ -158,6 +158,7 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertNotNil(artifactRange)
     XCTAssertLessThan(archiveRange?.lowerBound ?? workflow.endIndex, artifactRange?.lowerBound ?? workflow.startIndex)
     XCTAssertTrue(workflow.contains("uses: actions/checkout@v6"))
+    XCTAssertTrue(workflow.contains("script/check_release_runner.sh"))
     XCTAssertTrue(workflow.contains("script/configure_github_release_secrets.sh"))
   }
 
@@ -172,6 +173,7 @@ final class ReleaseScriptTests: XCTestCase {
 
     XCTAssertTrue(workflow.contains("environment: release"))
     XCTAssertTrue(workflow.contains("uses: actions/checkout@v6"))
+    XCTAssertTrue(workflow.contains("bash -n script/check_release_runner.sh"))
     XCTAssertTrue(workflow.contains("bash -n script/configure_github_release_secrets.sh"))
     XCTAssertTrue(workflow.contains("- self-hosted"))
     XCTAssertTrue(workflow.contains("- macOS"))

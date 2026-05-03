@@ -17,6 +17,16 @@ Jarvis should be online and available to the `devaryakjha/bonsai` repository
 before starting the workflow. Regular pull request and push validation stays on
 GitHub-hosted macOS runners and does not receive release credentials.
 
+Check the configured runner without changing keychains or secrets:
+
+```sh
+./script/check_release_runner.sh
+```
+
+The script defaults to `ssh jarvis` and checks toolchain versions, visible
+Developer ID Application identities, and the configured notarytool profile. Use
+`BONSAI_RELEASE_RUNNER_HOST` to point it at another runner host.
+
 ## Protected Environment
 
 Create a GitHub Actions environment named `release` and put the release secrets

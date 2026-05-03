@@ -28,6 +28,7 @@ jobs:
         run: |
           for script in \
             script/build_and_run.sh \
+            script/check_release_runner.sh \
             script/configure_github_release_secrets.sh \
             script/package_release.sh \
             script/perf_large_repo.sh; do
