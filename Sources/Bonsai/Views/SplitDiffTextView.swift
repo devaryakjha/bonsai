@@ -96,10 +96,14 @@ struct SplitDiffTextView: NSViewRepresentable {
     private var lastUsesSideBySide: Bool?
     private var isSyncing = false
     private var frameObserver: NSObjectProtocol?
+    private var scrollObservers: [NSObjectProtocol] = []
 
     deinit {
       if let frameObserver {
         NotificationCenter.default.removeObserver(frameObserver)
+      }
+      for observer in scrollObservers {
+        NotificationCenter.default.removeObserver(observer)
       }
     }
 
@@ -142,23 +146,25 @@ struct SplitDiffTextView: NSViewRepresentable {
 
     func installScrollSync() {
       if let oldClip = oldScrollView?.contentView {
-        NotificationCenter.default.addObserver(
+        let observer = NotificationCenter.default.addObserver(
           forName: NSView.boundsDidChangeNotification,
           object: oldClip,
           queue: .main
         ) { [weak self] _ in
           self?.sync(from: self?.oldScrollView, to: self?.newScrollView)
         }
+        scrollObservers.append(observer)
       }
 
       if let newClip = newScrollView?.contentView {
-        NotificationCenter.default.addObserver(
+        let observer = NotificationCenter.default.addObserver(
           forName: NSView.boundsDidChangeNotification,
           object: newClip,
           queue: .main
         ) { [weak self] _ in
           self?.sync(from: self?.newScrollView, to: self?.oldScrollView)
         }
+        scrollObservers.append(observer)
       }
     }
 

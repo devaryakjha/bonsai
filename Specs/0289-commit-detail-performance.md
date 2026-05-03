@@ -17,6 +17,9 @@ moving through history.
   the UI.
 - Cancelled Git subprocesses are terminated instead of being allowed to burn CPU
   in the background.
+- AppKit bridge observers used by rich diff surfaces are removed with their
+  coordinators so repeated diff view creation does not leak notification
+  tokens.
 
 ## Acceptance
 
