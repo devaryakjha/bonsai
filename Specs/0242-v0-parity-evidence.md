@@ -71,6 +71,7 @@ Fork 2.66 dated 10 Apr 2026 at the time of this refresh.
 | Ahead/behind pull and push toolbar counts | Verified through `Specs/0040-toolbar-tracking-counts.md` and `Specs/0109-tracking-action-arrow-labels.md` |
 | Select stale local branches | Verified through `Specs/0286-stale-local-branch-selection.md` |
 | Copy path from worktree and submodule context menus | Verified through `Specs/0085-copy-infrastructure-values.md` |
+| Verbose Git output preference | Verified through `Specs/0288-verbose-git-output-preference.md` |
 
 ## Remaining Completion Gates
 

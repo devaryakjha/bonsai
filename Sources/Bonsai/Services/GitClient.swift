@@ -1031,7 +1031,11 @@ struct GitClient {
 
   func runRaw(_ arguments: [String], in repository: GitRepository) async throws -> String {
     let output = try await git(arguments, in: repository.url)
-    return output.combinedOutput
+    return GitCommandOutputFormatter.formattedOutput(
+      arguments: arguments,
+      output: output,
+      verbose: UserDefaults.standard.bool(forKey: GitCommandOutputFormatter.verboseGitOutputKey)
+    )
   }
 
   func runRevisionCommand(

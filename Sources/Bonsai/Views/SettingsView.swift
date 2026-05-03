@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
   @AppStorage("bonsai.showToolbarLabels") private var showToolbarLabels = false
   @AppStorage("bonsai.autoRefresh") private var autoRefresh = true
+  @AppStorage(GitCommandOutputFormatter.verboseGitOutputKey) private var verboseGitOutput = false
   @AppStorage("bonsai.showCommitRowDetails") private var showCommitRowDetails = false
   @AppStorage("bonsai.diffAlgorithm") private var diffAlgorithm = DiffAlgorithm.histogram.rawValue
   @AppStorage("bonsai.diffWhitespaceMode") private var diffWhitespaceMode = DiffWhitespaceMode.show.rawValue
@@ -29,6 +30,11 @@ struct SettingsView: View {
           Toggle("", isOn: $autoRefresh)
             .labelsHidden()
             .accessibilityLabel("Auto refresh")
+        }
+        SettingsRow("Verbose Git output") {
+          Toggle("", isOn: $verboseGitOutput)
+            .labelsHidden()
+            .accessibilityLabel("Verbose Git output")
         }
         SettingsRow("Source directories") {
           TextEditor(text: $sourceDirectories)
