@@ -83,10 +83,29 @@ api_headers=(
   -H "X-GitHub-Api-Version: 2022-11-28"
 )
 
+delete_release_by_id() {
+  local release_id="$1" delete_response delete_status
+  delete_response="$TEMP_ROOT/bonsai-release-delete-$release_id.json"
+  delete_status="$(
+    curl -sS \
+      -X DELETE \
+      -o "$delete_response" \
+      -w "%{http_code}" \
+      "${api_headers[@]}" \
+      "$API_BASE/releases/$release_id"
+  )"
+  if [[ "$delete_status" != "204" ]]; then
+    echo "Existing draft release deletion failed with status $delete_status" >&2
+    cat "$delete_response" >&2
+    exit 1
+  fi
+}
+
 urlencode() {
   jq -rn --arg value "$1" '$value | @uri'
 }
 
+existing_release_id=""
 release_lookup_response="$TEMP_ROOT/bonsai-release-lookup.json"
 release_lookup_status="$(
   curl -sS \
@@ -108,20 +127,7 @@ if [[ "$release_lookup_status" == "200" ]]; then
     exit 1
   fi
 
-  delete_response="$TEMP_ROOT/bonsai-existing-release-delete.json"
-  delete_status="$(
-    curl -sS \
-      -X DELETE \
-      -o "$delete_response" \
-      -w "%{http_code}" \
-      "${api_headers[@]}" \
-      "$API_BASE/releases/$existing_release_id"
-  )"
-  if [[ "$delete_status" != "204" ]]; then
-    echo "Existing draft release deletion failed with status $delete_status" >&2
-    cat "$delete_response" >&2
-    exit 1
-  fi
+  delete_release_by_id "$existing_release_id"
   echo "Replaced existing draft GitHub release for $RELEASE_TAG"
 fi
 if [[ "$release_lookup_status" != "404" ]]; then
@@ -131,6 +137,45 @@ if [[ "$release_lookup_status" != "404" ]]; then
     exit 1
   fi
 fi
+
+release_list_response="$TEMP_ROOT/bonsai-release-list.json"
+release_list_status="$(
+  curl -sS \
+    -o "$release_list_response" \
+    -w "%{http_code}" \
+    "${api_headers[@]}" \
+    "$API_BASE/releases?per_page=100"
+)"
+if [[ "$release_list_status" != "200" ]]; then
+  echo "GitHub release list failed with status $release_list_status" >&2
+  cat "$release_list_response" >&2
+  exit 1
+fi
+
+published_matching_count="$(
+  jq -r \
+    --arg tag "$RELEASE_TAG" \
+    '[.[] | select(.tag_name == $tag and .draft != true)] | length' \
+    "$release_list_response"
+)"
+if [[ "$published_matching_count" != "0" ]]; then
+  echo "Published GitHub release already exists for $RELEASE_TAG" >&2
+  exit 1
+fi
+
+draft_release_ids="$(
+  jq -r \
+    --arg tag "$RELEASE_TAG" \
+    '.[] | select(.tag_name == $tag and .draft == true) | .id' \
+    "$release_list_response"
+)"
+while IFS= read -r draft_release_id; do
+  if [[ -z "$draft_release_id" || "$draft_release_id" == "$existing_release_id" ]]; then
+    continue
+  fi
+  delete_release_by_id "$draft_release_id"
+  echo "Replaced existing draft GitHub release for $RELEASE_TAG"
+done <<<"$draft_release_ids"
 
 encoded_tag="$(urlencode "$RELEASE_TAG")"
 tag_lookup_response="$TEMP_ROOT/bonsai-tag-lookup.json"

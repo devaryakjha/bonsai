@@ -420,6 +420,7 @@ final class ReleaseScriptTests: XCTestCase {
 
     let logText = try String(contentsOf: fixture.log, encoding: .utf8)
     XCTAssertTrue(logText.contains("GET|https://api.github.com/repos/devaryakjha/bonsai/releases/tags/v9.8.7"), logText)
+    XCTAssertTrue(logText.contains("GET|https://api.github.com/repos/devaryakjha/bonsai/releases?per_page=100"), logText)
     XCTAssertTrue(logText.contains("DELETE|https://api.github.com/repos/devaryakjha/bonsai/releases/41"), logText)
     XCTAssertTrue(logText.contains("POST|https://api.github.com/repos/devaryakjha/bonsai/releases"), logText)
     XCTAssertTrue(logText.contains("POST|https://uploads.github.com/repos/devaryakjha/bonsai/releases/42/assets?name=Bonsai.zip"), logText)
@@ -567,8 +568,7 @@ final class ReleaseScriptTests: XCTestCase {
     let curl = fakeBin.appending(path: "curl")
     let manifestStatus = failManifestUpload ? "500" : "201"
     let manifestBody = failManifestUpload ? #"{"message":"upload failed"}"# : #"{"name":"Bonsai.release.plist"}"#
-    let releaseLookupStatus = existingReleaseDraft ? "200" : "404"
-    let releaseLookupBody = existingReleaseDraft ? #"{"id":41,"draft":true}"# : #"{"message":"Not Found"}"#
+    let releaseListBody = existingReleaseDraft ? #"[{"id":41,"draft":true,"tag_name":"v9.8.7"}]"# : #"[]"#
     let tagLookupStatus = tagExists ? "200" : "404"
     let tagLookupBody = tagExists ? #"{"ref":"refs/tags/v9.8.7"}"# : #"{"message":"Not Found"}"#
     let script = """
@@ -615,8 +615,12 @@ final class ReleaseScriptTests: XCTestCase {
     body='{"message":"unexpected"}'
     case "$method|$url" in
       "GET|https://api.github.com/repos/devaryakjha/bonsai/releases/tags/v9.8.7")
-        status="\(releaseLookupStatus)"
-        body='\(releaseLookupBody)'
+        status="404"
+        body='{"message":"Not Found"}'
+        ;;
+      "GET|https://api.github.com/repos/devaryakjha/bonsai/releases?per_page=100")
+        status="200"
+        body='\(releaseListBody)'
         ;;
       "GET|https://api.github.com/repos/devaryakjha/bonsai/git/ref/tags/v9.8.7")
         status="\(tagLookupStatus)"
