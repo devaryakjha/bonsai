@@ -53,8 +53,10 @@ there. Require reviewer approval for the environment before the workflow can
 access secrets.
 
 For `devaryakjha/bonsai`, the `release` environment has already been created
-with `devaryakjha` as a required reviewer. The remaining setup is to add the
-environment secrets below; repository-level release secrets should stay empty.
+with `devaryakjha` as a required reviewer, and the current environment secrets
+have produced a signed and notarized `v0.1.0` release. Repository-level release
+secrets should stay empty; keep release secrets scoped to the protected
+environment.
 
 Check the GitHub-side release setup without printing secret values:
 
@@ -217,6 +219,18 @@ After downloading the asset pair, verify it locally:
 mkdir -p dist/release
 cp Bonsai.zip Bonsai.release.plist dist/release/
 make release-verify-artifacts
+```
+
+If the release artifact passes local verification, publish the draft release:
+
+```sh
+gh release edit v0.1.0 --draft=false
+```
+
+For `v0.1.0`, the published release is:
+
+```text
+https://github.com/devaryakjha/bonsai/releases/tag/v0.1.0
 ```
 
 The public release should attach both files.

@@ -12,6 +12,8 @@
 <p align="center">
   <a href="#status">Status</a>
   ·
+  <a href="#install">Install</a>
+  ·
   <a href="#highlights">Highlights</a>
   ·
   <a href="#build">Build</a>
@@ -35,6 +37,19 @@ repository management, commit history, staging, rich unified and split diffs,
 branch/tag/remote workflows, stashes, merge/rebase/cherry-pick/revert,
 submodules, reflog recovery, file history, blame, conflict assistance, Git-flow,
 Git LFS, GPG signing, and provider notifications.
+
+## Install
+
+Download the latest notarized macOS archive from
+[GitHub Releases](https://github.com/devaryakjha/bonsai/releases/latest).
+
+For `v0.1.0`, the released assets are:
+
+- [`Bonsai.zip`](https://github.com/devaryakjha/bonsai/releases/download/v0.1.0/Bonsai.zip)
+- [`Bonsai.release.plist`](https://github.com/devaryakjha/bonsai/releases/download/v0.1.0/Bonsai.release.plist)
+
+The release manifest records the build number, source commit, archive size,
+SHA-256, signing kind, team identifier, and notarization state.
 
 ## Highlights
 

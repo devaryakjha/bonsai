@@ -132,6 +132,8 @@ that final zip.
 - If using a local notarization run instead of the workflow, tag the audited
   commit and attach `dist/release/Bonsai.zip` plus
   `dist/release/Bonsai.release.plist` manually.
+- Keep the GitHub Release as a draft until the downloaded assets pass the
+  post-release checks below, then publish it.
 - Include a concise summary of v0 parity coverage and known limitations.
 - Link `Specs/0242-v0-parity-evidence.md` for parity evidence.
 - Link `Documentation/ReleasePackaging.md` for build and notarization details.
@@ -142,6 +144,7 @@ that final zip.
   clean macOS account or machine.
 - Put `Bonsai.zip` and `Bonsai.release.plist` in `dist/release/`, then run
   `make release-verify-artifacts`.
+- Extract the downloaded zip and run `xcrun stapler validate Bonsai.app`.
 - Open Bonsai from the downloaded artifact.
 - Confirm Gatekeeper accepts the app.
 - Open a local Git repository and verify history, working tree, and diff loading.
