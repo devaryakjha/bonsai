@@ -109,19 +109,19 @@ that final zip.
   `BONSAI_NOTARY_TEAM_ID`.
 - Run the manual `Release` workflow if the artifact should be produced by
   GitHub Actions. The workflow targets the Jarvis self-hosted macOS ARM64
-  runner, so confirm Jarvis is online and available to this repository before
-  starting it.
-- Tag the release from the audited commit.
-- Attach the notarized `dist/release/Bonsai.zip` and
-  `dist/release/Bonsai.release.plist` from the local notarization run or from
-  the `Release` workflow artifact.
+  runner, uploads the notarized artifact pair to the workflow run, and creates a
+  draft GitHub Release tagged from the audited commit.
+- If using a local notarization run instead of the workflow, tag the audited
+  commit and attach `dist/release/Bonsai.zip` plus
+  `dist/release/Bonsai.release.plist` manually.
 - Include a concise summary of v0 parity coverage and known limitations.
 - Link `Specs/0242-v0-parity-evidence.md` for parity evidence.
 - Link `Documentation/ReleasePackaging.md` for build and notarization details.
 
 ## 6. Post-Release Check
 
-- Download the uploaded zip on a clean macOS account or machine.
+- Download the uploaded zip and manifest from the draft GitHub Release on a
+  clean macOS account or machine.
 - Put `Bonsai.zip` and `Bonsai.release.plist` in `dist/release/`, then run
   `./script/package_release.sh --verify-artifacts`.
 - Open Bonsai from the downloaded artifact.

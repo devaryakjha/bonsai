@@ -170,7 +170,9 @@ final class ReleaseScriptTests: XCTestCase {
     )
     let verifyRange = workflow.range(of: "name: Verify release artifacts")
     let uploadRange = workflow.range(of: "uses: actions/upload-artifact@v7")
+    let releaseRange = workflow.range(of: "gh release create \"$release_tag\"")
 
+    XCTAssertTrue(workflow.contains("contents: write"))
     XCTAssertTrue(workflow.contains("environment: release"))
     XCTAssertTrue(workflow.contains("uses: actions/checkout@v6"))
     XCTAssertTrue(workflow.contains("bash -n script/check_release_runner.sh"))
@@ -184,7 +186,13 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(workflow.contains("./script/package_release.sh --verify-artifacts"))
     XCTAssertNotNil(verifyRange)
     XCTAssertNotNil(uploadRange)
+    XCTAssertNotNil(releaseRange)
     XCTAssertLessThan(verifyRange?.lowerBound ?? workflow.endIndex, uploadRange?.lowerBound ?? workflow.startIndex)
+    XCTAssertLessThan(uploadRange?.lowerBound ?? workflow.endIndex, releaseRange?.lowerBound ?? workflow.startIndex)
+    XCTAssertTrue(workflow.contains("GH_TOKEN: ${{ github.token }}"))
+    XCTAssertTrue(workflow.contains("gh release view \"$release_tag\""))
+    XCTAssertTrue(workflow.contains("--target \"$GITHUB_SHA\""))
+    XCTAssertTrue(workflow.contains("--draft"))
     XCTAssertTrue(workflow.contains("if: always()"))
     XCTAssertTrue(workflow.contains("security delete-keychain \"$BONSAI_NOTARY_KEYCHAIN\""))
   }

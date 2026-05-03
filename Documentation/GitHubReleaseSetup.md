@@ -121,12 +121,17 @@ failure paths.
 
 Run the manual `Release` workflow from the audited commit. The workflow validates
 source, imports the certificate, stores notarytool credentials, runs the release
-doctor and credential preflight, builds the notarized archive, then uploads:
+doctor and credential preflight, builds the notarized archive, uploads the
+artifact pair to the workflow run, and creates a draft GitHub Release tagged
+from the audited commit with:
 
 - `Bonsai.zip`
 - `Bonsai.release.plist`
 
-After downloading the artifact pair, verify it locally:
+Keep the GitHub Release as a draft until the downloaded asset pair passes local
+post-release verification.
+
+After downloading the asset pair, verify it locally:
 
 ```sh
 mkdir -p dist/release

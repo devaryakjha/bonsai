@@ -21,6 +21,8 @@ available, without weakening local release validation.
   `./script/package_release.sh --verify-artifacts`.
 - Upload the final stapled `dist/release/Bonsai.zip` and
   `dist/release/Bonsai.release.plist` as workflow artifacts.
+- Create a draft GitHub Release from the audited commit after artifact
+  verification so maintainers can review assets before publishing.
 - Keep credential names documented and avoid checking secrets into the
   repository.
 
@@ -32,5 +34,7 @@ available, without weakening local release validation.
 - `script/package_release.sh` can validate and submit using an optional
   notarytool keychain path.
 - The workflow verifies release artifacts before upload.
+- The workflow creates a draft GitHub Release with the notarized zip and
+  manifest after artifact verification.
 - `Documentation/ReleaseChecklist.md` documents both local and GitHub release
   paths.

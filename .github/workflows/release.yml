@@ -13,7 +13,7 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   notarize:
@@ -147,6 +147,43 @@ jobs:
             dist/release/Bonsai.release.plist
           if-no-files-found: error
           retention-days: 30
+
+      - name: Create draft GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          release_tag="v$BONSAI_VERSION"
+          notes_path="$RUNNER_TEMP/bonsai-release-notes.md"
+          if gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "GitHub release already exists for $release_tag"
+            exit 1
+          fi
+
+          cat > "$notes_path" <<NOTES
+          Bonsai $BONSAI_VERSION ($BONSAI_BUILD_NUMBER)
+
+          Native macOS Git client v0 release candidate.
+
+          Evidence:
+          - Fork-parity matrix: Specs/0242-v0-parity-evidence.md
+          - Completion audit: Specs/0259-v0-completion-audit.md
+          - Release checklist: Documentation/ReleaseChecklist.md
+
+          Attachments:
+          - Bonsai.zip
+          - Bonsai.release.plist
+
+          Keep this release as a draft until the downloaded artifact passes the post-release Gatekeeper and smoke checks.
+          NOTES
+
+          gh release create "$release_tag" \
+            dist/release/Bonsai.zip \
+            dist/release/Bonsai.release.plist \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Bonsai $BONSAI_VERSION" \
+            --notes-file "$notes_path" \
+            --draft
 
       - name: Clean up signing keychain
         if: always()
