@@ -281,6 +281,26 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(logText.contains("DELETE|https://api.github.com/repos/devaryakjha/bonsai/git/refs/tags/v9.8.7"), logText)
   }
 
+  func testDraftReleaseScriptKeepsPreexistingTagOnAssetFailure() throws {
+    try requireExecutable("jq")
+    let root = try packageRoot()
+    let fixture = try makeDraftReleaseFixture(failManifestUpload: true, tagExists: true)
+    let result = try runScript(
+      "script/create_github_draft_release.sh",
+      environment: draftReleaseEnvironment(root: root, fixture: fixture)
+    )
+
+    XCTAssertNotEqual(result.status, 0)
+    XCTAssertTrue(
+      result.output.contains("GitHub release asset upload failed for Bonsai.release.plist"),
+      result.output
+    )
+
+    let logText = try String(contentsOf: fixture.log, encoding: .utf8)
+    XCTAssertTrue(logText.contains("DELETE|https://api.github.com/repos/devaryakjha/bonsai/releases/42"), logText)
+    XCTAssertFalse(logText.contains("DELETE|https://api.github.com/repos/devaryakjha/bonsai/git/refs/tags/v9.8.7"), logText)
+  }
+
   private func runPackageRelease(
     arguments: [String],
     environment overrides: [String: String] = [:]
@@ -361,7 +381,10 @@ final class ReleaseScriptTests: XCTestCase {
     ]
   }
 
-  private func makeDraftReleaseFixture(failManifestUpload: Bool) throws -> DraftReleaseFixture {
+  private func makeDraftReleaseFixture(
+    failManifestUpload: Bool,
+    tagExists: Bool = false
+  ) throws -> DraftReleaseFixture {
     let directory = FileManager.default.temporaryDirectory
       .appending(path: "bonsai-draft-release-\(UUID().uuidString)", directoryHint: .isDirectory)
     let fakeBin = directory.appending(path: "bin", directoryHint: .isDirectory)
@@ -378,6 +401,8 @@ final class ReleaseScriptTests: XCTestCase {
     let curl = fakeBin.appending(path: "curl")
     let manifestStatus = failManifestUpload ? "500" : "201"
     let manifestBody = failManifestUpload ? #"{"message":"upload failed"}"# : #"{"name":"Bonsai.release.plist"}"#
+    let tagLookupStatus = tagExists ? "200" : "404"
+    let tagLookupBody = tagExists ? #"{"ref":"refs/tags/v9.8.7"}"# : #"{"message":"Not Found"}"#
     let script = """
     #!/usr/bin/env bash
     set -euo pipefail
@@ -426,8 +451,8 @@ final class ReleaseScriptTests: XCTestCase {
         body='{"message":"Not Found"}'
         ;;
       "GET|https://api.github.com/repos/devaryakjha/bonsai/git/ref/tags/v9.8.7")
-        status="404"
-        body='{"message":"Not Found"}'
+        status="\(tagLookupStatus)"
+        body='\(tagLookupBody)'
         ;;
       "POST|https://api.github.com/repos/devaryakjha/bonsai/releases")
         status="201"
