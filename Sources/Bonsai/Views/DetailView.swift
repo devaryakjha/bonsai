@@ -158,8 +158,7 @@ private struct DetailHeaderView: View {
           .monospaced()
         Text(commit.authorName)
         if let date = commit.date {
-          Text(date, style: .date)
-          Text(date, style: .time)
+          Text(StaticDateText.timestamp(date))
         }
       }
       .font(.caption)

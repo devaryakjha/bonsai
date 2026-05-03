@@ -258,7 +258,7 @@ private struct CommitRow: View {
             .frame(width: graphColumnWidth)
           Text(commit.authorName)
           if let date = commit.date {
-            Text(date, style: .relative)
+            Text(StaticDateText.relativeOrDate(date))
           }
           ForEach(commit.decorations.prefix(3), id: \.self) { decoration in
             Text(decoration)

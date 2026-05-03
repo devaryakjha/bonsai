@@ -20,11 +20,15 @@ moving through history.
 - AppKit bridge observers used by rich diff surfaces are removed with their
   coordinators so repeated diff view creation does not leak notification
   tokens.
+- Commit rows use static date strings instead of SwiftUI live relative-date text;
+  seconds are shown only for sub-minute commits.
 
 ## Acceptance
 
 - Store coverage proves commit tree loading is lazy and still available on
   demand.
 - Process coverage proves cancellation terminates a long-running subprocess.
+- Date-copy coverage proves history rows do not schedule per-second updates for
+  older commits.
 - Existing integration coverage for commit selection, changed files, and diffs
   remains green.

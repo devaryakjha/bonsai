@@ -45,6 +45,7 @@ final class RepositoryStore {
   var selectedStash: GitStash?
   var selectedStatusEntry: GitStatusEntry?
   var selectedChangedFile: GitChangedFile?
+  var isLoadingCommitDetails = false
   var selectedTreeEntry: GitTreeEntry?
   var mainMode: MainMode = .history {
     didSet {
@@ -736,12 +737,21 @@ final class RepositoryStore {
     commitSelectionTask?.cancel()
     selectedCommit = commit
     selectedStash = nil
-    selectedChangedFile = nil
+    let cachedFiles = commit.flatMap { commitChangedFilesCache[$0.hash] }
+    snapshot.changedFiles = cachedFiles ?? []
+    selectedChangedFile = cachedFiles?.first
     selectedTreeEntry = nil
     commitTreeEntries = []
     stashChangedFiles = []
     commitTreePath = ""
     treeBlobText = ""
+    imageDiffSnapshot = nil
+    isLoadingCommitDetails = commit != nil && cachedFiles == nil
+    if let commit, let file = selectedChangedFile {
+      diffText = cachedDiffForCommitFile(file, commit: commit) ?? ""
+    } else {
+      diffText = ""
+    }
     let expectedRepositoryPath = selectedRepository?.path
     let expectedCommitHash = commit?.hash
     commitSelectionTask = Task {
@@ -769,6 +779,7 @@ final class RepositoryStore {
       selectedChangedFile = nil
       selectedStatusEntry = nil
       selectedTreeEntry = nil
+      isLoadingCommitDetails = true
       commitTreeEntries = []
       stashChangedFiles = []
       commitTreePath = ""
@@ -790,6 +801,7 @@ final class RepositoryStore {
   }
 
   func selectChangedFile(_ file: GitChangedFile?) {
+    isLoadingCommitDetails = false
     selectedChangedFile = file
     selectedStatusEntry = nil
     selectedTreeEntry = nil
@@ -801,6 +813,7 @@ final class RepositoryStore {
 
   func selectStash(_ stash: GitStash?) {
     commitSelectionTask?.cancel()
+    isLoadingCommitDetails = false
     selectedStash = stash
     selectedCommit = nil
     selectedChangedFile = nil
@@ -818,6 +831,7 @@ final class RepositoryStore {
   func selectStatusEntry(_ entry: GitStatusEntry?) {
     guard entry?.isIgnored != true else { return }
     commitSelectionTask?.cancel()
+    isLoadingCommitDetails = false
     selectedStatusEntry = entry
     selectedChangedFile = nil
     selectedStash = nil
@@ -857,6 +871,7 @@ final class RepositoryStore {
 
   func selectTreeBlob(_ entry: GitTreeEntry) {
     commitSelectionTask?.cancel()
+    isLoadingCommitDetails = false
     selectedTreeEntry = entry
     selectedChangedFile = nil
     selectedStatusEntry = nil
@@ -2358,12 +2373,14 @@ final class RepositoryStore {
       guard expectedCommitHash == nil || selectedCommit?.hash == expectedCommitHash else { return }
       snapshot.changedFiles = files
       selectedChangedFile = snapshot.changedFiles.first
+      isLoadingCommitDetails = false
       await refreshDiff(
         expectedRepositoryPath: expectedRepositoryPath,
         expectedCommitHash: expectedCommitHash
       )
     } catch is CancellationError {
     } catch {
+      isLoadingCommitDetails = false
       errorMessage = error.localizedDescription
     }
   }
@@ -2523,6 +2540,20 @@ final class RepositoryStore {
     return files
   }
 
+  private func cachedDiffForCommitFile(
+    _ file: GitChangedFile,
+    commit: GitCommit
+  ) -> String? {
+    let key = CommitDiffCacheKey(
+      commitHash: commit.hash,
+      filePath: file.path,
+      oldPath: file.oldPath,
+      algorithm: diffAlgorithm,
+      whitespaceMode: diffWhitespaceMode
+    )
+    return commitDiffCache[key]
+  }
+
   private func diffForCommitFile(
     _ file: GitChangedFile,
     commit: GitCommit,
@@ -2638,6 +2669,7 @@ final class RepositoryStore {
     selectedCommit = nil
     selectedStatusEntry = nil
     selectedChangedFile = nil
+    isLoadingCommitDetails = false
     selectedTreeEntry = nil
     commitTreeEntries = []
     commitTreePath = ""

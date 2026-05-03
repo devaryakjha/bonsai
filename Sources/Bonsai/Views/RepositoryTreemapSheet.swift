@@ -67,7 +67,7 @@ struct RepositoryTreemapSheet: View {
         HStack(spacing: 8) {
           Text(report.repositoryName)
             .lineLimit(1)
-          Text(report.generatedAt, style: .time)
+          Text(StaticDateText.time(report.generatedAt))
             .foregroundStyle(.tertiary)
             .lineLimit(1)
         }

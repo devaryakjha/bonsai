@@ -598,7 +598,7 @@ private struct FileHistoryRow: View {
             .lineLimit(1)
             .help(entry.authorEmail)
           if let date = entry.date {
-            Text(date, style: .date)
+            Text(StaticDateText.date(date))
           }
         }
         .font(.caption)
@@ -1771,7 +1771,7 @@ private struct ReflogSheet: View {
             Text(entry.subject)
               .lineLimit(1)
             if let date = entry.date {
-              Text(date, style: .date)
+              Text(StaticDateText.date(date))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
