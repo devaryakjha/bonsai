@@ -85,6 +85,22 @@ Developer ID `.p12` into a temporary keychain and confirm it exposes
 `BONSAI_CODESIGN_IDENTITY`; the temporary keychain is deleted before the helper
 exits.
 
+## Getting the Credential Values
+
+| Local value | Source |
+| --- | --- |
+| `BONSAI_CODESIGN_IDENTITY` | Full quoted `Developer ID Application: ... (TEAMID)` identity from the local keychain |
+| `BONSAI_DEVELOPER_ID_CERTIFICATE_PATH` | Local password-protected `.p12` export containing the Developer ID Application certificate and private key |
+| `BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD` | Password chosen locally when exporting that `.p12` |
+| `BONSAI_NOTARY_APPLE_ID` | Apple ID email that can notarize for the Apple Developer team |
+| `BONSAI_NOTARY_APP_PASSWORD` | App-specific password for that Apple ID |
+| `BONSAI_NOTARY_TEAM_ID` | Apple Developer Team ID, usually the value in parentheses in the Developer ID identity |
+
+`BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64` is a GitHub environment secret, but it
+is not a local value you need to paste. `script/configure_github_release_secrets.sh`
+derives it from `BONSAI_DEVELOPER_ID_CERTIFICATE_PATH` and uploads it without
+printing the certificate contents.
+
 The workflow consumes these secrets:
 
 - `BONSAI_CODESIGN_IDENTITY`
@@ -96,8 +112,41 @@ The workflow consumes these secrets:
 
 ## Developer ID Certificate
 
+Create a Developer ID Application certificate from the Apple Developer account:
+
+1. Open Apple Developer account settings.
+2. Go to Certificates, Identifiers & Profiles.
+3. Open Certificates and create a new certificate.
+4. Under Software, choose Developer ID, then Developer ID Application.
+5. Upload a certificate signing request from Keychain Access.
+6. Download the `.cer` file and double-click it to install it into the login
+   keychain.
+
+To create the certificate signing request in Keychain Access:
+
+1. Open Certificate Assistant > Request a Certificate From a Certificate
+   Authority.
+2. Enter the Apple ID email.
+3. Use a recognizable common name, such as `Bonsai Developer ID`.
+4. Save the request to disk and upload the `.certSigningRequest` file to Apple.
+
+The certificate must appear in Keychain Access under My Certificates with a
+private key nested under it. `Apple Development` and `Apple Distribution`
+certificates are not valid substitutes for this direct-distribution release
+path.
+
 Export the Developer ID Application certificate and private key from Keychain
-Access as a password-protected `.p12` file. Do not commit this file.
+Access as a password-protected `.p12` file:
+
+1. In Keychain Access, select the Developer ID Application certificate in My
+   Certificates.
+2. Right-click and choose Export.
+3. Save it outside the repository, for example
+   `~/Desktop/BonsaiDeveloperID.p12`.
+4. Set a strong export password and use that as
+   `BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD`.
+
+Do not commit the `.p12` file.
 
 Find the identity string:
 
@@ -111,19 +160,20 @@ Use the full quoted identity value as `BONSAI_CODESIGN_IDENTITY`, for example:
 Developer ID Application: Example, Inc. (TEAMID)
 ```
 
-Create a single-line base64 value for the `.p12` secret:
+Use the `.p12` path as `BONSAI_DEVELOPER_ID_CERTIFICATE_PATH`. The helper
+converts that file to the `BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64` GitHub secret
+for you.
 
-```sh
-base64 -i DeveloperID.p12 | tr -d '\n'
-```
-
-Store that output as `BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64`. Store the `.p12`
-export password as `BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD`.
+The Team ID is the value in parentheses in the identity string. It is also
+available from the Apple Developer account membership page.
 
 ## Notarization Account
 
-Create an app-specific password for the Apple ID that can notarize for the
-Developer Team. Store:
+Use the Apple ID that can notarize for the Apple Developer team. Create an
+app-specific password from Apple Account security settings and label it clearly,
+for example `Bonsai Notarization`.
+
+Store:
 
 - Apple ID email as `BONSAI_NOTARY_APPLE_ID`
 - App-specific password as `BONSAI_NOTARY_APP_PASSWORD`
