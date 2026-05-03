@@ -231,6 +231,10 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(metadata.contains(#""appearance": "tinted""#), metadata)
     XCTAssertTrue(exportScript.contains("The source .icon package is never modified."), exportScript)
     XCTAssertFalse(exportScript.contains("rm -rf \"$ICON_DOCUMENT\""), exportScript)
+    XCTAssertTrue(exportScript.contains("MACOS_ICON_LIVE_AREA_NUMERATOR=55"), exportScript)
+    XCTAssertTrue(exportScript.contains("MACOS_ICON_LIVE_AREA_DENOMINATOR=64"), exportScript)
+    XCTAssertTrue(exportScript.contains("pad_icon_canvas"), exportScript)
+    XCTAssertTrue(exportScript.contains("rendered inner icon"), exportScript)
   }
 
   func testGitHubSecretConfiguratorUploadsOnlyEnvironmentSecretsWithMockedGh() throws {
