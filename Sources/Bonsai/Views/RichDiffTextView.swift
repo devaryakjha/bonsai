@@ -30,6 +30,8 @@ struct RichDiffTextView: NSViewRepresentable {
     textView.textContainerInset = NSSize(width: 18, height: 16)
     textView.textContainer?.widthTracksTextView = false
     textView.textContainer?.containerSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+    textView.layoutManager?.allowsNonContiguousLayout = true
+    textView.layoutManager?.backgroundLayoutEnabled = true
     textView.minSize = NSSize(width: 0, height: 0)
     textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
     textView.isHorizontallyResizable = true

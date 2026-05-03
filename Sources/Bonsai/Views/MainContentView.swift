@@ -6,14 +6,12 @@ struct MainContentView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      Picker("Mode", selection: $store.mainMode) {
-        ForEach(MainMode.allCases) { mode in
-          Text(mode.rawValue).tag(mode)
-        }
-      }
-      .pickerStyle(.segmented)
-      .labelsHidden()
-      .accessibilityLabel("Main mode")
+      AppKitSegmentedControl(
+        options: MainMode.allCases,
+        selection: $store.mainMode,
+        label: "Main mode",
+        title: \.rawValue
+      )
       .padding([.horizontal, .top], 12)
       .padding(.bottom, 8)
 

@@ -294,15 +294,13 @@ private struct ChangedFilesView: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       HStack {
-        Picker("Commit panel", selection: $mode) {
-          ForEach(CommitFilePanelMode.allCases) { mode in
-            Text(mode.title).tag(mode)
-          }
-        }
-        .pickerStyle(.segmented)
-        .controlSize(.small)
-        .labelsHidden()
-        .accessibilityLabel("Commit panel")
+        AppKitSegmentedControl(
+          options: CommitFilePanelMode.allCases,
+          selection: $mode,
+          label: "Commit panel",
+          controlSize: .small,
+          title: \.title
+        )
         .frame(width: 190)
         Spacer()
         Text(countText)

@@ -186,8 +186,11 @@ struct SplitDiffTextView: NSViewRepresentable {
       guard !isSyncing,
             let source,
             let target else { return }
+      let sourceY = source.contentView.bounds.origin.y
+      let targetY = target.contentView.bounds.origin.y
+      guard abs(sourceY - targetY) > 0.5 else { return }
       isSyncing = true
-      target.contentView.scroll(to: NSPoint(x: target.contentView.bounds.origin.x, y: source.contentView.bounds.origin.y))
+      target.contentView.scroll(to: NSPoint(x: target.contentView.bounds.origin.x, y: sourceY))
       target.reflectScrolledClipView(target.contentView)
       isSyncing = false
     }
@@ -340,6 +343,8 @@ struct SplitDiffTextView: NSViewRepresentable {
     textView.textContainerInset = NSSize(width: 18, height: 16)
     textView.textContainer?.widthTracksTextView = false
     textView.textContainer?.containerSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+    textView.layoutManager?.allowsNonContiguousLayout = true
+    textView.layoutManager?.backgroundLayoutEnabled = true
     textView.minSize = NSSize(width: 0, height: 0)
     textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
     textView.isHorizontallyResizable = true

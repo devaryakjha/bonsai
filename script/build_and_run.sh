@@ -39,8 +39,20 @@ build_number() {
 pkill -x "$APP_NAME" >/dev/null 2>&1 || true
 
 cd "$ROOT_DIR"
-swift build
-BUILD_BINARY="$(swift build --show-bin-path)/$APP_NAME"
+BUILD_CONFIGURATION="release"
+case "$MODE" in
+  --debug|debug)
+    BUILD_CONFIGURATION="debug"
+    ;;
+esac
+
+if [[ "$BUILD_CONFIGURATION" == "release" ]]; then
+  swift build -c release
+  BUILD_BINARY="$(swift build -c release --show-bin-path)/$APP_NAME"
+else
+  swift build
+  BUILD_BINARY="$(swift build --show-bin-path)/$APP_NAME"
+fi
 APP_VERSION="$(app_version)"
 BUILD_NUMBER="$(build_number)"
 

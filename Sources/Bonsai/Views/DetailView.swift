@@ -64,10 +64,7 @@ private struct DetailHeaderView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 10) {
-      ViewThatFits(in: .horizontal) {
-        horizontalHeader
-        stackedHeader
-      }
+      horizontalHeader
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(.horizontal, 14)
@@ -80,13 +77,6 @@ private struct DetailHeaderView: View {
 
       Spacer(minLength: 16)
 
-      controls
-    }
-  }
-
-  private var stackedHeader: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      titleColumn
       controls
     }
   }
@@ -222,13 +212,10 @@ private struct DiffHeaderControls: View {
   var onNavigateSearch: (DiffSearch.NavigationDirection) -> Void
 
   var body: some View {
-    ViewThatFits(in: .horizontal) {
-      controls(searchFieldWidth: 180, showsMatchLabel: true)
-      controls(searchFieldWidth: 128, showsMatchLabel: false)
-    }
+    controls(searchFieldWidth: 150)
   }
 
-  private func controls(searchFieldWidth: CGFloat, showsMatchLabel: Bool) -> some View {
+  private func controls(searchFieldWidth: CGFloat) -> some View {
     HStack(spacing: 8) {
       Button {
         if isSearchVisible {
@@ -254,7 +241,7 @@ private struct DiffHeaderControls: View {
             onNavigateSearch(.next)
           }
 
-        if showsMatchLabel, let matchLabel {
+        if let matchLabel {
           Text(matchLabel)
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -286,18 +273,16 @@ private struct DiffHeaderControls: View {
         .disabled(!hasSearchMatches)
       }
 
-      Picker("Diff view", selection: Binding(
-        get: { store.diffDisplayMode },
-        set: { store.diffDisplayMode = $0 }
-      )) {
-        ForEach(DiffDisplayMode.allCases) { mode in
-          Text(mode.title).tag(mode)
-        }
-      }
-      .pickerStyle(.segmented)
-      .controlSize(.small)
-      .labelsHidden()
-      .accessibilityLabel("Diff view")
+      AppKitSegmentedControl(
+        options: DiffDisplayMode.allCases,
+        selection: Binding(
+          get: { store.diffDisplayMode },
+          set: { store.diffDisplayMode = $0 }
+        ),
+        label: "Diff view",
+        controlSize: .small,
+        title: \.title
+      )
       .frame(width: 150)
 
       Menu {
