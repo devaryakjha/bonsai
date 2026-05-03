@@ -27,3 +27,5 @@ instead of assuming the identity lives in the login keychain.
   identity check no longer blocks before the notarization credential check.
 - `ReleaseScriptTests` assert that the protected release workflow imports the
   Developer ID G2 intermediate certificate in the signing keychain setup.
+- Release manifests classify modern Developer ID signatures from
+  `codesign -dvvv` `Authority=` output instead of falling back to `unknown`.

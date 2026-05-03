@@ -46,6 +46,10 @@ final class ReleaseScriptTests: XCTestCase {
       contentsOf: root.appending(path: "script/create_github_draft_release.sh"),
       encoding: .utf8
     )
+    let makefile = try String(
+      contentsOf: root.appending(path: "Makefile"),
+      encoding: .utf8
+    )
     let runnerScript = try String(
       contentsOf: root.appending(path: "script/check_release_runner.sh"),
       encoding: .utf8
@@ -58,11 +62,21 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(help.contains("BONSAI_NOTARY_KEYCHAIN"), help)
     XCTAssertTrue(runnerHelp.contains("--workflow"), runnerHelp)
     XCTAssertTrue(runnerHelp.contains("--workflow-local"), runnerHelp)
+    XCTAssertTrue(makefile.contains("release-verify-artifacts:"), makefile)
+    XCTAssertTrue(makefile.contains("release-github-doctor:"), makefile)
+    XCTAssertTrue(makefile.contains("app-icon:"), makefile)
+    XCTAssertTrue(makefile.contains("release-archive:"), makefile)
+    XCTAssertTrue(makefile.contains("release-dry-run:"), makefile)
+    XCTAssertTrue(makefile.contains("gh workflow run Release --repo devaryakjha/bonsai --ref main -f dry_run=true"), makefile)
     XCTAssertTrue(script.contains("verify_release_artifacts()"))
+    XCTAssertTrue(script.contains("APP_ICON_DOCUMENT_SOURCE="))
+    XCTAssertTrue(script.contains("Bonsai.icon/icon.json"))
     XCTAssertTrue(script.contains("github_release_doctor()"))
     XCTAssertTrue(script.contains("print_github_release_remediation()"))
     XCTAssertTrue(script.contains("manifest archiveSHA256 mismatch"))
     XCTAssertTrue(script.contains("plutil -extract archiveSHA256 raw"))
+    XCTAssertTrue(script.contains("release_signature_kind()"))
+    XCTAssertTrue(script.contains("Developer\\ ID\\ Application:*"))
     XCTAssertTrue(runnerScript.contains("Release workflow runner: ready"), runnerScript)
     XCTAssertTrue(runnerScript.contains("notarytool: available"), runnerScript)
     XCTAssertTrue(runnerScript.contains("Developer ID signing smoke: valid"), runnerScript)
@@ -99,10 +113,13 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(result.output.contains("BONSAI_NOTARY_TEAM_ID: missing"), result.output)
     XCTAssertTrue(result.output.contains("repository-level release secrets: none"), result.output)
     XCTAssertTrue(result.output.contains("Next steps:"), result.output)
-    XCTAssertTrue(result.output.contains("./script/configure_github_release_secrets.sh --print-template"), result.output)
-    XCTAssertTrue(result.output.contains("./script/configure_github_release_secrets.sh --dry-run"), result.output)
-    XCTAssertTrue(result.output.contains("gh workflow run Release --repo devaryakjha/bonsai --ref main -f dry_run=true"), result.output)
-    XCTAssertTrue(result.output.contains("gh workflow run Release --repo devaryakjha/bonsai --ref main -f dry_run=false"), result.output)
+    XCTAssertTrue(result.output.contains("make release-secret-template"), result.output)
+    XCTAssertTrue(result.output.contains("make release-secrets-dry-run"), result.output)
+    XCTAssertTrue(result.output.contains("make release-secrets-upload"), result.output)
+    XCTAssertTrue(result.output.contains("make release-github-doctor"), result.output)
+    XCTAssertTrue(result.output.contains("make release-dry-run"), result.output)
+    XCTAssertTrue(result.output.contains("make release"), result.output)
+    XCTAssertFalse(result.output.contains("gh workflow run Release"), result.output)
     XCTAssertTrue(result.output.contains("GitHub release configuration: not ready"), result.output)
     XCTAssertFalse(result.output.contains("Packaged "), result.output)
   }
@@ -189,9 +206,31 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(result.output.contains("BONSAI_NOTARY_APPLE_ID"), result.output)
     XCTAssertTrue(result.output.contains("BONSAI_NOTARY_APP_PASSWORD"), result.output)
     XCTAssertTrue(result.output.contains("BONSAI_NOTARY_TEAM_ID"), result.output)
-    XCTAssertTrue(result.output.contains("./script/configure_github_release_secrets.sh --dry-run"), result.output)
-    XCTAssertTrue(result.output.contains("./script/package_release.sh --github-doctor"), result.output)
+    XCTAssertTrue(result.output.contains("make release-secrets-dry-run"), result.output)
+    XCTAssertTrue(result.output.contains("make release-secrets-upload"), result.output)
+    XCTAssertTrue(result.output.contains("make release-github-doctor"), result.output)
     XCTAssertFalse(result.output.contains("GitHub CLI: missing"), result.output)
+  }
+
+  func testIconComposerDocumentIsCanonicalAppIconSource() throws {
+    let root = try packageRoot()
+    let iconDocument = root.appending(path: "Assets/AppIcon/Bonsai.icon", directoryHint: .isDirectory)
+    let iconJSON = iconDocument.appending(path: "icon.json")
+    let lightAsset = iconDocument.appending(path: "Assets/bonsai-worktree-topology.svg")
+    let darkAsset = iconDocument.appending(path: "Assets/bonsai-worktree-topology-dark.svg")
+    let exportScript = try String(
+      contentsOf: root.appending(path: "script/export_app_icon.sh"),
+      encoding: .utf8
+    )
+    let metadata = try String(contentsOf: iconJSON, encoding: .utf8)
+
+    XCTAssertTrue(FileManager.default.fileExists(atPath: lightAsset.path(percentEncoded: false)))
+    XCTAssertTrue(FileManager.default.fileExists(atPath: darkAsset.path(percentEncoded: false)))
+    XCTAssertNoThrow(try JSONSerialization.jsonObject(with: Data(metadata.utf8)))
+    XCTAssertTrue(metadata.contains(#""appearance": "dark""#), metadata)
+    XCTAssertTrue(metadata.contains(#""appearance": "tinted""#), metadata)
+    XCTAssertTrue(exportScript.contains("The source .icon package is never modified."), exportScript)
+    XCTAssertFalse(exportScript.contains("rm -rf \"$ICON_DOCUMENT\""), exportScript)
   }
 
   func testGitHubSecretConfiguratorUploadsOnlyEnvironmentSecretsWithMockedGh() throws {
@@ -264,16 +303,16 @@ final class ReleaseScriptTests: XCTestCase {
       contentsOf: root.appending(path: ".github/workflows/ci.yml"),
       encoding: .utf8
     )
-    let archiveRange = workflow.range(of: "./script/package_release.sh --verify-archive")
-    let artifactRange = workflow.range(of: "./script/package_release.sh --verify-artifacts")
+    let archiveRange = workflow.range(of: "make release-verify-archive")
+    let artifactRange = workflow.range(of: "make release-verify-artifacts")
 
     XCTAssertNotNil(archiveRange)
     XCTAssertNotNil(artifactRange)
     XCTAssertLessThan(archiveRange?.lowerBound ?? workflow.endIndex, artifactRange?.lowerBound ?? workflow.startIndex)
     XCTAssertTrue(workflow.contains("uses: actions/checkout@v6"))
-    XCTAssertTrue(workflow.contains("script/check_release_runner.sh"))
-    XCTAssertTrue(workflow.contains("script/configure_github_release_secrets.sh"))
-    XCTAssertTrue(workflow.contains("script/create_github_draft_release.sh"))
+    XCTAssertTrue(workflow.contains("make validate-scripts"))
+    XCTAssertTrue(workflow.contains("make test"))
+    XCTAssertTrue(workflow.contains("make perf"))
   }
 
   func testReleaseWorkflowVerifiesArtifactsBeforeUploadAndCleansTemporaryKeychain() throws {
@@ -290,14 +329,13 @@ final class ReleaseScriptTests: XCTestCase {
     let dryRunUploadRange = dryRunJob.range(of: "uses: actions/upload-artifact@v7")
     let notarizeVerifyRange = notarizeJob.range(of: "name: Verify release artifacts")
     let notarizeUploadRange = notarizeJob.range(of: "uses: actions/upload-artifact@v7")
-    let releaseRange = notarizeJob.range(of: "./script/create_github_draft_release.sh")
+    let releaseRange = notarizeJob.range(of: "make release-draft")
 
     XCTAssertTrue(workflow.contains("contents: write"))
     XCTAssertTrue(workflow.contains("dry_run:"), workflow)
     XCTAssertTrue(workflow.contains("default: true"), workflow)
     XCTAssertTrue(workflow.contains("uses: actions/checkout@v6"))
-    XCTAssertTrue(workflow.contains("bash -n script/check_release_runner.sh"))
-    XCTAssertTrue(workflow.contains("bash -n script/configure_github_release_secrets.sh"))
+    XCTAssertTrue(workflow.contains("run: make validate"))
     XCTAssertTrue(workflow.contains("dist/release/Bonsai.zip"))
     XCTAssertTrue(workflow.contains("dist/release/Bonsai.release.plist"))
 
@@ -307,12 +345,12 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(dryRunJob.contains("- ARM64"), dryRunJob)
     XCTAssertTrue(dryRunJob.contains("- jarvis"), dryRunJob)
     XCTAssertTrue(dryRunJob.contains("BONSAI_RELEASE_DRY_RUN=true"), dryRunJob)
-    XCTAssertTrue(dryRunJob.contains("./script/package_release.sh --verify-archive"), dryRunJob)
-    XCTAssertTrue(dryRunJob.contains("./script/package_release.sh --verify-artifacts"), dryRunJob)
+    XCTAssertTrue(dryRunJob.contains("make release-verify-archive"), dryRunJob)
+    XCTAssertTrue(dryRunJob.contains("make release-verify-artifacts"), dryRunJob)
     XCTAssertTrue(dryRunJob.contains("Upload dry-run artifact"), dryRunJob)
     XCTAssertFalse(dryRunJob.contains("environment: release"), dryRunJob)
     XCTAssertFalse(dryRunJob.contains("${{ secrets."), dryRunJob)
-    XCTAssertFalse(dryRunJob.contains("./script/package_release.sh --notarize"), dryRunJob)
+    XCTAssertFalse(dryRunJob.contains("make release-notarize"), dryRunJob)
     XCTAssertNotNil(dryRunVerifyRange)
     XCTAssertNotNil(dryRunUploadRange)
     XCTAssertLessThan(dryRunVerifyRange?.lowerBound ?? dryRunJob.endIndex, dryRunUploadRange?.lowerBound ?? dryRunJob.startIndex)
@@ -323,13 +361,15 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(notarizeJob.contains("BONSAI_NOTARY_KEYCHAIN=$RUNNER_TEMP/bonsai-signing.keychain-db"), notarizeJob)
     XCTAssertTrue(notarizeJob.contains("https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer"), notarizeJob)
     XCTAssertTrue(notarizeJob.contains("security import \"$developer_id_g2_path\""), notarizeJob)
-    XCTAssertTrue(notarizeJob.contains("./script/package_release.sh --notarize"), notarizeJob)
-    XCTAssertTrue(notarizeJob.contains("./script/package_release.sh --verify-artifacts"), notarizeJob)
+    XCTAssertTrue(notarizeJob.contains("make release-doctor"), notarizeJob)
+    XCTAssertTrue(notarizeJob.contains("make release-check-credentials"), notarizeJob)
+    XCTAssertTrue(notarizeJob.contains("make release-notarize"), notarizeJob)
+    XCTAssertTrue(notarizeJob.contains("make release-verify-artifacts"), notarizeJob)
     XCTAssertTrue(notarizeJob.contains("GH_TOKEN: ${{ github.token }}"), notarizeJob)
-    XCTAssertTrue(notarizeJob.contains("run: ./script/create_github_draft_release.sh"), notarizeJob)
+    XCTAssertTrue(notarizeJob.contains("run: make release-draft"), notarizeJob)
     XCTAssertTrue(notarizeJob.contains("if: always()"), notarizeJob)
     XCTAssertTrue(notarizeJob.contains("security delete-keychain \"$BONSAI_NOTARY_KEYCHAIN\""), notarizeJob)
-    XCTAssertFalse(notarizeJob.contains("./script/package_release.sh --verify-archive"), notarizeJob)
+    XCTAssertFalse(notarizeJob.contains("make release-verify-archive"), notarizeJob)
     XCTAssertNotNil(notarizeVerifyRange)
     XCTAssertNotNil(notarizeUploadRange)
     XCTAssertNotNil(releaseRange)
@@ -338,7 +378,6 @@ final class ReleaseScriptTests: XCTestCase {
 
     XCTAssertTrue(workflow.contains("curl --version | sed -n '1p'"))
     XCTAssertTrue(workflow.contains("jq --version"))
-    XCTAssertTrue(workflow.contains("bash -n script/create_github_draft_release.sh"))
     XCTAssertFalse(workflow.contains("gh release create"))
   }
 

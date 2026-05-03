@@ -59,23 +59,13 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Validate source
-        run: |
-          git diff --check
-          bash -n script/build_and_run.sh
-          bash -n script/check_release_runner.sh
-          bash -n script/configure_github_release_secrets.sh
-          bash -n script/create_github_draft_release.sh
-          bash -n script/package_release.sh
-          bash -n script/perf_large_repo.sh
-          bash -n script/perf_ui_sample.sh
-          swift test
-          ./script/perf_large_repo.sh
+        run: make validate
 
       - name: Build dry-run archive
-        run: ./script/package_release.sh --verify-archive
+        run: make release-verify-archive
 
       - name: Verify release artifacts
-        run: ./script/package_release.sh --verify-artifacts
+        run: make release-verify-artifacts
 
       - name: Upload dry-run artifact
         uses: actions/upload-artifact@v7
@@ -131,17 +121,7 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Validate source
-        run: |
-          git diff --check
-          bash -n script/build_and_run.sh
-          bash -n script/check_release_runner.sh
-          bash -n script/configure_github_release_secrets.sh
-          bash -n script/create_github_draft_release.sh
-          bash -n script/package_release.sh
-          bash -n script/perf_large_repo.sh
-          bash -n script/perf_ui_sample.sh
-          swift test
-          ./script/perf_large_repo.sh
+        run: make validate
 
       - name: Check release secrets
         env:
@@ -217,14 +197,14 @@ jobs:
 
       - name: Check release credentials
         run: |
-          ./script/package_release.sh --doctor
-          ./script/package_release.sh --check-credentials
+          make release-doctor
+          make release-check-credentials
 
       - name: Build signed and notarized archive
-        run: ./script/package_release.sh --notarize
+        run: make release-notarize
 
       - name: Verify release artifacts
-        run: ./script/package_release.sh --verify-artifacts
+        run: make release-verify-artifacts
 
       - name: Upload release artifact
         uses: actions/upload-artifact@v7
@@ -239,7 +219,7 @@ jobs:
       - name: Create draft GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: ./script/create_github_draft_release.sh
+        run: make release-draft
 
       - name: Clean up signing keychain
         if: always()

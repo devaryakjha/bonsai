@@ -9,11 +9,11 @@
 ## Validation
 
 - [ ] `git diff --check`
-- [ ] `swift test`
-- [ ] `./script/build_and_run.sh --verify`
-- [ ] `./script/package_release.sh --verify`
-- [ ] `./script/package_release.sh --verify-archive`
-- [ ] `./script/package_release.sh --verify-artifacts`
+- [ ] `make test`
+- [ ] `make run-verify`
+- [ ] `make release-verify`
+- [ ] `make release-verify-archive`
+- [ ] `make release-verify-artifacts`
 
 ## UI Evidence
 

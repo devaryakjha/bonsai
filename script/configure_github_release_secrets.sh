@@ -206,9 +206,9 @@ export BONSAI_NOTARY_APPLE_ID="developer@example.com"
 export BONSAI_NOTARY_APP_PASSWORD="replace-with-app-specific-password"
 export BONSAI_NOTARY_TEAM_ID="TEAMID"
 
-./script/configure_github_release_secrets.sh --dry-run
-./script/configure_github_release_secrets.sh
-./script/package_release.sh --github-doctor
+make release-secrets-dry-run
+make release-secrets-upload
+make release-github-doctor
 TEMPLATE
 }
 

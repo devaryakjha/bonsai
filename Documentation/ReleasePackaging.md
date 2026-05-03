@@ -1,27 +1,29 @@
 # Release Packaging
 
 Bonsai is a SwiftPM macOS app. Development launches use
-`script/build_and_run.sh`; release validation uses `script/package_release.sh`
-so distribution checks do not depend on the debug run path.
+`make run`; release validation uses `make release-*` targets so distribution
+checks do not depend on the debug run path. The targets delegate to scripts
+under `script/`, which remain reusable implementation details.
 
 ## Local Verification
 
 Run the credential-free release verifier:
 
 ```sh
-script/package_release.sh --verify
+make release-verify
 ```
 
 This builds `Bonsai` with `swift build -c release`, stages
-`dist/release/Bonsai.app`, copies the app icon and topology SVG mark into
-`Contents/Resources`, writes `Info.plist`, ad-hoc signs the bundle, and verifies
-the code signature. This proves the bundle is structurally signable without
-requiring an Apple Developer account.
+`dist/release/Bonsai.app`, copies the generated `.icns`, the canonical Icon
+Composer `.icon` package, and the topology SVG mark into `Contents/Resources`,
+writes `Info.plist`, ad-hoc signs the bundle, and verifies the code signature.
+This proves the bundle is structurally signable without requiring an Apple
+Developer account.
 
 To also create and validate a local test archive with an ad-hoc signature, run:
 
 ```sh
-script/package_release.sh --verify-archive
+make release-verify-archive
 ```
 
 The package version defaults to the root `VERSION` file. The build number
@@ -79,7 +81,7 @@ Set a Developer ID Application identity before creating a distributable archive:
 
 ```sh
 export BONSAI_CODESIGN_IDENTITY="Developer ID Application: Example, Inc. (TEAMID)"
-script/package_release.sh --archive
+make release-archive
 ```
 
 The script writes `dist/release/Bonsai.zip` using `ditto` after signing with the
@@ -95,7 +97,7 @@ profile:
 ```sh
 export BONSAI_CODESIGN_IDENTITY="Developer ID Application: Example, Inc. (TEAMID)"
 export BONSAI_NOTARY_PROFILE="bonsai-notary"
-script/package_release.sh --notarize
+make release-notarize
 ```
 
 The script submits the zip with `xcrun notarytool submit --wait`, staples and
@@ -108,7 +110,7 @@ You can validate the local signing identity and notarytool profile before
 running the full packaging workflow:
 
 ```sh
-script/package_release.sh --check-credentials
+make release-check-credentials
 ```
 
 This mode requires `BONSAI_CODESIGN_IDENTITY` to name a `Developer ID
@@ -118,7 +120,7 @@ Application` certificate present in the login keychain, and validates
 For a read-only report that lists all missing credential inputs in one pass, run:
 
 ```sh
-script/package_release.sh --doctor
+make release-doctor
 ```
 
 Doctor mode does not build, sign, submit, staple, or rewrite artifacts. It
@@ -128,7 +130,7 @@ ready.
 To verify an existing zip and manifest pair without rebuilding:
 
 ```sh
-script/package_release.sh --verify-artifacts
+make release-verify-artifacts
 ```
 
 This extracts `dist/release/Bonsai.zip`, validates the app bundle metadata and

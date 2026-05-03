@@ -1,0 +1,37 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 512 512"
+  role="img"
+  aria-labelledby="title desc"
+>
+  <title id="title">Bonsai worktree topology mark</title>
+  <desc id="desc">
+    A minimal source-control topology mark with one root commit branching into
+    three worktree endpoints.
+  </desc>
+  <g
+    fill="none"
+    stroke="currentColor"
+    stroke-width="24"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <!-- Left worktree lane -->
+    <path d="M151 210v28c0 24 12 45 32 58l48 31c16 10 25 15 25 23" />
+
+    <!-- Main history lane -->
+    <path d="M256 210v142" />
+
+    <!-- Right worktree lane -->
+    <path d="M361 210v26c0 25-13 48-34 61l-47 30c-15 10-24 15-24 23" />
+
+    <!-- Cross-branch connector -->
+    <path d="M256 276c18-24 49-20 73-27 17-5 29-13 32-31" />
+
+    <!-- Commit / worktree nodes -->
+    <circle cx="151" cy="166" r="32" />
+    <circle cx="256" cy="166" r="32" />
+    <circle cx="361" cy="166" r="32" />
+    <circle cx="256" cy="396" r="32" />
+  </g>
+</svg>

@@ -1,0 +1,85 @@
+{
+  "fill": "automatic",
+  "groups": [
+    {
+      "layers": [
+        {
+          "glass": false,
+          "image-name": "bonsai-worktree-topology-dark.svg",
+          "name": "bonsai-worktree-topology-dark",
+          "opacity-specializations": [
+            {
+              "value": 0
+            },
+            {
+              "appearance": "dark",
+              "value": 1
+            },
+            {
+              "appearance": "tinted",
+              "value": 1
+            }
+          ],
+          "position": {
+            "scale": 2,
+            "translation-in-points": [
+              0,
+              -37.5
+            ]
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.5
+      }
+    },
+    {
+      "layers": [
+        {
+          "fill-specializations": [
+            {
+              "appearance": "dark",
+              "value": "automatic"
+            }
+          ],
+          "glass": false,
+          "hidden": false,
+          "image-name": "bonsai-worktree-topology.svg",
+          "name": "bonsai-worktree-topology",
+          "opacity-specializations": [
+            {
+              "appearance": "dark",
+              "value": 0
+            }
+          ],
+          "position": {
+            "scale": 2,
+            "translation-in-points": [
+              0,
+              -37.5
+            ]
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.5
+      }
+    }
+  ],
+  "supported-platforms": {
+    "circles": [
+      "watchOS"
+    ],
+    "squares": "shared"
+  }
+}

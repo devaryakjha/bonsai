@@ -60,37 +60,43 @@ Requirements:
 Build and launch Bonsai:
 
 ```sh
-./script/build_and_run.sh
+make run
 ```
 
 Build, launch, and verify that the app process is running:
 
 ```sh
-./script/build_and_run.sh --verify
+make run-verify
 ```
 
 Build and validate a release-style app bundle without Apple credentials:
 
 ```sh
-./script/package_release.sh --verify
+make release-verify
+```
+
+Export the fallback `.icns` from the canonical Icon Composer document:
+
+```sh
+make app-icon
 ```
 
 Run the large repository performance smoke:
 
 ```sh
-./script/perf_large_repo.sh
+make perf
 ```
 
 Check local distribution credential readiness:
 
 ```sh
-./script/package_release.sh --doctor
-./script/package_release.sh --check-credentials
-./script/package_release.sh --github-doctor
-./script/configure_github_release_secrets.sh --print-template
-./script/configure_github_release_secrets.sh --dry-run
-./script/check_release_runner.sh --workflow
-./script/check_release_runner.sh
+make release-doctor
+make release-check-credentials
+make release-github-doctor
+make release-secret-template
+make release-secrets-dry-run
+make release-runner-workflow
+make release-runner
 ```
 
 The credential checks are expected to fail on machines without a Developer ID
@@ -105,13 +111,11 @@ environment or reading Apple release secrets.
 Run the standard validation gates before submitting changes:
 
 ```sh
-git diff --check
-swift test
-./script/perf_large_repo.sh
-./script/build_and_run.sh --verify
-./script/package_release.sh --verify
-./script/package_release.sh --verify-archive
-./script/package_release.sh --verify-artifacts
+make validate
+make run-verify
+make release-verify
+make release-verify-archive
+make release-verify-artifacts
 ```
 
 ## Development

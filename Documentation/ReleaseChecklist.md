@@ -17,20 +17,18 @@ explains the packaging commands; this file defines the release sequence.
 Run the same non-credentialed gates expected from contributors:
 
 ```sh
-git diff --check
-swift test
-./script/perf_large_repo.sh
-./script/build_and_run.sh --verify
-./script/package_release.sh --verify
-./script/package_release.sh --verify-archive
-./script/package_release.sh --verify-artifacts
+make validate
+make run-verify
+make release-verify
+make release-verify-archive
+make release-verify-artifacts
 ```
 
 For interactive sidebar, resize, or scrolling checks, also run the local release
 app sampler:
 
 ```sh
-./script/perf_ui_sample.sh
+make perf-ui
 ```
 
 ## 3. Distribution Credentials
@@ -50,13 +48,13 @@ export BONSAI_BUILD_NUMBER="$(git rev-list --count HEAD)"
 Check the full local credential state:
 
 ```sh
-./script/package_release.sh --doctor
+make release-doctor
 ```
 
 Validate that the machine has the correct public-distribution credentials:
 
 ```sh
-./script/package_release.sh --check-credentials
+make release-check-credentials
 ```
 
 The identity must be a `Developer ID Application` certificate. Apple Development
@@ -67,7 +65,7 @@ or Apple Distribution identities are not enough for direct macOS distribution.
 Create the notarized release artifact:
 
 ```sh
-./script/package_release.sh --notarize
+make release-notarize
 ```
 
 Expected local outputs:
@@ -89,24 +87,24 @@ that final zip.
   workflow toolchain state. This command must exit zero before relying on the
   GitHub Actions release workflow:
   ```sh
-  ./script/check_release_runner.sh --workflow
+  make release-runner-workflow
   ```
 - If using runner-local signing credentials instead of GitHub environment
   secrets, also run the stricter credential preflight:
   ```sh
-  ./script/check_release_runner.sh
+  make release-runner
   ```
 - Confirm the protected environment, Jarvis runner, and required environment
   secret names:
   ```sh
-  ./script/package_release.sh --github-doctor
+  make release-github-doctor
   ```
 - If configuring the secrets from a local Developer ID `.p12`, run the helper
   template and dry run before upload:
   ```sh
-  ./script/configure_github_release_secrets.sh --print-template
-  ./script/configure_github_release_secrets.sh --dry-run
-  ./script/configure_github_release_secrets.sh
+  make release-secret-template
+  make release-secrets-dry-run
+  make release-secrets-upload
   ```
 - Configure the protected `release` environment with these secrets:
   `BONSAI_CODESIGN_IDENTITY`,
@@ -120,11 +118,17 @@ that final zip.
   validation, release archive creation, artifact verification, and workflow
   artifact upload without entering the protected `release` environment, reading
   Apple signing secrets, or creating a draft GitHub Release.
+  ```sh
+  make release-dry-run
+  ```
 - Run the manual `Release` workflow if the artifact should be produced by
   GitHub Actions, with `dry_run` disabled for the public artifact. The workflow
   targets the Jarvis self-hosted macOS ARM64 runner, uploads the notarized
   artifact pair to the workflow run, and creates a draft GitHub Release tagged
   from the audited commit.
+  ```sh
+  make release
+  ```
 - If using a local notarization run instead of the workflow, tag the audited
   commit and attach `dist/release/Bonsai.zip` plus
   `dist/release/Bonsai.release.plist` manually.
@@ -137,7 +141,7 @@ that final zip.
 - Download the uploaded zip and manifest from the draft GitHub Release on a
   clean macOS account or machine.
 - Put `Bonsai.zip` and `Bonsai.release.plist` in `dist/release/`, then run
-  `./script/package_release.sh --verify-artifacts`.
+  `make release-verify-artifacts`.
 - Open Bonsai from the downloaded artifact.
 - Confirm Gatekeeper accepts the app.
 - Open a local Git repository and verify history, working tree, and diff loading.

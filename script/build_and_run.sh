@@ -16,6 +16,7 @@ APP_RESOURCES="$APP_CONTENTS/Resources"
 APP_BINARY="$APP_MACOS/$APP_NAME"
 INFO_PLIST="$APP_CONTENTS/Info.plist"
 APP_ICON_SOURCE="$ROOT_DIR/Assets/AppIcon/Bonsai.icns"
+APP_ICON_DOCUMENT_SOURCE="$ROOT_DIR/Assets/AppIcon/Bonsai.icon"
 APP_MARK_SOURCE="$ROOT_DIR/Assets/AppIcon/bonsai-worktree-topology.svg"
 
 app_version() {
@@ -61,6 +62,7 @@ mkdir -p "$APP_MACOS" "$APP_RESOURCES"
 cp "$BUILD_BINARY" "$APP_BINARY"
 chmod +x "$APP_BINARY"
 cp "$APP_ICON_SOURCE" "$APP_RESOURCES/Bonsai.icns"
+ditto "$APP_ICON_DOCUMENT_SOURCE" "$APP_RESOURCES/Bonsai.icon"
 cp "$APP_MARK_SOURCE" "$APP_RESOURCES/bonsai-worktree-topology.svg"
 
 cat >"$INFO_PLIST" <<PLIST
@@ -73,6 +75,8 @@ cat >"$INFO_PLIST" <<PLIST
   <key>CFBundleIdentifier</key>
   <string>$BUNDLE_ID</string>
   <key>CFBundleIconFile</key>
+  <string>Bonsai</string>
+  <key>CFBundleIconName</key>
   <string>Bonsai</string>
   <key>CFBundleName</key>
   <string>$APP_NAME</string>

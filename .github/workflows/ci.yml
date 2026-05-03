@@ -29,29 +29,19 @@ jobs:
           swift --version
 
       - name: Validate shell scripts
-        run: |
-          for script in \
-            script/build_and_run.sh \
-            script/check_release_runner.sh \
-            script/configure_github_release_secrets.sh \
-            script/create_github_draft_release.sh \
-            script/package_release.sh \
-            script/perf_large_repo.sh \
-            script/perf_ui_sample.sh; do
-            bash -n "$script"
-          done
+        run: make validate-scripts
 
       - name: Run Swift tests
-        run: swift test
+        run: make test
 
       - name: Run performance smoke
-        run: ./script/perf_large_repo.sh
+        run: make perf
 
       - name: Verify release bundle
-        run: ./script/package_release.sh --verify
+        run: make release-verify
 
       - name: Verify release archive
-        run: ./script/package_release.sh --verify-archive
+        run: make release-verify-archive
 
       - name: Verify release artifacts
-        run: ./script/package_release.sh --verify-artifacts
+        run: make release-verify-artifacts

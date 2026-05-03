@@ -21,6 +21,7 @@ INFO_PLIST="$APP_CONTENTS/Info.plist"
 ARCHIVE_PATH="$DIST_DIR/$APP_NAME.zip"
 MANIFEST_PATH="$DIST_DIR/$APP_NAME.release.plist"
 APP_ICON_SOURCE="$ROOT_DIR/Assets/AppIcon/Bonsai.icns"
+APP_ICON_DOCUMENT_SOURCE="$ROOT_DIR/Assets/AppIcon/Bonsai.icon"
 APP_MARK_SOURCE="$ROOT_DIR/Assets/AppIcon/bonsai-worktree-topology.svg"
 
 usage() {
@@ -85,6 +86,7 @@ stage_app_bundle() {
 
   require_file "$build_binary"
   require_file "$APP_ICON_SOURCE"
+  require_file "$APP_ICON_DOCUMENT_SOURCE/icon.json"
   require_file "$APP_MARK_SOURCE"
 
   rm -rf "$APP_BUNDLE"
@@ -92,6 +94,7 @@ stage_app_bundle() {
   cp "$build_binary" "$APP_BINARY"
   chmod +x "$APP_BINARY"
   cp "$APP_ICON_SOURCE" "$APP_RESOURCES/Bonsai.icns"
+  ditto "$APP_ICON_DOCUMENT_SOURCE" "$APP_RESOURCES/Bonsai.icon"
   cp "$APP_MARK_SOURCE" "$APP_RESOURCES/bonsai-worktree-topology.svg"
 
   cat >"$INFO_PLIST" <<PLIST
@@ -104,6 +107,8 @@ stage_app_bundle() {
   <key>CFBundleIdentifier</key>
   <string>$BUNDLE_ID</string>
   <key>CFBundleIconFile</key>
+  <string>Bonsai</string>
+  <key>CFBundleIconName</key>
   <string>Bonsai</string>
   <key>CFBundleName</key>
   <string>$APP_NAME</string>
@@ -145,6 +150,7 @@ validate_app_bundle() {
   require_file "$APP_BINARY"
   require_file "$INFO_PLIST"
   require_file "$APP_RESOURCES/Bonsai.icns"
+  require_file "$APP_RESOURCES/Bonsai.icon/icon.json"
   require_file "$APP_RESOURCES/bonsai-worktree-topology.svg"
 
   plutil -lint "$INFO_PLIST" >/dev/null
@@ -167,6 +173,13 @@ validate_app_bundle() {
   icon_file="$(/usr/libexec/PlistBuddy -c "Print :CFBundleIconFile" "$INFO_PLIST")"
   if [[ "$icon_file" != "Bonsai" ]]; then
     echo "unexpected CFBundleIconFile: $icon_file" >&2
+    exit 1
+  fi
+
+  local icon_name
+  icon_name="$(/usr/libexec/PlistBuddy -c "Print :CFBundleIconName" "$INFO_PLIST")"
+  if [[ "$icon_name" != "Bonsai" ]]; then
+    echo "unexpected CFBundleIconName: $icon_name" >&2
     exit 1
   fi
 
@@ -204,7 +217,7 @@ write_release_manifest() {
   archive_size="$(stat -f%z "$ARCHIVE_PATH")"
   git_commit="$(git -C "$ROOT_DIR" rev-parse HEAD 2>/dev/null || printf 'unknown')"
   codesign_details="$(codesign -dvvv "$APP_BUNDLE" 2>&1 || true)"
-  signature_kind="$(printf '%s\n' "$codesign_details" | awk -F= '/^Signature=/{print $2; exit}')"
+  signature_kind="$(release_signature_kind "$codesign_details")"
   team_identifier="$(printf '%s\n' "$codesign_details" | awk -F= '/^TeamIdentifier=/{print $2; exit}')"
 
   if [[ -z "$signature_kind" ]]; then
@@ -238,6 +251,35 @@ PLIST
   plutil -insert teamIdentifier -string "$team_identifier" "$MANIFEST_PATH"
   plutil -insert notarized -bool "$notarized" "$MANIFEST_PATH"
   validate_release_manifest
+}
+
+release_signature_kind() {
+  local codesign_details="$1"
+  local signature authority
+  signature="$(printf '%s\n' "$codesign_details" | awk -F= '/^Signature=/{print $2; exit}')"
+  if [[ -n "$signature" ]]; then
+    printf '%s' "$signature"
+    return
+  fi
+
+  authority="$(printf '%s\n' "$codesign_details" | awk -F= '/^Authority=/{print $2; exit}')"
+  case "$authority" in
+    Developer\ ID\ Application:*)
+      printf '%s' "Developer ID"
+      ;;
+    Apple\ Development:*)
+      printf '%s' "Apple Development"
+      ;;
+    Apple\ Distribution:*)
+      printf '%s' "Apple Distribution"
+      ;;
+    "")
+      printf '%s' "unknown"
+      ;;
+    *)
+      printf '%s' "$authority"
+      ;;
+  esac
 }
 
 validate_release_manifest() {
@@ -324,6 +366,8 @@ validate_archive() {
     echo "missing archived CFBundleVersion" >&2
     exit 1
   fi
+
+  require_file "$archive_app_bundle/Contents/Resources/Bonsai.icon/icon.json"
 
   codesign --verify --strict --verbose=2 "$archive_app_bundle"
 
@@ -611,17 +655,17 @@ print_github_release_remediation() {
   cat <<REMEDIATION
 Next steps:
   1. Print the local secret template:
-     ./script/configure_github_release_secrets.sh --print-template
+     make release-secret-template
   2. Fill the exports locally, then validate without uploading:
-     ./script/configure_github_release_secrets.sh --dry-run
+     make release-secrets-dry-run
   3. Upload only to the protected $GITHUB_RELEASE_ENVIRONMENT environment:
-     ./script/configure_github_release_secrets.sh
+     make release-secrets-upload
   4. Re-run this doctor:
-     ./script/package_release.sh --github-doctor
+     make release-github-doctor
   5. Re-run the Jarvis dry run:
-     gh workflow run Release --repo $GITHUB_RELEASE_REPOSITORY --ref main -f dry_run=true
+     make release-dry-run
   6. After the doctor passes, dispatch the protected release:
-     gh workflow run Release --repo $GITHUB_RELEASE_REPOSITORY --ref main -f dry_run=false
+     make release
 REMEDIATION
 }
 
