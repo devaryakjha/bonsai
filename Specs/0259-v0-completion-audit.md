@@ -40,7 +40,7 @@ development, regular checkpoint commits, and OSS-ready project structure.
 | GitHub release secret handoff | `script/configure_github_release_secrets.sh` validates local Apple release credential inputs, uploads the six required secret names to the protected environment, and reruns the GitHub release doctor without printing secret values | Covered pending secret values |
 | GitHub release secret template | `script/configure_github_release_secrets.sh --print-template` prints the required local release credential exports with placeholders and no GitHub CLI dependency | Covered pending secret values |
 | Jarvis release runner preflight | `script/check_release_runner.sh` checks the SSH runner host, toolchain versions, Developer ID Application identities, a harmless signing smoke, and notary profile state without changing secrets or keychains; it exits non-zero when the runner is not release-ready | Covered |
-| Jarvis release workflow dry run | The manual `Release` workflow defaults to a no-secret dry run on Jarvis outside the protected `release` environment, runs source validation, builds `--verify-archive`, verifies the artifact pair, and skips secret checks, notarization, and draft release creation | Covered |
+| Jarvis release workflow dry run | The manual `Release` workflow defaults to a no-secret dry run on Jarvis outside the protected `release` environment, runs source validation, builds `--verify-archive`, verifies the artifact pair, and skips secret checks, notarization, and draft release creation; run `25270932133` passed and its downloaded artifact pair verified locally | Covered |
 | Release artifact evidence | `script/package_release.sh` writes `dist/release/Bonsai.release.plist` for archive-producing modes with version, build, commit, zip hash, signature kind, team, and notarization state | Covered |
 | Release artifact verification | `script/package_release.sh --verify-artifacts` validates the zip, manifest shape, archive name, byte size, and SHA-256 after packaging or download | Covered |
 | Release guardrail tests | `Tests/BonsaiTests/ReleaseScriptTests.swift` covers credential rejection, doctor output, artifact verifier wiring, manifest upload, draft release upload/cleanup, release secret template output, and temporary keychain cleanup wiring without running release builds or notarization | Covered |
@@ -48,6 +48,14 @@ development, regular checkpoint commits, and OSS-ready project structure.
 
 ## Current Blocking Evidence
 
+- GitHub `Release` dry run
+  `https://github.com/devaryakjha/bonsai/actions/runs/25270932133` completed
+  successfully for commit `310441dcf33e58c418fac0d806fb469ff3527dd1`.
+- GitHub push CI
+  `https://github.com/devaryakjha/bonsai/actions/runs/25270873229` completed
+  successfully for commit `310441dcf33e58c418fac0d806fb469ff3527dd1`.
+- The dry-run artifact pair from run `25270932133` was downloaded and verified
+  locally with `./script/package_release.sh --verify-artifacts`.
 - The GitHub `release` environment exists and has `devaryakjha` configured as a
   required reviewer.
 - `gh secret list --repo devaryakjha/bonsai --env release` returns no configured
@@ -58,10 +66,11 @@ development, regular checkpoint commits, and OSS-ready project structure.
   environment, required reviewer, and Jarvis runner labels, then reports the six
   missing environment secret names and exits non-zero.
 - `./script/check_release_runner.sh` reaches Jarvis and reports the configured
-  toolchain plus a visible `Developer ID Application` identity. A direct signing
-  smoke currently fails with `errSecInternalComponent`, and the checked
-  notarytool profile is blocked by the locked default keychain over SSH, so the
-  preflight exits non-zero with `Release runner: not ready`.
+  toolchain plus a visible `Developer ID Application` identity:
+  `Developer ID Application: Aryakumar Jha (KZX5HZ32P9)`. A direct signing smoke
+  currently fails with `errSecInternalComponent`, and the checked notarytool
+  profile is blocked by a locked keychain over SSH, so the preflight exits
+  non-zero with `Release runner: not ready`.
 - `BONSAI_CODESIGN_IDENTITY` is not set in the current environment.
 - `BONSAI_NOTARY_PROFILE` is not set in the current environment.
 - `security find-identity -p codesigning -v` did not show a `Developer ID

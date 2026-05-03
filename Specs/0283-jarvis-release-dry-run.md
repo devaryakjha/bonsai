@@ -34,3 +34,16 @@ Developer ID and notarization secrets are configured.
   release path.
 - `ReleaseScriptTests` cover the workflow wiring.
 - `swift test`, `actionlint`, and the release artifact verifier pass.
+
+## Evidence
+
+- GitHub `Release` dry run
+  `https://github.com/devaryakjha/bonsai/actions/runs/25270932133` completed
+  successfully for commit `310441dcf33e58c418fac0d806fb469ff3527dd1`.
+- The `Dry-run macOS artifact` job ran on Jarvis, completed source validation,
+  built the dry-run archive, verified release artifacts, and uploaded the dry-run
+  artifact pair.
+- The `Notarized macOS artifact` job was skipped for the dry run.
+- The uploaded dry-run `Bonsai.zip` and `Bonsai.release.plist` artifact pair was
+  downloaded and verified locally with `./script/package_release.sh
+  --verify-artifacts`.
