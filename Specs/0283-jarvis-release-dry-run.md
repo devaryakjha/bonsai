@@ -38,8 +38,8 @@ Developer ID and notarization secrets are configured.
 ## Evidence
 
 - GitHub `Release` dry run
-  `https://github.com/devaryakjha/bonsai/actions/runs/25272626762` completed
-  successfully for commit `25ce981447503686220923ae3208e28ff5923518`.
+  `https://github.com/devaryakjha/bonsai/actions/runs/25275877276` completed
+  successfully for commit `2c1db333d982312e0cf168b0a967ee70375a69d1`.
 - The `Dry-run macOS artifact` job ran on Jarvis, completed source validation,
   including the deterministic large-repository performance smoke, built the
   dry-run archive, verified release artifacts, and uploaded the dry-run artifact

@@ -40,7 +40,7 @@ development, regular checkpoint commits, and OSS-ready project structure.
 | GitHub release secret handoff | `script/configure_github_release_secrets.sh` validates local Apple release credential inputs, imports the Developer ID `.p12` into a temporary keychain to confirm it exposes the configured identity, uploads the six required secret names to the protected environment, and reruns the GitHub release doctor without printing secret values | Covered pending secret values |
 | GitHub release secret template | `script/configure_github_release_secrets.sh --print-template` prints the required local release credential exports with placeholders and no GitHub CLI dependency | Covered pending secret values |
 | Jarvis release runner preflight | `script/check_release_runner.sh --workflow` checks Jarvis' no-secret GitHub Actions release toolchain and now exits zero with `Release workflow runner: ready`; strict `script/check_release_runner.sh` still checks runner-local Developer ID identities, signing smoke, and notary profile state without changing secrets or keychains | Covered |
-| Jarvis release workflow dry run | The manual `Release` workflow defaults to a no-secret dry run on Jarvis outside the protected `release` environment, runs source validation, builds `--verify-archive`, verifies the artifact pair, and skips secret checks, notarization, and draft release creation; run `25270932133` passed and its downloaded artifact pair verified locally | Covered |
+| Jarvis release workflow dry run | The manual `Release` workflow defaults to a no-secret dry run on Jarvis outside the protected `release` environment, runs source validation, builds `--verify-archive`, verifies the artifact pair, and skips secret checks, notarization, and draft release creation; run `25275877276` passed and its downloaded artifact pair verified locally | Covered |
 | Release artifact evidence | `script/package_release.sh` writes `dist/release/Bonsai.release.plist` for archive-producing modes with version, build, commit, zip hash, signature kind, team, and notarization state | Covered |
 | Release artifact verification | `script/package_release.sh --verify-artifacts` validates the zip, manifest shape, archive name, byte size, and SHA-256 after packaging or download | Covered |
 | Release guardrail tests | `Tests/BonsaiTests/ReleaseScriptTests.swift` covers credential rejection, doctor output, artifact verifier wiring, manifest upload, draft release upload/cleanup, release secret template output, and temporary keychain cleanup wiring without running release builds or notarization | Covered |
@@ -49,17 +49,17 @@ development, regular checkpoint commits, and OSS-ready project structure.
 ## Current Blocking Evidence
 
 - GitHub push CI
-  `https://github.com/devaryakjha/bonsai/actions/runs/25272577915` completed
+  `https://github.com/devaryakjha/bonsai/actions/runs/25272769659` completed
   successfully on the Jarvis self-hosted macOS runner for commit
-  `25ce981447503686220923ae3208e28ff5923518`.
+  `2c1db333d982312e0cf168b0a967ee70375a69d1`.
 - GitHub `Release` dry run
-  `https://github.com/devaryakjha/bonsai/actions/runs/25272626762` completed
+  `https://github.com/devaryakjha/bonsai/actions/runs/25275877276` completed
   successfully on the Jarvis self-hosted macOS runner for commit
-  `25ce981447503686220923ae3208e28ff5923518`.
-- The dry-run artifact pair from run `25272626762` was downloaded and verified
+  `2c1db333d982312e0cf168b0a967ee70375a69d1`.
+- The dry-run artifact pair from run `25275877276` was downloaded and verified
   locally with `./script/package_release.sh --verify-artifacts`; the manifest
-  records `version=0.1.0`, `buildNumber=3`,
-  `archiveSHA256=b7eeaddd216e0e73cebfe35fa492ce74bcb3900a056e28809d35946dc65e6f19`,
+  records `version=0.1.0`, `buildNumber=4`,
+  `archiveSHA256=27dac32721823f9a038e34185cc036b1af5f8cee1f07b8b6adcef694e6ad75ff`,
   `signatureKind=adhoc`, and `notarized=false`.
 - The GitHub `release` environment exists and has `devaryakjha` configured as a
   required reviewer.
