@@ -40,7 +40,7 @@ development, regular checkpoint commits, and OSS-ready project structure.
 | GitHub release secret handoff | `script/configure_github_release_secrets.sh` validates local Apple release credential inputs, uploads the six required secret names to the protected environment, and reruns the GitHub release doctor without printing secret values | Covered pending secret values |
 | GitHub release secret template | `script/configure_github_release_secrets.sh --print-template` prints the required local release credential exports with placeholders and no GitHub CLI dependency | Covered pending secret values |
 | Jarvis release runner preflight | `script/check_release_runner.sh` checks the SSH runner host, toolchain versions, Developer ID Application identities, a harmless signing smoke, and notary profile state without changing secrets or keychains; it exits non-zero when the runner is not release-ready | Covered |
-| Jarvis release workflow dry run | The manual `Release` workflow defaults to a no-secret dry run on Jarvis, runs source validation, builds `--verify-archive`, verifies the artifact pair, and skips secret checks, notarization, and draft release creation | Covered |
+| Jarvis release workflow dry run | The manual `Release` workflow defaults to a no-secret dry run on Jarvis outside the protected `release` environment, runs source validation, builds `--verify-archive`, verifies the artifact pair, and skips secret checks, notarization, and draft release creation | Covered |
 | Release artifact evidence | `script/package_release.sh` writes `dist/release/Bonsai.release.plist` for archive-producing modes with version, build, commit, zip hash, signature kind, team, and notarization state | Covered |
 | Release artifact verification | `script/package_release.sh --verify-artifacts` validates the zip, manifest shape, archive name, byte size, and SHA-256 after packaging or download | Covered |
 | Release guardrail tests | `Tests/BonsaiTests/ReleaseScriptTests.swift` covers credential rejection, doctor output, artifact verifier wiring, manifest upload, draft release upload/cleanup, release secret template output, and temporary keychain cleanup wiring without running release builds or notarization | Covered |
@@ -92,7 +92,8 @@ development, regular checkpoint commits, and OSS-ready project structure.
 - A read-only Jarvis release runner preflight exists:
   `script/check_release_runner.sh`.
 - The manual Jarvis release workflow has a default dry run that exercises the
-  self-hosted runner path without Apple release secrets.
+  self-hosted runner path without release-environment approval or Apple release
+  secrets.
 - A post-build artifact verifier exists:
   `script/package_release.sh --verify-artifacts`.
 - Release guardrails are covered by `ReleaseScriptTests`.

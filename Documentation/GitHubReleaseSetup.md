@@ -129,8 +129,8 @@ Run the manual `Release` workflow from the audited commit first with its default
 `dry_run` input enabled. The dry run targets Jarvis, validates source, builds the
 credential-free archive with `script/package_release.sh --verify-archive`,
 verifies the generated artifact pair, and uploads it to the workflow run. It
-does not read release secrets, create a signing keychain, notarize, or create a
-draft GitHub Release.
+does not use the protected `release` environment, read release secrets, create a
+signing keychain, notarize, or create a draft GitHub Release.
 
 For a public release, run the same workflow again with `dry_run` disabled after
 `./script/package_release.sh --github-doctor` reports the protected environment

@@ -111,8 +111,8 @@ that final zip.
 - Run the manual `Release` workflow once with the default `dry_run` input before
   attempting a credentialed release. This exercises the Jarvis runner, source
   validation, release archive creation, artifact verification, and workflow
-  artifact upload without reading Apple signing secrets or creating a draft
-  GitHub Release.
+  artifact upload without entering the protected `release` environment, reading
+  Apple signing secrets, or creating a draft GitHub Release.
 - Run the manual `Release` workflow if the artifact should be produced by
   GitHub Actions, with `dry_run` disabled for the public artifact. The workflow
   targets the Jarvis self-hosted macOS ARM64 runner, uploads the notarized

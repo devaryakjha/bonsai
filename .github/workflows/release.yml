@@ -21,8 +21,73 @@ permissions:
   contents: write
 
 jobs:
+  dry-run:
+    name: Dry-run macOS artifact
+    if: ${{ inputs.dry_run == true }}
+    runs-on:
+      - self-hosted
+      - macOS
+      - ARM64
+      - jarvis
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Show toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+          curl --version | sed -n '1p'
+          jq --version
+
+      - name: Resolve release metadata
+        run: |
+          version="${{ inputs.version }}"
+          build_number="${{ inputs.build_number }}"
+          if [[ -z "$version" ]]; then
+            version="$(tr -d '[:space:]' < VERSION)"
+          fi
+          if [[ -z "$build_number" ]]; then
+            build_number="${{ github.run_number }}"
+          fi
+          {
+            echo "BONSAI_VERSION=$version"
+            echo "BONSAI_BUILD_NUMBER=$build_number"
+            echo "BONSAI_RELEASE_DRY_RUN=true"
+          } >> "$GITHUB_ENV"
+
+      - name: Validate source
+        run: |
+          git diff --check
+          bash -n script/build_and_run.sh
+          bash -n script/check_release_runner.sh
+          bash -n script/configure_github_release_secrets.sh
+          bash -n script/create_github_draft_release.sh
+          bash -n script/package_release.sh
+          bash -n script/perf_large_repo.sh
+          swift test
+
+      - name: Build dry-run archive
+        run: ./script/package_release.sh --verify-archive
+
+      - name: Verify release artifacts
+        run: ./script/package_release.sh --verify-artifacts
+
+      - name: Upload dry-run artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Bonsai-${{ env.BONSAI_VERSION }}-${{ env.BONSAI_BUILD_NUMBER }}-dry-run
+          path: |
+            dist/release/Bonsai.zip
+            dist/release/Bonsai.release.plist
+          if-no-files-found: error
+          retention-days: 7
+
   notarize:
     name: Notarized macOS artifact
+    if: ${{ inputs.dry_run != true }}
     runs-on:
       - self-hosted
       - macOS
@@ -50,20 +115,16 @@ jobs:
         run: |
           version="${{ inputs.version }}"
           build_number="${{ inputs.build_number }}"
-          dry_run="${{ inputs.dry_run }}"
           if [[ -z "$version" ]]; then
             version="$(tr -d '[:space:]' < VERSION)"
           fi
           if [[ -z "$build_number" ]]; then
             build_number="${{ github.run_number }}"
           fi
-          if [[ -z "$dry_run" ]]; then
-            dry_run="true"
-          fi
           {
             echo "BONSAI_VERSION=$version"
             echo "BONSAI_BUILD_NUMBER=$build_number"
-            echo "BONSAI_RELEASE_DRY_RUN=$dry_run"
+            echo "BONSAI_RELEASE_DRY_RUN=false"
             echo "BONSAI_NOTARY_KEYCHAIN=$RUNNER_TEMP/bonsai-signing.keychain-db"
           } >> "$GITHUB_ENV"
 
@@ -79,7 +140,6 @@ jobs:
           swift test
 
       - name: Check release secrets
-        if: ${{ inputs.dry_run != true }}
         env:
           BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64: ${{ secrets.BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64 }}
           BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD }}
@@ -103,7 +163,6 @@ jobs:
           exit "$missing"
 
       - name: Create signing keychain
-        if: ${{ inputs.dry_run != true }}
         env:
           BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64: ${{ secrets.BONSAI_DEVELOPER_ID_CERTIFICATE_BASE64 }}
           BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.BONSAI_DEVELOPER_ID_CERTIFICATE_PASSWORD }}
@@ -131,7 +190,6 @@ jobs:
           rm -f "$certificate_path"
 
       - name: Store notarization credentials
-        if: ${{ inputs.dry_run != true }}
         env:
           BONSAI_NOTARY_APPLE_ID: ${{ secrets.BONSAI_NOTARY_APPLE_ID }}
           BONSAI_NOTARY_APP_PASSWORD: ${{ secrets.BONSAI_NOTARY_APP_PASSWORD }}
@@ -144,18 +202,12 @@ jobs:
             --keychain "$BONSAI_NOTARY_KEYCHAIN"
 
       - name: Check release credentials
-        if: ${{ inputs.dry_run != true }}
         run: |
           ./script/package_release.sh --doctor
           ./script/package_release.sh --check-credentials
 
       - name: Build signed and notarized archive
-        if: ${{ inputs.dry_run != true }}
         run: ./script/package_release.sh --notarize
-
-      - name: Build dry-run archive
-        if: ${{ inputs.dry_run == true }}
-        run: ./script/package_release.sh --verify-archive
 
       - name: Verify release artifacts
         run: ./script/package_release.sh --verify-artifacts
@@ -171,7 +223,6 @@ jobs:
           retention-days: 30
 
       - name: Create draft GitHub release
-        if: ${{ inputs.dry_run != true }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: ./script/create_github_draft_release.sh

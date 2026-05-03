@@ -97,7 +97,8 @@ Application certificate and a valid notarytool profile. Maintainer release setup
 is documented in `Documentation/ReleaseChecklist.md`,
 `Documentation/ReleasePackaging.md`, and `Documentation/GitHubReleaseSetup.md`.
 The manual GitHub `Release` workflow defaults to a Jarvis dry run that builds
-and verifies the credential-free archive without reading Apple release secrets.
+and verifies the credential-free archive without entering the protected release
+environment or reading Apple release secrets.
 
 Run the standard validation gates before submitting changes:
 

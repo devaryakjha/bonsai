@@ -14,6 +14,8 @@ Developer ID and notarization secrets are configured.
   credential-free release archive with `script/package_release.sh --verify-archive`,
   verify the generated artifact pair, and upload the artifact pair to the
   workflow run.
+- Keep dry-run mode outside the protected `release` environment so the no-secret
+  runner check can execute without release approval.
 - In dry-run mode, skip release secret checks, temporary signing keychain
   creation, notarization credentials, Developer ID credential checks,
   notarized packaging, and draft GitHub Release creation.
@@ -24,8 +26,9 @@ Developer ID and notarization secrets are configured.
 ## Acceptance
 
 - `.github/workflows/release.yml` exposes `dry_run`, uses Jarvis in both modes,
-  builds `--verify-archive` only for dry runs, and gates secret/notarization/
-  draft-release steps to non-dry runs.
+  builds `--verify-archive` only for dry runs, keeps dry runs outside the
+  protected `release` environment, and keeps secret/notarization/draft-release
+  steps inside the non-dry-run path.
 - `Documentation/GitHubReleaseSetup.md` and `Documentation/ReleaseChecklist.md`
   tell maintainers to run the default dry run before relying on the credentialed
   release path.
