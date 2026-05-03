@@ -3,6 +3,7 @@ import SwiftUI
 
 struct RichDiffTextView: NSViewRepresentable {
   var text: String
+  var renderVersion: Int?
   var searchText: String = ""
   var searchNavigationRequest: DiffSearch.NavigationRequest?
 
@@ -42,9 +43,14 @@ struct RichDiffTextView: NSViewRepresentable {
   }
 
   func updateNSView(_ scrollView: NSScrollView, context: Context) {
-    let shouldRender = context.coordinator.lastText != text || context.coordinator.lastSearchText != searchText
+    let shouldRender = context.coordinator.shouldRender(
+      text: text,
+      renderVersion: renderVersion,
+      searchText: searchText
+    )
     if shouldRender {
-      context.coordinator.lastText = text
+      context.coordinator.lastText = renderVersion == nil ? text : nil
+      context.coordinator.lastRenderVersion = renderVersion
       context.coordinator.lastSearchText = searchText
       context.coordinator.textView?.textStorage?.setAttributedString(Self.attributedDiff(text, searchText: searchText))
     }
@@ -57,8 +63,16 @@ struct RichDiffTextView: NSViewRepresentable {
   final class Coordinator {
     weak var textView: NSTextView?
     var lastText: String?
+    var lastRenderVersion: Int?
     var lastSearchText: String?
     var lastSearchNavigationRequest: DiffSearch.NavigationRequest?
+
+    func shouldRender(text: String, renderVersion: Int?, searchText: String) -> Bool {
+      if let renderVersion {
+        return lastRenderVersion != renderVersion || lastSearchText != searchText
+      }
+      return lastText != text || lastSearchText != searchText
+    }
 
     func navigateSearch(query: String, request: DiffSearch.NavigationRequest?) {
       guard let request,

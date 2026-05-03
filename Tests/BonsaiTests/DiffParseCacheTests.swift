@@ -19,6 +19,10 @@ final class DiffParseCacheTests: XCTestCase {
 
     XCTAssertEqual(store.diffHunks.count, 1)
     XCTAssertEqual(store.diffLineChanges.count, 1)
+    XCTAssertEqual(store.diffSummary?.additions, 1)
+    XCTAssertEqual(store.diffSummary?.deletions, 1)
+    XCTAssertEqual(store.diffSummary?.hunkCount, 1)
+    XCTAssertEqual(store.diffRenderVersion, 1)
     XCTAssertTrue(store.splitDiff.oldText.contains("-two"))
 
     store.diffText = """
@@ -33,6 +37,9 @@ final class DiffParseCacheTests: XCTestCase {
 
     XCTAssertEqual(store.diffHunks.count, 1)
     XCTAssertEqual(store.diffLineChanges.first?.kind, .addition)
+    XCTAssertEqual(store.diffSummary?.additions, 1)
+    XCTAssertEqual(store.diffSummary?.deletions, 0)
+    XCTAssertEqual(store.diffRenderVersion, 2)
     XCTAssertFalse(store.splitDiff.oldText.contains("-two"))
     XCTAssertTrue(store.splitDiff.newText.contains("+two"))
 
@@ -42,6 +49,8 @@ final class DiffParseCacheTests: XCTestCase {
     XCTAssertTrue(store.diffLineChanges.isEmpty)
     XCTAssertTrue(store.splitDiff.oldLines.isEmpty)
     XCTAssertTrue(store.splitDiff.newLines.isEmpty)
+    XCTAssertNil(store.diffSummary)
+    XCTAssertEqual(store.diffRenderVersion, 3)
   }
 
   func testLargeDiffParseCacheKeepsHunksAndSplitButSkipsLineChangeActions() {

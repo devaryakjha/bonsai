@@ -6,11 +6,15 @@ private struct DiffParseCache {
   var hunks: [DiffHunk]
   var lineChanges: [DiffLineChange]
   var splitDiff: SplitDiff
+  var summary: DiffSummary
+  var isBinary: Bool
 
   static let empty = DiffParseCache(
     hunks: [],
     lineChanges: [],
-    splitDiff: SplitDiff(oldLines: [], newLines: [])
+    splitDiff: SplitDiff(oldLines: [], newLines: []),
+    summary: DiffSummary(),
+    isBinary: false
   )
 }
 
@@ -61,6 +65,7 @@ final class RepositoryStore {
       updateDiffParseCache()
     }
   }
+  var diffRenderVersion = 0
   var imageDiffSnapshot: ImageDiffSnapshot?
   var commitTreeEntries: [GitTreeEntry] = []
   var commitTreePath = ""
@@ -179,6 +184,10 @@ final class RepositoryStore {
     diffParseCache.splitDiff
   }
 
+  var diffSummary: DiffSummary? {
+    diffParseCache.summary.isEmpty ? nil : diffParseCache.summary
+  }
+
   var selectedPreviewPath: String? {
     selectedStatusEntry?.path ?? selectedChangedFile?.path ?? selectedTreeEntry?.path
   }
@@ -196,7 +205,7 @@ final class RepositoryStore {
   }
 
   var selectedDiffIsBinary: Bool {
-    FilePreviewSupport.isBinaryDiff(diffText)
+    diffParseCache.isBinary
   }
 
   var canCopyCurrentPatch: Bool {
@@ -2582,6 +2591,7 @@ final class RepositoryStore {
   }
 
   private func updateDiffParseCache() {
+    defer { diffRenderVersion += 1 }
     guard !diffText.isEmpty else {
       diffParseCache = .empty
       return
@@ -2593,7 +2603,9 @@ final class RepositoryStore {
       lineChanges: DiffRenderPolicy.allowsLineChangeActions(diffLineCount: diffLineCount)
         ? hunks.flatMap(GitParsers.parseDiffLineChanges)
         : [],
-      splitDiff: GitParsers.parseSplitDiff(diffText)
+      splitDiff: GitParsers.parseSplitDiff(diffText),
+      summary: DiffSummary(diffText: diffText, hunkCount: hunks.count),
+      isBinary: FilePreviewSupport.isBinaryDiff(diffText)
     )
   }
 

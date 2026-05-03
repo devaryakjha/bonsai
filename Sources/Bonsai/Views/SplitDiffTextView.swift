@@ -3,6 +3,7 @@ import SwiftUI
 
 struct SplitDiffTextView: NSViewRepresentable {
   var splitDiff: SplitDiff
+  var renderVersion: Int?
   var paneContext: SplitDiffPaneContext = .fallback
   var searchText: String = ""
   var searchNavigationRequest: DiffSearch.NavigationRequest?
@@ -40,9 +41,14 @@ struct SplitDiffTextView: NSViewRepresentable {
     context.coordinator.updateOrientationIfNeeded(in: splitView)
     context.coordinator.setDividerPositionIfNeeded(in: splitView)
     context.coordinator.updatePaneContextIfNeeded(paneContext)
-    let shouldRender = context.coordinator.lastDiff != splitDiff || context.coordinator.lastSearchText != searchText
+    let shouldRender = context.coordinator.shouldRender(
+      splitDiff: splitDiff,
+      renderVersion: renderVersion,
+      searchText: searchText
+    )
     if shouldRender {
-      context.coordinator.lastDiff = splitDiff
+      context.coordinator.lastDiff = renderVersion == nil ? splitDiff : nil
+      context.coordinator.lastRenderVersion = renderVersion
       context.coordinator.lastSearchText = searchText
       context.coordinator.oldTextView?.textStorage?.setAttributedString(Self.attributedDiff(
         splitDiff.oldLines,
@@ -87,6 +93,7 @@ struct SplitDiffTextView: NSViewRepresentable {
     weak var newTitleLabel: NSTextField?
     weak var newDetailLabel: NSTextField?
     var lastDiff: SplitDiff?
+    var lastRenderVersion: Int?
     var lastSearchText: String?
     var lastSearchNavigationRequest: DiffSearch.NavigationRequest?
     var oldSearchRanges: [NSRange] = []
@@ -105,6 +112,13 @@ struct SplitDiffTextView: NSViewRepresentable {
       for observer in scrollObservers {
         NotificationCenter.default.removeObserver(observer)
       }
+    }
+
+    func shouldRender(splitDiff: SplitDiff, renderVersion: Int?, searchText: String) -> Bool {
+      if let renderVersion {
+        return lastRenderVersion != renderVersion || lastSearchText != searchText
+      }
+      return lastDiff != splitDiff || lastSearchText != searchText
     }
 
     func installFrameObserver(for splitView: NSSplitView) {

@@ -376,9 +376,7 @@ private struct DiffHeaderControls: View {
   }
 
   private var summary: DiffSummary? {
-    let diffText = store.diffText.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !diffText.isEmpty else { return nil }
-    return DiffSummary(diffText: store.diffText, hunkCount: store.diffHunks.count)
+    store.diffSummary
   }
 
   private var canFindDiff: Bool {
@@ -470,12 +468,14 @@ private struct DiffView: View {
           case .unified:
             RichDiffTextView(
               text: store.diffText,
+              renderVersion: store.diffRenderVersion,
               searchText: searchText,
               searchNavigationRequest: searchNavigationRequest
             )
           case .split:
             SplitDiffViewer(
               splitDiff: store.splitDiff,
+              renderVersion: store.diffRenderVersion,
               paneContext: splitPaneContext,
               searchText: searchText,
               searchNavigationRequest: searchNavigationRequest
@@ -513,6 +513,7 @@ private struct DiffView: View {
 
 private struct SplitDiffViewer: View {
   var splitDiff: SplitDiff
+  var renderVersion: Int
   var paneContext: SplitDiffPaneContext
   var searchText: String
   var searchNavigationRequest: DiffSearch.NavigationRequest?
@@ -520,6 +521,7 @@ private struct SplitDiffViewer: View {
   var body: some View {
     SplitDiffTextView(
       splitDiff: splitDiff,
+      renderVersion: renderVersion,
       paneContext: paneContext,
       searchText: searchText,
       searchNavigationRequest: searchNavigationRequest
@@ -804,27 +806,6 @@ private struct HunkActionStrip: View {
 
   private func hunkActionTitle(for hunk: DiffHunk) -> String {
     "\(isStaged ? "Unstage" : "Stage") hunk \(hunk.id + 1)"
-  }
-}
-
-private struct DiffSummary {
-  var additions = 0
-  var deletions = 0
-  var hunkCount = 0
-
-  init(diffText: String, hunkCount: Int) {
-    self.hunkCount = hunkCount
-    for line in diffText.split(separator: "\n", omittingEmptySubsequences: false) {
-      if line.hasPrefix("+") && !line.hasPrefix("+++") {
-        additions += 1
-      } else if line.hasPrefix("-") && !line.hasPrefix("---") {
-        deletions += 1
-      }
-    }
-  }
-
-  var isMetadataOnly: Bool {
-    additions == 0 && deletions == 0
   }
 }
 
