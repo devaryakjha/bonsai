@@ -353,10 +353,26 @@ check_developer_id_identity() {
     exit 1
   fi
 
-  if ! security find-identity -p codesigning -v | grep -F -- "$identity" >/dev/null; then
-    echo "Developer ID identity is not available in the login keychain: $identity" >&2
+  if ! find_codesigning_identities | grep -F -- "$identity" >/dev/null; then
+    echo "Developer ID identity is not available in the release keychain: $identity" >&2
     exit 1
   fi
+}
+
+find_codesigning_identities() {
+  local args=(-p codesigning -v)
+  if [[ -n "${BONSAI_NOTARY_KEYCHAIN:-}" ]]; then
+    args+=("$BONSAI_NOTARY_KEYCHAIN")
+  fi
+  security find-identity "${args[@]}"
+}
+
+codesigning_keychain_label() {
+  if [[ -n "${BONSAI_NOTARY_KEYCHAIN:-}" ]]; then
+    printf '%s' "$BONSAI_NOTARY_KEYCHAIN"
+    return
+  fi
+  printf '%s' "login keychain"
 }
 
 check_notary_credentials() {
@@ -394,7 +410,7 @@ release_doctor() {
   echo "Build: $(build_number)"
 
   developer_id_count="$(
-    security find-identity -p codesigning -v \
+    find_codesigning_identities \
       | grep -c 'Developer ID Application' \
       || true
   )"
@@ -413,10 +429,10 @@ release_doctor() {
     if [[ "$identity" != Developer\ ID\ Application:* ]]; then
       echo "BONSAI_CODESIGN_IDENTITY: invalid prefix"
       failures=1
-    elif security find-identity -p codesigning -v | grep -F -- "$identity" >/dev/null; then
+    elif find_codesigning_identities | grep -F -- "$identity" >/dev/null; then
       echo "BONSAI_CODESIGN_IDENTITY: available"
     else
-      echo "BONSAI_CODESIGN_IDENTITY: not found in login keychain"
+      echo "BONSAI_CODESIGN_IDENTITY: not found in $(codesigning_keychain_label)"
       failures=1
     fi
   fi
