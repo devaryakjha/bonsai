@@ -289,6 +289,21 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.staleLocalBranchesRequest) { request in
+      StaleLocalBranchesSheet(
+        request: request,
+        selectedBranchIDs: $store.staleBranchSelection,
+        forceDelete: $store.staleBranchForceDelete,
+        onCancel: {
+          store.staleLocalBranchesRequest = nil
+          store.staleBranchSelection = []
+          store.staleBranchForceDelete = false
+        },
+        onDelete: {
+          Task { await store.deleteSelectedStaleLocalBranches() }
+        }
+      )
+    }
     .sheet(item: $store.forcePushRequest) { request in
       ForcePushSheet(
         request: request,
@@ -1623,6 +1638,73 @@ private struct DeleteRefSheet: View {
     }
     .padding(20)
     .frame(width: 460)
+  }
+}
+
+private struct StaleLocalBranchesSheet: View {
+  var request: StaleLocalBranchesRequest
+  @Binding var selectedBranchIDs: Set<String>
+  @Binding var forceDelete: Bool
+  var onCancel: () -> Void
+  var onDelete: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text(request.title)
+        .font(.title3)
+        .fontWeight(.semibold)
+
+      Text(request.message)
+        .foregroundStyle(.secondary)
+
+      VStack(alignment: .leading, spacing: 8) {
+        ForEach(request.branches) { branch in
+          Toggle(isOn: selectionBinding(for: branch)) {
+            VStack(alignment: .leading, spacing: 2) {
+              Text(branch.shortName)
+                .fontWeight(.medium)
+                .lineLimit(1)
+              Text(branch.upstream ?? "Upstream gone")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            }
+          }
+          .toggleStyle(.checkbox)
+        }
+      }
+      .padding(.vertical, 2)
+
+      Toggle("Force delete unmerged branches", isOn: $forceDelete)
+
+      Text(request.detail)
+        .foregroundStyle(.secondary)
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button("Delete Selected", role: .destructive, action: onDelete)
+          .buttonStyle(.borderedProminent)
+          .disabled(selectedBranchIDs.isEmpty)
+      }
+    }
+    .padding(20)
+    .frame(width: 500)
+  }
+
+  private func selectionBinding(for branch: GitRef) -> Binding<Bool> {
+    Binding(
+      get: {
+        selectedBranchIDs.contains(branch.id)
+      },
+      set: { isSelected in
+        if isSelected {
+          selectedBranchIDs.insert(branch.id)
+        } else {
+          selectedBranchIDs.remove(branch.id)
+        }
+      }
+    )
   }
 }
 

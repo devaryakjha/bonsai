@@ -90,6 +90,9 @@ final class RepositoryStore {
   var resetRequest: ResetRequest?
   var deleteRefRequest: DeleteRefRequest?
   var deleteRefForce = false
+  var staleLocalBranchesRequest: StaleLocalBranchesRequest?
+  var staleBranchSelection: Set<String> = []
+  var staleBranchForceDelete = false
   var forcePushRequest: ForcePushRequest?
   var reflogEntries: [GitReflogEntry] = []
   var reflogResetRequest: ReflogResetRequest?
@@ -457,6 +460,10 @@ final class RepositoryStore {
 
   var currentBranch: GitRef? {
     localBranches.first(where: \.isHead)
+  }
+
+  var staleLocalBranches: [GitRef] {
+    localBranches.filter { $0.upstreamGone && !$0.isHead }
   }
 
   var pullReadinessIssue: String? {
@@ -1790,6 +1797,32 @@ final class RepositoryStore {
     deleteRefRequest = nil
     deleteRefForce = false
     await delete(request.ref, force: force)
+  }
+
+  func presentStaleLocalBranches() {
+    let branches = staleLocalBranches
+    guard !branches.isEmpty else {
+      commandResult = CommandResult(title: "Stale local branches", output: "No stale local branches.", isError: false)
+      return
+    }
+
+    staleBranchSelection = Set(branches.map(\.id))
+    staleBranchForceDelete = false
+    staleLocalBranchesRequest = StaleLocalBranchesRequest(branches: branches)
+  }
+
+  func deleteSelectedStaleLocalBranches() async {
+    guard let request = staleLocalBranchesRequest else { return }
+    let selectedBranches = request.branches.filter { staleBranchSelection.contains($0.id) && !$0.isHead }
+    let force = staleBranchForceDelete
+    staleLocalBranchesRequest = nil
+    staleBranchSelection = []
+    staleBranchForceDelete = false
+    guard !selectedBranches.isEmpty else { return }
+
+    await runMutation(title: "Delete stale branches") {
+      try await gitClient.deleteBranches(selectedBranches.map(\.shortName), force: force, in: requiredRepository())
+    }
   }
 
   private func delete(_ ref: GitRef, force: Bool) async {

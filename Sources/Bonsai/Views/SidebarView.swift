@@ -166,7 +166,7 @@ struct SidebarView: View {
       }
 
       if !store.localBranches.isEmpty {
-        Section("Local branches") {
+        Section {
           ForEach(store.localBranches) { branch in
             BranchRow(
               branch: branch,
@@ -237,6 +237,21 @@ struct SidebarView: View {
                 store.presentDelete(branch)
               }
               .disabled(branch.isHead)
+            }
+          }
+        } header: {
+          HStack {
+            Text("Local branches")
+            Spacer()
+            if !store.staleLocalBranches.isEmpty {
+              Button {
+                store.presentStaleLocalBranches()
+              } label: {
+                Image(systemName: "line.3.horizontal.decrease.circle")
+              }
+              .buttonStyle(.borderless)
+              .help("Review stale local branches")
+              .accessibilityLabel("Review stale local branches")
             }
           }
         }

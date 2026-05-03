@@ -1223,6 +1223,14 @@ struct GitClient {
     ["branch", force ? "-D" : "-d", name]
   }
 
+  func deleteBranches(_ names: [String], force: Bool, in repository: GitRepository) async throws -> String {
+    try await runRaw(Self.deleteBranchesArguments(names, force: force), in: repository)
+  }
+
+  static func deleteBranchesArguments(_ names: [String], force: Bool) -> [String] {
+    ["branch", force ? "-D" : "-d"] + names
+  }
+
   func deleteRemoteBranch(_ branch: GitRef, in repository: GitRepository) async throws -> String {
     try await runRaw(Self.deleteRemoteBranchArguments(branch), in: repository)
   }

@@ -2044,6 +2044,48 @@ final class GitClientIntegrationTests: XCTestCase {
     _ = try await client.stashDrop(untrackedStash, in: repository)
   }
 
+  func testStoreSelectsAndDeletesStaleLocalBranches() async throws {
+    let remote = try await makeBareRepository()
+    let repo = try await makeRepository()
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+
+    try write("seed\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Seed")
+    _ = try await client.git(["remote", "add", "origin", remote.path(percentEncoded: false)], in: repo)
+    _ = try await client.git(["push", "-u", "origin", "main"], in: repo)
+
+    _ = try await client.createBranch(named: "feature/stale", startPoint: nil, in: repository)
+    _ = try await client.checkout("feature/stale", in: repository)
+    try write("stale\n", to: repo.appending(path: "stale.txt"))
+    try await commitAll(in: repo, message: "Stale branch")
+    _ = try await client.git(["push", "-u", "origin", "feature/stale"], in: repo)
+    _ = try await client.checkout("main", in: repository)
+    _ = try await client.git(["push", "origin", "--delete", "feature/stale"], in: repo)
+    _ = try await client.git(["fetch", "--prune", "origin"], in: repo)
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    var staleBranches = await store.staleLocalBranches
+    XCTAssertEqual(staleBranches.map(\.shortName), ["feature/stale"])
+
+    await MainActor.run {
+      store.presentStaleLocalBranches()
+      store.staleBranchForceDelete = true
+    }
+    let request = await store.staleLocalBranchesRequest
+    let selectedBranchCount = await store.staleBranchSelection.count
+    XCTAssertEqual(request?.branchCount, 1)
+    XCTAssertEqual(selectedBranchCount, 1)
+
+    await store.deleteSelectedStaleLocalBranches()
+    let refs = try await client.refs(in: repository)
+    XCTAssertFalse(refs.contains { $0.shortName == "feature/stale" && $0.kind == .localBranch })
+    XCTAssertTrue(refs.contains { $0.shortName == "main" && $0.kind == .localBranch && $0.isHead })
+
+    staleBranches = await store.staleLocalBranches
+    XCTAssertTrue(staleBranches.isEmpty)
+  }
+
   func testSubmoduleListingAndSingleUpdate() async throws {
     let child = try await makeRepository()
     try write("child\n", to: child.appending(path: "README.md"))

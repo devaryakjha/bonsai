@@ -1523,6 +1523,30 @@ struct DeleteRefRequest: Identifiable, Hashable {
   }
 }
 
+struct StaleLocalBranchesRequest: Identifiable, Hashable {
+  var branches: [GitRef]
+
+  var id: String {
+    branches.map(\.id).joined(separator: "|")
+  }
+
+  var branchCount: Int {
+    branches.count
+  }
+
+  var title: String {
+    "Stale local branches"
+  }
+
+  var message: String {
+    branchCount == 1 ? "1 branch tracks a deleted upstream." : "\(branchCount.formatted()) branches track deleted upstreams."
+  }
+
+  var detail: String {
+    "Review the selection before deleting local branch references."
+  }
+}
+
 struct ForcePushRequest: Identifiable, Hashable {
   var branch: GitRef
 

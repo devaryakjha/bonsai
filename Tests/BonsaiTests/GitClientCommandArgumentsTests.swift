@@ -451,6 +451,14 @@ final class GitClientCommandArgumentsTests: XCTestCase {
       GitClient.deleteBranchArguments("release/v1 candidate", force: true),
       ["branch", "-D", "release/v1 candidate"]
     )
+    XCTAssertEqual(
+      GitClient.deleteBranchesArguments(["feature/stale one", "bugfix/stale two"], force: false),
+      ["branch", "-d", "feature/stale one", "bugfix/stale two"]
+    )
+    XCTAssertEqual(
+      GitClient.deleteBranchesArguments(["feature/stale one", "bugfix/stale two"], force: true),
+      ["branch", "-D", "feature/stale one", "bugfix/stale two"]
+    )
   }
 
   func testTagArgumentsPreserveNamesMessagesAndTargets() {

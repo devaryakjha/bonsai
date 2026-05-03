@@ -539,6 +539,33 @@ final class GitParsersTests: XCTestCase {
     XCTAssertEqual(request.detail, "/Users/arya/projects/bonsai-worktree")
   }
 
+  func testStaleLocalBranchesRequestCopyCountsBranches() {
+    let request = StaleLocalBranchesRequest(branches: [
+      GitRef(
+        name: "refs/heads/feature/stale",
+        shortName: "feature/stale",
+        objectName: "abc123",
+        upstream: "origin/feature/stale",
+        upstreamGone: true,
+        isHead: false,
+        kind: .localBranch
+      ),
+      GitRef(
+        name: "refs/heads/bugfix/stale",
+        shortName: "bugfix/stale",
+        objectName: "def456",
+        upstream: "origin/bugfix/stale",
+        upstreamGone: true,
+        isHead: false,
+        kind: .localBranch
+      )
+    ])
+
+    XCTAssertEqual(request.title, "Stale local branches")
+    XCTAssertEqual(request.message, "2 branches track deleted upstreams.")
+    XCTAssertEqual(request.detail, "Review the selection before deleting local branch references.")
+  }
+
   func testParseLineHistoryEntriesReadsCommitsAndSkipsPatchBodies() {
     let entries = GitParsers.parseLineHistoryEntries("""
     \u{1e}abcdef1234567890\u{1f}abcdef1\u{1f}Asha\u{1f}asha@example.test\u{1f}2026-05-02T10:00:00+05:30\u{1f}Update line

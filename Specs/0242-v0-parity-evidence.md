@@ -67,6 +67,9 @@ Fork 2.66 dated 10 Apr 2026 at the time of this refresh.
 | Repository treemap | Verified |
 | Large-repository history and diff performance pass | Verified through `Specs/0256-large-repository-performance-pass.md` |
 | Compact/wide visual QA | Verified through `Specs/0257-visual-qa-adaptive-split-diff.md` |
+| Ahead/behind pull and push toolbar counts | Verified through `Specs/0040-toolbar-tracking-counts.md` and `Specs/0109-tracking-action-arrow-labels.md` |
+| Select stale local branches | Verified through `Specs/0286-stale-local-branch-selection.md` |
+| Copy path from worktree and submodule context menus | Verified through `Specs/0085-copy-infrastructure-values.md` |
 
 ## Remaining Completion Gates
 
