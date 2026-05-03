@@ -53,6 +53,23 @@ final class CodeAgentClientTests: XCTestCase {
     XCTAssertLessThan(prompt.count, diff.count)
   }
 
+  func testCommitMessagePromptUsesCustomRequestAndFallback() {
+    let custom = CodeAgentClient.commitMessagePrompt(
+      diffStat: " README.md | 1 +",
+      stagedDiff: "+hello",
+      request: "Write a release-note style subject."
+    )
+    let fallback = CodeAgentClient.commitMessagePrompt(
+      diffStat: " README.md | 1 +",
+      stagedDiff: "+hello",
+      request: "   "
+    )
+
+    XCTAssertTrue(custom.contains("Write a release-note style subject."))
+    XCTAssertTrue(custom.contains("Return only the commit message text."))
+    XCTAssertTrue(fallback.contains(CodeAgentPromptPreferences.defaultCommitMessageRequest))
+  }
+
   func testNormalizedCommitMessageStripsFencesLabelsAndAttribution() {
     let output = """
     ```text
@@ -129,5 +146,19 @@ final class CodeAgentClientTests: XCTestCase {
     XCTAssertTrue(prompt.contains("Lead with findings ordered by severity."))
     XCTAssertTrue(prompt.contains("[Diff truncated to 60000 characters]"))
     XCTAssertLessThan(prompt.count, diff.count)
+  }
+
+  func testBranchReviewPromptUsesCustomRequestButKeepsSafetyRules() {
+    let prompt = CodeAgentClient.branchReviewPrompt(
+      branchName: "feature/review",
+      baseReference: "abcdef1",
+      diffStat: " Sources/App.swift | 3 +++",
+      branchDiff: "+change",
+      request: "Review only release risk."
+    )
+
+    XCTAssertTrue(prompt.contains("Review only release risk."))
+    XCTAssertTrue(prompt.contains("Do not edit files, run commands, or include AI attribution."))
+    XCTAssertTrue(prompt.contains("Branch: feature/review"))
   }
 }

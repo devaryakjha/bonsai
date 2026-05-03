@@ -73,7 +73,11 @@ struct CodeAgentClient {
       throw CodeAgentClientError.noStagedChanges
     }
 
-    let prompt = Self.commitMessagePrompt(diffStat: diffStat, stagedDiff: stagedDiff)
+    let prompt = Self.commitMessagePrompt(
+      diffStat: diffStat,
+      stagedDiff: stagedDiff,
+      request: CodeAgentPromptPreferences.commitMessageRequest()
+    )
     let output = try await runner.run(
       executable,
       arguments: Self.agentArguments(for: provider),
@@ -115,7 +119,8 @@ struct CodeAgentClient {
       branchName: branch.shortName,
       baseReference: baseReference,
       diffStat: diffStat,
-      branchDiff: branchDiff
+      branchDiff: branchDiff,
+      request: CodeAgentPromptPreferences.branchReviewRequest()
     )
     let output = try await runner.run(
       executable,
@@ -206,10 +211,18 @@ struct CodeAgentClient {
     ]
   }
 
-  static func commitMessagePrompt(diffStat: String, stagedDiff: String) -> String {
+  static func commitMessagePrompt(
+    diffStat: String,
+    stagedDiff: String,
+    request: String = CodeAgentPromptPreferences.defaultCommitMessageRequest
+  ) -> String {
     let boundedDiff = bounded(stagedDiff, limit: maxDiffCharacters)
+    let resolvedRequest = CodeAgentPromptPreferences.resolvedRequest(
+      request,
+      fallback: CodeAgentPromptPreferences.defaultCommitMessageRequest
+    )
     return """
-    Write a Git commit message for the staged changes below.
+    \(resolvedRequest)
 
     Requirements:
     - Return only the commit message text.
@@ -226,10 +239,20 @@ struct CodeAgentClient {
     """
   }
 
-  static func branchReviewPrompt(branchName: String, baseReference: String, diffStat: String, branchDiff: String) -> String {
+  static func branchReviewPrompt(
+    branchName: String,
+    baseReference: String,
+    diffStat: String,
+    branchDiff: String,
+    request: String = CodeAgentPromptPreferences.defaultBranchReviewRequest
+  ) -> String {
     let boundedDiff = bounded(branchDiff, limit: maxDiffCharacters)
+    let resolvedRequest = CodeAgentPromptPreferences.resolvedRequest(
+      request,
+      fallback: CodeAgentPromptPreferences.defaultBranchReviewRequest
+    )
     return """
-    Review the current Git branch diff.
+    \(resolvedRequest)
 
     Requirements:
     - Return only the review text.

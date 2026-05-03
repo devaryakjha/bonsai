@@ -56,6 +56,7 @@ Fork 2.66 dated 10 Apr 2026 at the time of this refresh.
 | External editor reveal/open-in integrations | Verified |
 | Claude branch review and generated commit messages | Verified through `Specs/0251-claude-generated-commit-message.md` and `Specs/0252-claude-branch-review.md` |
 | Codex AI commit messages and code review | Verified through `Specs/0254-code-agent-provider-parity.md` |
+| Editable default AI agent requests in Integration preferences | Verified through `Specs/0287-editable-code-agent-requests.md` |
 | Cmd+V to apply patch from clipboard | Verified through `Specs/0253-apply-patch-clipboard-shortcut.md` |
 | Collapsible commit details | Verified |
 | Keyboard navigation in sidebar | Verified through `Specs/0258-sidebar-keyboard-navigation.md` |

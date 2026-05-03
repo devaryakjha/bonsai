@@ -8,6 +8,8 @@ struct SettingsView: View {
   @AppStorage("bonsai.diffWhitespaceMode") private var diffWhitespaceMode = DiffWhitespaceMode.show.rawValue
   @AppStorage("bonsai.diffDisplayMode") private var diffDisplayMode = DiffDisplayMode.unified.rawValue
   @AppStorage("bonsai.githubToken") private var githubToken = ""
+  @AppStorage(CodeAgentPromptPreferences.commitMessageRequestKey) private var commitMessageRequest = CodeAgentPromptPreferences.defaultCommitMessageRequest
+  @AppStorage(CodeAgentPromptPreferences.branchReviewRequestKey) private var branchReviewRequest = CodeAgentPromptPreferences.defaultBranchReviewRequest
   @AppStorage(ProjectRepositoryScanner.sourceDirectoriesDefaultsKey) private var sourceDirectories = ProjectRepositoryScanner.defaultSourceDirectoryText
 
   var body: some View {
@@ -75,10 +77,49 @@ struct SettingsView: View {
           SecureField("GitHub token", text: $githubToken)
             .textFieldStyle(.roundedBorder)
         }
+        SettingsRow("Commit request") {
+          PromptPreferenceEditor(
+            text: $commitMessageRequest,
+            resetHelp: "Reset commit request",
+            onReset: {
+              commitMessageRequest = CodeAgentPromptPreferences.defaultCommitMessageRequest
+            }
+          )
+        }
+        SettingsRow("Review request") {
+          PromptPreferenceEditor(
+            text: $branchReviewRequest,
+            resetHelp: "Reset review request",
+            onReset: {
+              branchReviewRequest = CodeAgentPromptPreferences.defaultBranchReviewRequest
+            }
+          )
+        }
       }
     }
     .padding(24)
     .frame(width: 560)
+  }
+}
+
+private struct PromptPreferenceEditor: View {
+  @Binding var text: String
+  var resetHelp: String
+  var onReset: () -> Void
+
+  var body: some View {
+    HStack(alignment: .top, spacing: 8) {
+      TextEditor(text: $text)
+        .font(.body.monospaced())
+        .frame(minHeight: 66, maxHeight: 92)
+        .scrollContentBackground(.hidden)
+      Button(action: onReset) {
+        Image(systemName: "arrow.counterclockwise")
+      }
+      .buttonStyle(.borderless)
+      .help(resetHelp)
+      .accessibilityLabel(resetHelp)
+    }
   }
 }
 
