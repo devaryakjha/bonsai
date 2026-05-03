@@ -21,6 +21,7 @@ USAGE
 remote_script='
 set -euo pipefail
 profile="$1"
+failures=0
 
 echo "Bonsai release runner preflight"
 echo "Host: $(hostname)"
@@ -32,6 +33,7 @@ developer_id_output="$(security find-identity -p codesigning -v 2>&1 || true)"
 developer_id_count="$(printf "%s\n" "$developer_id_output" | grep -c "Developer ID Application" || true)"
 if [[ "$developer_id_count" == "0" ]]; then
   echo "Developer ID Application identities: none"
+  failures=1
 else
   echo "Developer ID Application identities: $developer_id_count"
   printf "%s\n" "$developer_id_output" | grep "Developer ID Application" || true
@@ -46,6 +48,7 @@ else
   else
     echo "Developer ID signing smoke: failed"
     sed -n "1,3p" "$signing_smoke_stderr"
+    failures=1
   fi
   rm -f "$signing_smoke_file" "$signing_smoke_stdout" "$signing_smoke_stderr"
 fi
@@ -55,6 +58,7 @@ notary_stderr="$(mktemp)"
 if xcrun notarytool history --keychain-profile "$profile" >"$notary_stdout" 2>"$notary_stderr"; then
   echo "notarytool profile $profile: valid"
 else
+  failures=1
   if grep -q "keychainLocked" "$notary_stderr"; then
     echo "notarytool profile $profile: keychain locked"
   elif grep -qi "No Keychain password item found" "$notary_stderr"; then
@@ -65,6 +69,13 @@ else
   fi
 fi
 rm -f "$notary_stdout" "$notary_stderr"
+
+if [[ "$failures" == "0" ]]; then
+  echo "Release runner: ready"
+else
+  echo "Release runner: not ready"
+fi
+exit "$failures"
 '
 
 case "$MODE" in

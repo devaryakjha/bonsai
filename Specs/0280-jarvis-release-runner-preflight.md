@@ -17,6 +17,8 @@ commands or accidental secret exposure.
   profile states.
 - Avoid changing keychains, storing credentials, uploading secrets, or building
   release artifacts.
+- Exit non-zero when the checked runner cannot sign with Developer ID or cannot
+  validate the configured notarytool profile.
 - Include the script in shell syntax validation.
 - Document the script in the release setup flow.
 
@@ -24,6 +26,8 @@ commands or accidental secret exposure.
 
 - `./script/check_release_runner.sh` runs the preflight over SSH and reports
   whether the visible Developer ID identity is usable for signing.
+- The script prints `Release runner: ready` only when signing and notary checks
+  both pass; otherwise it prints `Release runner: not ready` and exits non-zero.
 - `./script/check_release_runner.sh --local` runs the same read-only checks on
   the current machine.
 - `BONSAI_RELEASE_RUNNER_HOST` overrides the default SSH host.
