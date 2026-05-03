@@ -440,6 +440,19 @@ private struct ChangedFilesView: View {
         }
       }
     }
+    .onAppear {
+      loadTreeIfNeeded(for: mode)
+    }
+    .onChange(of: mode) { _, newMode in
+      loadTreeIfNeeded(for: newMode)
+    }
+  }
+
+  private func loadTreeIfNeeded(for mode: CommitFilePanelMode) {
+    guard mode == .tree else { return }
+    Task {
+      await store.ensureCommitTreeLoaded()
+    }
   }
 
   private var countText: String {

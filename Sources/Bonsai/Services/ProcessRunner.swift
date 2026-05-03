@@ -23,6 +23,31 @@ enum ProcessRunnerError: LocalizedError {
   }
 }
 
+private final class RunningProcessBox: @unchecked Sendable {
+  private let lock = NSLock()
+  private var process: Process?
+
+  func set(_ process: Process) {
+    lock.lock()
+    self.process = process
+    lock.unlock()
+  }
+
+  func clear(_ process: Process) {
+    lock.lock()
+    if self.process === process {
+      self.process = nil
+    }
+    lock.unlock()
+  }
+
+  func terminate() {
+    lock.lock()
+    process?.terminate()
+    lock.unlock()
+  }
+}
+
 struct ProcessRunner {
   func run(
     _ executable: String,
@@ -52,7 +77,10 @@ struct ProcessRunner {
     standardInput: String? = nil,
     environment: [String: String]? = nil
   ) async throws -> ProcessDataOutput {
-    try await Task.detached(priority: .userInitiated) {
+    let processBox = RunningProcessBox()
+    let task = Task.detached(priority: .userInitiated) {
+      try Task.checkCancellation()
+
       let process = Process()
       process.executableURL = URL(filePath: executable)
       process.arguments = arguments
@@ -72,11 +100,17 @@ struct ProcessRunner {
       }
 
       try process.run()
+      processBox.set(process)
+      if Task.isCancelled {
+        process.terminate()
+      }
       if let standardInput {
         stdin.fileHandleForWriting.write(Data(standardInput.utf8))
         try? stdin.fileHandleForWriting.close()
       }
       process.waitUntilExit()
+      processBox.clear(process)
+      try Task.checkCancellation()
 
       let stdoutData = stdout.fileHandleForReading.readDataToEndOfFile()
       let stderrData = stderr.fileHandleForReading.readDataToEndOfFile()
@@ -96,6 +130,12 @@ struct ProcessRunner {
       }
 
       return output
-    }.value
+    }
+    return try await withTaskCancellationHandler {
+      try await task.value
+    } onCancel: {
+      task.cancel()
+      processBox.terminate()
+    }
   }
 }

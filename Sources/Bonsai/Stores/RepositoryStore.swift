@@ -14,6 +14,14 @@ private struct DiffParseCache {
   )
 }
 
+private struct CommitDiffCacheKey: Hashable {
+  var commitHash: String
+  var filePath: String
+  var oldPath: String?
+  var algorithm: DiffAlgorithm
+  var whitespaceMode: DiffWhitespaceMode
+}
+
 @MainActor
 @Observable
 final class RepositoryStore {
@@ -24,6 +32,9 @@ final class RepositoryStore {
   private let recentCommitMessagesKey = "bonsai.recentCommitMessages"
   private let autoRefreshKey = "bonsai.autoRefresh"
   private let showIgnoredFilesKey = "bonsai.showIgnoredFiles"
+  private var commitSelectionTask: Task<Void, Never>?
+  private var commitChangedFilesCache: [String: [GitChangedFile]] = [:]
+  private var commitDiffCache: [CommitDiffCacheKey: String] = [:]
 
   var selectedRepository: GitRepository?
   var recentRepositories: [GitRepository] = []
@@ -711,7 +722,7 @@ final class RepositoryStore {
       if let selectedStash {
         stashChangedFiles = try await gitClient.changedFiles(in: repository, stash: selectedStash)
       }
-      if mainMode == .history {
+      if mainMode == .history && !commitTreeEntries.isEmpty {
         try await refreshCommitTreeEntries(resetPath: commitTreeEntries.isEmpty)
       }
       await refreshDiff()
@@ -722,15 +733,22 @@ final class RepositoryStore {
   }
 
   func selectCommit(_ commit: GitCommit?) {
+    commitSelectionTask?.cancel()
     selectedCommit = commit
     selectedStash = nil
     selectedChangedFile = nil
     selectedTreeEntry = nil
+    commitTreeEntries = []
     stashChangedFiles = []
     commitTreePath = ""
     treeBlobText = ""
-    Task {
-      await refreshCommitFilesAndDiff()
+    let expectedRepositoryPath = selectedRepository?.path
+    let expectedCommitHash = commit?.hash
+    commitSelectionTask = Task {
+      await refreshCommitFilesAndDiff(
+        expectedRepositoryPath: expectedRepositoryPath,
+        expectedCommitHash: expectedCommitHash
+      )
     }
   }
 
@@ -751,6 +769,7 @@ final class RepositoryStore {
       selectedChangedFile = nil
       selectedStatusEntry = nil
       selectedTreeEntry = nil
+      commitTreeEntries = []
       stashChangedFiles = []
       commitTreePath = ""
       treeBlobText = ""
@@ -758,7 +777,11 @@ final class RepositoryStore {
       fileHistoryDocument = nil
       lineHistoryDocument = nil
       mainMode = .history
-      await refreshCommitFilesAndDiff()
+      commitSelectionTask?.cancel()
+      await refreshCommitFilesAndDiff(
+        expectedRepositoryPath: selectedRepository?.path,
+        expectedCommitHash: commit.hash
+      )
       errorMessage = nil
     } catch {
       commandResult = CommandResult(title: "Show commit", output: error.localizedDescription, isError: true)
@@ -777,6 +800,7 @@ final class RepositoryStore {
   }
 
   func selectStash(_ stash: GitStash?) {
+    commitSelectionTask?.cancel()
     selectedStash = stash
     selectedCommit = nil
     selectedChangedFile = nil
@@ -793,6 +817,7 @@ final class RepositoryStore {
 
   func selectStatusEntry(_ entry: GitStatusEntry?) {
     guard entry?.isIgnored != true else { return }
+    commitSelectionTask?.cancel()
     selectedStatusEntry = entry
     selectedChangedFile = nil
     selectedStash = nil
@@ -831,6 +856,7 @@ final class RepositoryStore {
   }
 
   func selectTreeBlob(_ entry: GitTreeEntry) {
+    commitSelectionTask?.cancel()
     selectedTreeEntry = entry
     selectedChangedFile = nil
     selectedStatusEntry = nil
@@ -841,6 +867,17 @@ final class RepositoryStore {
 
     Task {
       await refreshTreeBlob()
+    }
+  }
+
+  func ensureCommitTreeLoaded() async {
+    guard selectedRepository != nil, selectedCommit != nil, commitTreeEntries.isEmpty else { return }
+    do {
+      try await refreshCommitTreeEntries(resetPath: true)
+      errorMessage = nil
+    } catch is CancellationError {
+    } catch {
+      errorMessage = error.localizedDescription
     }
   }
 
@@ -2307,13 +2344,25 @@ final class RepositoryStore {
     }
   }
 
-  private func refreshCommitFilesAndDiff() async {
+  private func refreshCommitFilesAndDiff(
+    expectedRepositoryPath: String? = nil,
+    expectedCommitHash: String? = nil
+  ) async {
     guard let repository = selectedRepository else { return }
+    guard expectedRepositoryPath == nil || repository.path == expectedRepositoryPath else { return }
+    guard expectedCommitHash == nil || selectedCommit?.hash == expectedCommitHash else { return }
     do {
-      snapshot.changedFiles = try await gitClient.changedFiles(in: repository, commit: selectedCommit)
-      try await refreshCommitTreeEntries(resetPath: true)
+      let files = try await changedFilesForSelectedCommit(in: repository)
+      try Task.checkCancellation()
+      guard expectedRepositoryPath == nil || selectedRepository?.path == expectedRepositoryPath else { return }
+      guard expectedCommitHash == nil || selectedCommit?.hash == expectedCommitHash else { return }
+      snapshot.changedFiles = files
       selectedChangedFile = snapshot.changedFiles.first
-      await refreshDiff()
+      await refreshDiff(
+        expectedRepositoryPath: expectedRepositoryPath,
+        expectedCommitHash: expectedCommitHash
+      )
+    } catch is CancellationError {
     } catch {
       errorMessage = error.localizedDescription
     }
@@ -2394,13 +2443,18 @@ final class RepositoryStore {
     }
   }
 
-  private func refreshDiff() async {
+  private func refreshDiff(
+    expectedRepositoryPath: String? = nil,
+    expectedCommitHash: String? = nil
+  ) async {
     imageDiffSnapshot = nil
 
     guard let repository = selectedRepository else {
       diffText = ""
       return
     }
+    guard expectedRepositoryPath == nil || repository.path == expectedRepositoryPath else { return }
+    guard expectedCommitHash == nil || selectedCommit?.hash == expectedCommitHash else { return }
 
     do {
       if let entry = selectedStatusEntry {
@@ -2436,23 +2490,64 @@ final class RepositoryStore {
           imageDiffSnapshot = await gitClient.imageDiffForStashFile(file, stash: stash, in: repository)
         }
       } else if let file = selectedChangedFile, let commit = selectedCommit {
-        diffText = try await gitClient.diffForCommitFile(
+        let nextDiffText = try await diffForCommitFile(
           file,
           commit: commit,
-          algorithm: diffAlgorithm,
-          whitespaceMode: diffWhitespaceMode,
           in: repository
         )
+        try Task.checkCancellation()
+        guard expectedRepositoryPath == nil || selectedRepository?.path == expectedRepositoryPath else { return }
+        guard expectedCommitHash == nil || selectedCommit?.hash == expectedCommitHash else { return }
+        diffText = nextDiffText
         if FilePreviewSupport.isImagePath(file.path) {
           imageDiffSnapshot = await gitClient.imageDiffForCommitFile(file, commit: commit, in: repository)
         }
       } else {
         diffText = ""
       }
+    } catch is CancellationError {
     } catch {
       diffText = ""
       errorMessage = error.localizedDescription
     }
+  }
+
+  private func changedFilesForSelectedCommit(in repository: GitRepository) async throws -> [GitChangedFile] {
+    guard let selectedCommit else { return [] }
+    if let cached = commitChangedFilesCache[selectedCommit.hash] {
+      return cached
+    }
+
+    let files = try await gitClient.changedFiles(in: repository, commit: selectedCommit)
+    commitChangedFilesCache[selectedCommit.hash] = files
+    return files
+  }
+
+  private func diffForCommitFile(
+    _ file: GitChangedFile,
+    commit: GitCommit,
+    in repository: GitRepository
+  ) async throws -> String {
+    let key = CommitDiffCacheKey(
+      commitHash: commit.hash,
+      filePath: file.path,
+      oldPath: file.oldPath,
+      algorithm: diffAlgorithm,
+      whitespaceMode: diffWhitespaceMode
+    )
+    if let cached = commitDiffCache[key] {
+      return cached
+    }
+
+    let diff = try await gitClient.diffForCommitFile(
+      file,
+      commit: commit,
+      algorithm: diffAlgorithm,
+      whitespaceMode: diffWhitespaceMode,
+      in: repository
+    )
+    commitDiffCache[key] = diff
+    return diff
   }
 
   private func updateDiffParseCache() {
@@ -2535,11 +2630,18 @@ final class RepositoryStore {
   }
 
   private func setSelectedRepository(_ repository: GitRepository) {
+    commitSelectionTask?.cancel()
+    commitChangedFilesCache.removeAll()
+    commitDiffCache.removeAll()
     selectedRepository = repository
     snapshot = RepositorySnapshot()
     selectedCommit = nil
     selectedStatusEntry = nil
     selectedChangedFile = nil
+    selectedTreeEntry = nil
+    commitTreeEntries = []
+    commitTreePath = ""
+    treeBlobText = ""
     selectedStash = nil
     stashChangedFiles = []
     diffText = ""

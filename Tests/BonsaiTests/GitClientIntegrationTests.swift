@@ -89,6 +89,24 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(report.totalBytes, 25)
   }
 
+  func testStoreLoadsCommitTreeOnDemand() async throws {
+    let repo = try await makeRepository()
+    try FileManager.default.createDirectory(at: repo.appending(path: "Sources"), withIntermediateDirectories: true)
+    try write("print(\"bonsai\")\n", to: repo.appending(path: "Sources/App.swift"))
+    try await commitAll(in: repo, message: "Initial project")
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+
+    let initialEntries = await store.commitTreeEntries
+    XCTAssertTrue(initialEntries.isEmpty)
+
+    await store.ensureCommitTreeLoaded()
+
+    let loadedEntries = await store.commitTreeEntries
+    XCTAssertTrue(loadedEntries.contains { $0.name == "Sources" && $0.isDirectory })
+  }
+
   func testClearRecentRepositoriesKeepsSelectedRepository() async throws {
     let previousRecents = UserDefaults.standard.data(forKey: "bonsai.recentRepositories")
     defer {
