@@ -12,6 +12,7 @@ commands or accidental secret exposure.
 - Report the remote macOS, Xcode, and Swift versions.
 - Report visible `Developer ID Application` identities without printing private
   key material.
+- Run a harmless Developer ID signing smoke when an identity is visible.
 - Check a notarytool keychain profile and classify locked-keychain and missing
   profile states.
 - Avoid changing keychains, storing credentials, uploading secrets, or building
@@ -21,7 +22,8 @@ commands or accidental secret exposure.
 
 ## Acceptance
 
-- `./script/check_release_runner.sh` runs the preflight over SSH.
+- `./script/check_release_runner.sh` runs the preflight over SSH and reports
+  whether the visible Developer ID identity is usable for signing.
 - `./script/check_release_runner.sh --local` runs the same read-only checks on
   the current machine.
 - `BONSAI_RELEASE_RUNNER_HOST` overrides the default SSH host.

@@ -38,7 +38,7 @@ development, regular checkpoint commits, and OSS-ready project structure.
 | Release credential diagnosis | `script/package_release.sh --doctor` reports Developer ID identity, configured signing identity, and notary profile readiness without mutating artifacts | Covered |
 | GitHub release setup diagnosis | `script/package_release.sh --github-doctor` reports the protected environment, reviewer rule, Jarvis runner labels, required environment secret names, and repository-level secret leakage without printing secret values | Covered |
 | GitHub release secret handoff | `script/configure_github_release_secrets.sh` validates local Apple release credential inputs, uploads the six required secret names to the protected environment, and reruns the GitHub release doctor without printing secret values | Covered pending secret values |
-| Jarvis release runner preflight | `script/check_release_runner.sh` checks the SSH runner host, toolchain versions, Developer ID Application identities, and notary profile state without changing secrets or keychains | Covered |
+| Jarvis release runner preflight | `script/check_release_runner.sh` checks the SSH runner host, toolchain versions, Developer ID Application identities, a harmless signing smoke, and notary profile state without changing secrets or keychains | Covered |
 | Release artifact evidence | `script/package_release.sh` writes `dist/release/Bonsai.release.plist` for archive-producing modes with version, build, commit, zip hash, signature kind, team, and notarization state | Covered |
 | Release artifact verification | `script/package_release.sh --verify-artifacts` validates the zip, manifest shape, archive name, byte size, and SHA-256 after packaging or download | Covered |
 | Release guardrail tests | `Tests/BonsaiTests/ReleaseScriptTests.swift` covers credential rejection, doctor output, artifact verifier wiring, manifest upload, and temporary keychain cleanup wiring without running release builds or notarization | Covered |
@@ -56,8 +56,9 @@ development, regular checkpoint commits, and OSS-ready project structure.
   environment, required reviewer, and Jarvis runner labels, then reports the six
   missing environment secret names and exits non-zero.
 - `./script/check_release_runner.sh` reaches Jarvis and reports the configured
-  toolchain plus a visible `Developer ID Application` identity, while the
-  checked notarytool profile is blocked by the locked default keychain over SSH.
+  toolchain plus a visible `Developer ID Application` identity. A direct signing
+  smoke currently fails with `errSecInternalComponent`, and the checked
+  notarytool profile is blocked by the locked default keychain over SSH.
 - `BONSAI_CODESIGN_IDENTITY` is not set in the current environment.
 - `BONSAI_NOTARY_PROFILE` is not set in the current environment.
 - `security find-identity -p codesigning -v` did not show a `Developer ID

@@ -35,6 +35,19 @@ if [[ "$developer_id_count" == "0" ]]; then
 else
   echo "Developer ID Application identities: $developer_id_count"
   printf "%s\n" "$developer_id_output" | grep "Developer ID Application" || true
+
+  signing_identity="$(printf "%s\n" "$developer_id_output" | sed -n "s/.*\"\(Developer ID Application:.*\)\".*/\1/p" | head -n 1)"
+  signing_smoke_file="$(mktemp)"
+  signing_smoke_stdout="$(mktemp)"
+  signing_smoke_stderr="$(mktemp)"
+  printf "bonsai signing smoke" >"$signing_smoke_file"
+  if codesign --force --options runtime --timestamp --sign "$signing_identity" "$signing_smoke_file" >"$signing_smoke_stdout" 2>"$signing_smoke_stderr"; then
+    echo "Developer ID signing smoke: valid"
+  else
+    echo "Developer ID signing smoke: failed"
+    sed -n "1,3p" "$signing_smoke_stderr"
+  fi
+  rm -f "$signing_smoke_file" "$signing_smoke_stdout" "$signing_smoke_stderr"
 fi
 
 notary_stdout="$(mktemp)"

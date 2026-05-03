@@ -24,8 +24,9 @@ Check the configured runner without changing keychains or secrets:
 ```
 
 The script defaults to `ssh jarvis` and checks toolchain versions, visible
-Developer ID Application identities, and the configured notarytool profile. Use
-`BONSAI_RELEASE_RUNNER_HOST` to point it at another runner host.
+Developer ID Application identities, a harmless Developer ID signing smoke, and
+the configured notarytool profile. Use `BONSAI_RELEASE_RUNNER_HOST` to point it
+at another runner host.
 
 ## Protected Environment
 
