@@ -96,13 +96,40 @@ release_lookup_status="$(
     "$API_BASE/releases/tags/$RELEASE_TAG"
 )"
 if [[ "$release_lookup_status" == "200" ]]; then
-  echo "GitHub release already exists for $RELEASE_TAG" >&2
-  exit 1
+  existing_release_draft="$(jq -r '.draft' "$release_lookup_response")"
+  existing_release_id="$(jq -r '.id' "$release_lookup_response")"
+  if [[ "$existing_release_draft" != "true" ]]; then
+    echo "Published GitHub release already exists for $RELEASE_TAG" >&2
+    exit 1
+  fi
+  if [[ -z "$existing_release_id" || "$existing_release_id" == "null" ]]; then
+    echo "Existing draft release response did not include an id" >&2
+    cat "$release_lookup_response" >&2
+    exit 1
+  fi
+
+  delete_response="$TEMP_ROOT/bonsai-existing-release-delete.json"
+  delete_status="$(
+    curl -sS \
+      -X DELETE \
+      -o "$delete_response" \
+      -w "%{http_code}" \
+      "${api_headers[@]}" \
+      "$API_BASE/releases/$existing_release_id"
+  )"
+  if [[ "$delete_status" != "204" ]]; then
+    echo "Existing draft release deletion failed with status $delete_status" >&2
+    cat "$delete_response" >&2
+    exit 1
+  fi
+  echo "Replaced existing draft GitHub release for $RELEASE_TAG"
 fi
 if [[ "$release_lookup_status" != "404" ]]; then
-  echo "GitHub release lookup failed with status $release_lookup_status" >&2
-  cat "$release_lookup_response" >&2
-  exit 1
+  if [[ "$release_lookup_status" != "200" ]]; then
+    echo "GitHub release lookup failed with status $release_lookup_status" >&2
+    cat "$release_lookup_response" >&2
+    exit 1
+  fi
 fi
 
 encoded_tag="$(urlencode "$RELEASE_TAG")"

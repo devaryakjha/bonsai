@@ -402,6 +402,30 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertFalse(logText.contains("DELETE|"), logText)
   }
 
+  func testDraftReleaseScriptReplacesExistingDraftRelease() throws {
+    try requireExecutable("jq")
+    let root = try packageRoot()
+    let fixture = try makeDraftReleaseFixture(
+      failManifestUpload: false,
+      existingReleaseDraft: true
+    )
+    let result = try runScript(
+      "script/create_github_draft_release.sh",
+      environment: draftReleaseEnvironment(root: root, fixture: fixture)
+    )
+
+    XCTAssertEqual(result.status, 0, result.output)
+    XCTAssertTrue(result.output.contains("Replaced existing draft GitHub release for v9.8.7"), result.output)
+    XCTAssertTrue(result.output.contains("Draft GitHub release created for v9.8.7"), result.output)
+
+    let logText = try String(contentsOf: fixture.log, encoding: .utf8)
+    XCTAssertTrue(logText.contains("GET|https://api.github.com/repos/devaryakjha/bonsai/releases/tags/v9.8.7"), logText)
+    XCTAssertTrue(logText.contains("DELETE|https://api.github.com/repos/devaryakjha/bonsai/releases/41"), logText)
+    XCTAssertTrue(logText.contains("POST|https://api.github.com/repos/devaryakjha/bonsai/releases"), logText)
+    XCTAssertTrue(logText.contains("POST|https://uploads.github.com/repos/devaryakjha/bonsai/releases/42/assets?name=Bonsai.zip"), logText)
+    XCTAssertTrue(logText.contains("POST|https://uploads.github.com/repos/devaryakjha/bonsai/releases/42/assets?name=Bonsai.release.plist"), logText)
+  }
+
   func testDraftReleaseScriptCleansPartialReleaseAndGeneratedTagOnAssetFailure() throws {
     try requireExecutable("jq")
     let root = try packageRoot()
@@ -524,7 +548,8 @@ final class ReleaseScriptTests: XCTestCase {
 
   private func makeDraftReleaseFixture(
     failManifestUpload: Bool,
-    tagExists: Bool = false
+    tagExists: Bool = false,
+    existingReleaseDraft: Bool = false
   ) throws -> DraftReleaseFixture {
     let directory = FileManager.default.temporaryDirectory
       .appending(path: "bonsai-draft-release-\(UUID().uuidString)", directoryHint: .isDirectory)
@@ -542,6 +567,8 @@ final class ReleaseScriptTests: XCTestCase {
     let curl = fakeBin.appending(path: "curl")
     let manifestStatus = failManifestUpload ? "500" : "201"
     let manifestBody = failManifestUpload ? #"{"message":"upload failed"}"# : #"{"name":"Bonsai.release.plist"}"#
+    let releaseLookupStatus = existingReleaseDraft ? "200" : "404"
+    let releaseLookupBody = existingReleaseDraft ? #"{"id":41,"draft":true}"# : #"{"message":"Not Found"}"#
     let tagLookupStatus = tagExists ? "200" : "404"
     let tagLookupBody = tagExists ? #"{"ref":"refs/tags/v9.8.7"}"# : #"{"message":"Not Found"}"#
     let script = """
@@ -588,8 +615,8 @@ final class ReleaseScriptTests: XCTestCase {
     body='{"message":"unexpected"}'
     case "$method|$url" in
       "GET|https://api.github.com/repos/devaryakjha/bonsai/releases/tags/v9.8.7")
-        status="404"
-        body='{"message":"Not Found"}'
+        status="\(releaseLookupStatus)"
+        body='\(releaseLookupBody)'
         ;;
       "GET|https://api.github.com/repos/devaryakjha/bonsai/git/ref/tags/v9.8.7")
         status="\(tagLookupStatus)"
@@ -608,6 +635,10 @@ final class ReleaseScriptTests: XCTestCase {
         body='\(manifestBody)'
         ;;
       "DELETE|https://api.github.com/repos/devaryakjha/bonsai/releases/42")
+        status="204"
+        body='{}'
+        ;;
+      "DELETE|https://api.github.com/repos/devaryakjha/bonsai/releases/41")
         status="204"
         body='{}'
         ;;
