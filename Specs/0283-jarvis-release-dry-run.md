@@ -38,13 +38,12 @@ Developer ID and notarization secrets are configured.
 ## Evidence
 
 - GitHub `Release` dry run
-  `https://github.com/devaryakjha/bonsai/actions/runs/25275877276` completed
-  successfully for commit `2c1db333d982312e0cf168b0a967ee70375a69d1`.
+  `https://github.com/devaryakjha/bonsai/actions/runs/25278101378` completed
+  successfully for commit `67b4fc152c230a7ae34a3fa261bfc5c745826db1`.
 - The `Dry-run macOS artifact` job ran on Jarvis, completed source validation,
   including the deterministic large-repository performance smoke, built the
   dry-run archive, verified release artifacts, and uploaded the dry-run artifact
   pair.
 - The `Notarized macOS artifact` job was skipped for the dry run.
 - The uploaded dry-run `Bonsai.zip` and `Bonsai.release.plist` artifact pair was
-  downloaded and verified locally with `./script/package_release.sh
-  --verify-artifacts`.
+  built and verified by the workflow with `make release-verify-artifacts`.

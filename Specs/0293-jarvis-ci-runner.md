@@ -30,9 +30,10 @@ the same runner class.
 ## Evidence
 
 - GitHub push CI
-  `https://github.com/devaryakjha/bonsai/actions/runs/25272769659` completed
-  successfully with the `Jarvis macOS validation` job.
+  `https://github.com/devaryakjha/bonsai/actions/runs/25278268466` completed
+  successfully with the `Jarvis macOS validation` job for commit
+  `d817e8bb8d20f5126b93a712f0e784af2586847e`.
 - GitHub `Release` dry run
-  `https://github.com/devaryakjha/bonsai/actions/runs/25275877276` completed
+  `https://github.com/devaryakjha/bonsai/actions/runs/25278101378` completed
   successfully with the `Dry-run macOS artifact` job after source validation,
   performance smoke, archive creation, artifact verification, and upload.

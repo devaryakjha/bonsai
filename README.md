@@ -26,9 +26,9 @@
 
 ## Status
 
-Bonsai is under highly active development. The v0 app surface is implemented and
-is being hardened for the first public release. Public binary distribution is
-still pending Developer ID signing and Apple notarization credentials.
+Bonsai is under highly active development. The v0 app surface is implemented,
+and the first GitHub release contains a Developer ID signed and notarized macOS
+archive.
 
 The v0 goal is practical feature parity with Fork's public macOS feature set:
 repository management, commit history, staging, rich unified and split diffs,

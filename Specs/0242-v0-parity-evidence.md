@@ -73,12 +73,19 @@ Fork 2.66 dated 10 Apr 2026 at the time of this refresh.
 | Copy path from worktree and submodule context menus | Verified through `Specs/0085-copy-infrastructure-values.md` |
 | Verbose Git output preference | Verified through `Specs/0288-verbose-git-output-preference.md` |
 
-## Remaining Completion Gates
+## Release Evidence
 
-- Run the credentialed Developer ID signing and notarization path before any
-  public binary distribution. The local release packaging verifier proves bundle
-  structure and signability, not Apple notarization success. The live blocker is
-  recorded in `Specs/0259-v0-completion-audit.md`.
+- GitHub `Release` run
+  `https://github.com/devaryakjha/bonsai/actions/runs/25278300708` produced a
+  Developer ID signed and notarized `Bonsai.zip` for commit
+  `d817e8bb8d20f5126b93a712f0e784af2586847e`.
+- The published GitHub Release `v0.1.0` has `Bonsai.zip` and
+  `Bonsai.release.plist` attached for installation and verification.
+- The downloaded release artifact was verified locally with
+  `make release-verify-artifacts`, `xcrun stapler validate`, and
+  `spctl -a -vv -t exec`.
+- The published release assets were downloaded from `v0.1.0` and verified with
+  the same artifact, stapler, and Gatekeeper checks.
 
 ## Acceptance
 

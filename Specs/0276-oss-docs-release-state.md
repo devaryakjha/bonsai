@@ -7,8 +7,8 @@ the repository is opened.
 
 ## Requirements
 
-- README status must distinguish the implemented v0 app surface from the still
-  blocked notarized public binary.
+- README status must distinguish the implemented v0 app surface from the
+  notarized public binary now attached to GitHub Releases.
 - README build instructions must expose the credential doctor and credential
   preflight so maintainers can diagnose distribution readiness.
 - Contributor and pull request validation docs must include the archive and
@@ -20,6 +20,5 @@ the repository is opened.
 
 - Public docs no longer imply clone setup or history graph lanes are only
   placeholders.
-- Release credential blockers are visible from README without leaking secrets or
-  claiming notarization is complete.
+- Release state is visible from README without leaking secrets.
 - `git diff --check` passes after the documentation update.
