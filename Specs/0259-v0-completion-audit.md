@@ -48,14 +48,19 @@ development, regular checkpoint commits, and OSS-ready project structure.
 
 ## Current Blocking Evidence
 
-- GitHub `Release` dry run
-  `https://github.com/devaryakjha/bonsai/actions/runs/25270932133` completed
-  successfully for commit `310441dcf33e58c418fac0d806fb469ff3527dd1`.
 - GitHub push CI
-  `https://github.com/devaryakjha/bonsai/actions/runs/25270873229` completed
-  successfully for commit `310441dcf33e58c418fac0d806fb469ff3527dd1`.
-- The dry-run artifact pair from run `25270932133` was downloaded and verified
-  locally with `./script/package_release.sh --verify-artifacts`.
+  `https://github.com/devaryakjha/bonsai/actions/runs/25272577915` completed
+  successfully on the Jarvis self-hosted macOS runner for commit
+  `25ce981447503686220923ae3208e28ff5923518`.
+- GitHub `Release` dry run
+  `https://github.com/devaryakjha/bonsai/actions/runs/25272626762` completed
+  successfully on the Jarvis self-hosted macOS runner for commit
+  `25ce981447503686220923ae3208e28ff5923518`.
+- The dry-run artifact pair from run `25272626762` was downloaded and verified
+  locally with `./script/package_release.sh --verify-artifacts`; the manifest
+  records `version=0.1.0`, `buildNumber=3`,
+  `archiveSHA256=b7eeaddd216e0e73cebfe35fa492ce74bcb3900a056e28809d35946dc65e6f19`,
+  `signatureKind=adhoc`, and `notarized=false`.
 - The GitHub `release` environment exists and has `devaryakjha` configured as a
   required reviewer.
 - `gh secret list --repo devaryakjha/bonsai --env release` returns no configured

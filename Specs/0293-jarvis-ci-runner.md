@@ -26,3 +26,13 @@ the same runner class.
   performance scripts and runs `./script/perf_large_repo.sh`.
 - README and GitHub release setup docs identify Jarvis as the normal validation
   runner.
+
+## Evidence
+
+- GitHub push CI
+  `https://github.com/devaryakjha/bonsai/actions/runs/25272577915` completed
+  successfully with the `Jarvis macOS validation` job.
+- GitHub `Release` dry run
+  `https://github.com/devaryakjha/bonsai/actions/runs/25272626762` completed
+  successfully with the `Dry-run macOS artifact` job after source validation,
+  performance smoke, archive creation, artifact verification, and upload.
