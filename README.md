@@ -75,7 +75,7 @@ Build and validate a release-style app bundle without Apple credentials:
 ./script/package_release.sh --verify
 ```
 
-Run the opt-in large repository performance smoke:
+Run the large repository performance smoke:
 
 ```sh
 ./script/perf_large_repo.sh
@@ -107,6 +107,7 @@ Run the standard validation gates before submitting changes:
 ```sh
 git diff --check
 swift test
+./script/perf_large_repo.sh
 ./script/build_and_run.sh --verify
 ./script/package_release.sh --verify
 ./script/package_release.sh --verify-archive
@@ -117,8 +118,9 @@ swift test
 
 Bonsai is developed spec-first. Start with the relevant document in `Specs/`,
 keep implementation slices small, and commit checkpoints as work lands.
-Pull requests run macOS CI for shell syntax, `swift test`, and the
-credential-free release bundle, archive, and artifact verifiers.
+Pull requests run macOS CI for shell syntax, `swift test`, the large-repository
+performance smoke, and the credential-free release bundle, archive, and artifact
+verifiers.
 
 Useful project paths:
 

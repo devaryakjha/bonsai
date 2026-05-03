@@ -19,16 +19,18 @@ Run the same non-credentialed gates expected from contributors:
 ```sh
 git diff --check
 swift test
+./script/perf_large_repo.sh
 ./script/build_and_run.sh --verify
 ./script/package_release.sh --verify
 ./script/package_release.sh --verify-archive
 ./script/package_release.sh --verify-artifacts
 ```
 
-For diff performance-sensitive changes, also run:
+For interactive sidebar, resize, or scrolling checks, also run the local release
+app sampler:
 
 ```sh
-./script/perf_large_repo.sh
+./script/perf_ui_sample.sh
 ```
 
 ## 3. Distribution Credentials

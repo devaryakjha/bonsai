@@ -32,12 +32,16 @@ jobs:
             script/configure_github_release_secrets.sh \
             script/create_github_draft_release.sh \
             script/package_release.sh \
-            script/perf_large_repo.sh; do
+            script/perf_large_repo.sh \
+            script/perf_ui_sample.sh; do
             bash -n "$script"
           done
 
       - name: Run Swift tests
         run: swift test
+
+      - name: Run performance smoke
+        run: ./script/perf_large_repo.sh
 
       - name: Verify release bundle
         run: ./script/package_release.sh --verify

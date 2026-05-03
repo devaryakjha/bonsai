@@ -12,6 +12,7 @@ maintainers do not depend only on local manual checks.
   Apple tooling.
 - Validate shell syntax for project scripts.
 - Run the Swift test suite.
+- Run the deterministic large-repository performance smoke.
 - Run the credential-free release packaging verifier.
 - Run the credential-free release archive verifier.
 - Run the credential-free release artifact verifier.
@@ -22,8 +23,10 @@ maintainers do not depend only on local manual checks.
 - `.github/workflows/ci.yml` exists and is narrow enough for OSS contributors to
   understand.
 - The workflow runs `bash -n` for `script/build_and_run.sh`,
-  `script/package_release.sh`, and `script/perf_large_repo.sh`.
+  `script/package_release.sh`, `script/perf_large_repo.sh`, and
+  `script/perf_ui_sample.sh`.
 - The workflow runs `swift test`.
+- The workflow runs `./script/perf_large_repo.sh`.
 - The workflow runs `./script/package_release.sh --verify`.
 - The workflow runs `./script/package_release.sh --verify-archive`.
 - The workflow runs `./script/package_release.sh --verify-artifacts`.
