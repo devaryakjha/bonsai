@@ -18,8 +18,9 @@ APP_MACOS="$APP_CONTENTS/MacOS"
 APP_RESOURCES="$APP_CONTENTS/Resources"
 APP_BINARY="$APP_MACOS/$APP_NAME"
 INFO_PLIST="$APP_CONTENTS/Info.plist"
-ARCHIVE_PATH="$DIST_DIR/$APP_NAME.zip"
+ARCHIVE_PATH="$DIST_DIR/$APP_NAME.dmg"
 MANIFEST_PATH="$DIST_DIR/$APP_NAME.release.plist"
+DMG_STAGING_DIR="$DIST_DIR/dmg"
 APP_ICON_SOURCE="$ROOT_DIR/Assets/AppIcon/Bonsai.icns"
 APP_ICON_DOCUMENT_SOURCE="$ROOT_DIR/Assets/AppIcon/Bonsai.icon"
 APP_MARK_SOURCE="$ROOT_DIR/Assets/AppIcon/bonsai-worktree-topology.svg"
@@ -29,10 +30,10 @@ usage() {
 usage: script/package_release.sh [--verify|--verify-archive|--archive|--notarize|--verify-artifacts|--check-credentials|--doctor|--github-doctor]
 
   --verify             Build, stage, ad-hoc sign, and validate the release app bundle.
-  --verify-archive     Build, ad-hoc sign, validate, and write a local test archive.
-  --archive            Build, Developer ID sign, validate, and write dist/release/Bonsai.zip.
+  --verify-archive     Build, ad-hoc sign, validate, and write a local test DMG.
+  --archive            Build, Developer ID sign, validate, and write dist/release/Bonsai.dmg.
   --notarize           Build, Developer ID sign, archive, submit to notarytool, and staple.
-  --verify-artifacts   Validate dist/release/Bonsai.zip against Bonsai.release.plist.
+  --verify-artifacts   Validate dist/release/Bonsai.dmg against Bonsai.release.plist.
   --check-credentials  Validate Developer ID and notarytool credentials without packaging.
   --doctor             Report local release credential readiness without changing artifacts.
   --github-doctor      Report GitHub release environment readiness without showing secrets.
@@ -201,10 +202,29 @@ validate_app_bundle() {
 }
 
 create_archive() {
+  rm -rf "$DMG_STAGING_DIR"
   rm -f "$ARCHIVE_PATH"
-  ditto -c -k --keepParent "$APP_BUNDLE" "$ARCHIVE_PATH"
+  mkdir -p "$DMG_STAGING_DIR"
+  ditto "$APP_BUNDLE" "$DMG_STAGING_DIR/$APP_NAME.app"
+  ln -s /Applications "$DMG_STAGING_DIR/Applications"
+  hdiutil create \
+    -volname "$APP_NAME" \
+    -srcfolder "$DMG_STAGING_DIR" \
+    -ov \
+    -format UDZO \
+    "$ARCHIVE_PATH" \
+    >/dev/null
   require_file "$ARCHIVE_PATH"
   validate_archive
+  rm -rf "$DMG_STAGING_DIR"
+}
+
+create_notary_app_archive() {
+  local notary_archive="$DIST_DIR/$APP_NAME.notary.zip"
+  rm -f "$notary_archive"
+  ditto -c -k --keepParent "$APP_BUNDLE" "$notary_archive"
+  require_file "$notary_archive"
+  printf '%s' "$notary_archive"
 }
 
 write_release_manifest() {
@@ -330,14 +350,30 @@ verify_release_artifacts() {
 }
 
 validate_archive() {
-  local archive_app_bundle archive_extract_dir archive_info_plist
-  archive_extract_dir="$(mktemp -d)"
+  local archive_app_bundle archive_info_plist archive_mount_dir mounted applications_shortcut
+  archive_mount_dir="$(mktemp -d)"
+  mounted=false
+  trap 'cleanup_archive_mount "$archive_mount_dir" "$mounted"' RETURN
 
-  ditto -x -k "$ARCHIVE_PATH" "$archive_extract_dir"
-  archive_app_bundle="$archive_extract_dir/$APP_NAME.app"
+  hdiutil verify "$ARCHIVE_PATH" >/dev/null
+  hdiutil attach "$ARCHIVE_PATH" -nobrowse -readonly -mountpoint "$archive_mount_dir" >/dev/null
+  mounted=true
+
+  archive_app_bundle="$archive_mount_dir/$APP_NAME.app"
   archive_info_plist="$archive_app_bundle/Contents/Info.plist"
+  applications_shortcut="$archive_mount_dir/Applications"
   require_file "$archive_info_plist"
   plutil -lint "$archive_info_plist" >/dev/null
+
+  if [[ ! -L "$applications_shortcut" ]]; then
+    echo "missing Applications shortcut in disk image" >&2
+    exit 1
+  fi
+
+  if [[ "$(readlink "$applications_shortcut")" != "/Applications" ]]; then
+    echo "unexpected Applications shortcut target: $(readlink "$applications_shortcut")" >&2
+    exit 1
+  fi
 
   local archived_bundle_id
   archived_bundle_id="$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$archive_info_plist")"
@@ -371,7 +407,16 @@ validate_archive() {
 
   codesign --verify --strict --verbose=2 "$archive_app_bundle"
 
-  rm -rf "$archive_extract_dir"
+  trap - RETURN
+  cleanup_archive_mount "$archive_mount_dir" "$mounted"
+}
+
+cleanup_archive_mount() {
+  local mount_dir="$1" mounted="$2"
+  if [[ "$mounted" == "true" ]]; then
+    hdiutil detach "$mount_dir" >/dev/null || true
+  fi
+  rm -rf "$mount_dir"
 }
 
 developer_id_identity() {
@@ -695,16 +740,21 @@ case "$MODE" in
   --notarize|notarize)
     check_distribution_credentials
     package_with_identity "$(developer_id_identity)"
-    create_archive
+    notary_app_archive="$(create_notary_app_archive)"
     notary_submit_args=(--keychain-profile "$(notary_profile)")
     if [[ -n "${BONSAI_NOTARY_KEYCHAIN:-}" ]]; then
       notary_submit_args+=(--keychain "$BONSAI_NOTARY_KEYCHAIN")
     fi
-    xcrun notarytool submit "$ARCHIVE_PATH" "${notary_submit_args[@]}" --wait
+    xcrun notarytool submit "$notary_app_archive" "${notary_submit_args[@]}" --wait
+    rm -f "$notary_app_archive"
     xcrun stapler staple "$APP_BUNDLE"
     xcrun stapler validate "$APP_BUNDLE"
     spctl -a -vv -t exec "$APP_BUNDLE"
     create_archive
+    xcrun notarytool submit "$ARCHIVE_PATH" "${notary_submit_args[@]}" --wait
+    xcrun stapler staple "$ARCHIVE_PATH"
+    xcrun stapler validate "$ARCHIVE_PATH"
+    spctl -a -vv -t open --context context:primary-signature "$ARCHIVE_PATH"
     write_release_manifest "$(developer_id_identity)" true
     ;;
   --verify-artifacts|verify-artifacts)

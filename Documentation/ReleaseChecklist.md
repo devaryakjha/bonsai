@@ -71,13 +71,13 @@ make release-notarize
 Expected local outputs:
 
 - `dist/release/Bonsai.app`
-- `dist/release/Bonsai.zip`
+- `dist/release/Bonsai.dmg`
 - `dist/release/Bonsai.release.plist`
 
 Do not publish the ad-hoc artifact created by `--verify`.
 
-The `--notarize` path rebuilds `dist/release/Bonsai.zip` after stapling; upload
-that final zip.
+The `--notarize` path staples the app, creates and notarizes
+`dist/release/Bonsai.dmg`, then writes the manifest for that final DMG.
 
 ## 5. GitHub Release
 
@@ -130,7 +130,7 @@ that final zip.
   make release
   ```
 - If using a local notarization run instead of the workflow, tag the audited
-  commit and attach `dist/release/Bonsai.zip` plus
+  commit and attach `dist/release/Bonsai.dmg` plus
   `dist/release/Bonsai.release.plist` manually.
 - Keep the GitHub Release as a draft until the downloaded assets pass the
   post-release checks below, then publish it.
@@ -140,11 +140,13 @@ that final zip.
 
 ## 6. Post-Release Check
 
-- Download the uploaded zip and manifest from the draft GitHub Release on a
+- Download the uploaded DMG and manifest from the draft GitHub Release on a
   clean macOS account or machine.
-- Put `Bonsai.zip` and `Bonsai.release.plist` in `dist/release/`, then run
+- Put `Bonsai.dmg` and `Bonsai.release.plist` in `dist/release/`, then run
   `make release-verify-artifacts`.
-- Extract the downloaded zip and run `xcrun stapler validate Bonsai.app`.
+- Open the downloaded DMG and confirm it shows `Bonsai.app` plus the
+  Applications shortcut.
+- Run `xcrun stapler validate Bonsai.dmg`.
 - Open Bonsai from the downloaded artifact.
 - Confirm Gatekeeper accepts the app.
 - Open a local Git repository and verify history, working tree, and diff loading.
