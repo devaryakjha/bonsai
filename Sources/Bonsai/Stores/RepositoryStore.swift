@@ -29,6 +29,8 @@ private struct CommitDiffCacheKey: Hashable {
 @MainActor
 @Observable
 final class RepositoryStore {
+  private static let periodicRefreshCheckIntervalNanoseconds: UInt64 = 5_000_000_000
+
   private let gitClient = GitClient()
   private let gitHubClient = GitHubClient()
   private let codeAgentClient = CodeAgentClient()
@@ -39,6 +41,8 @@ final class RepositoryStore {
   private var commitSelectionTask: Task<Void, Never>?
   private var commitChangedFilesCache: [String: [GitChangedFile]] = [:]
   private var commitDiffCache: [CommitDiffCacheKey: String] = [:]
+  private var lastObservedRepositoryPath: String?
+  private var lastObservedRepositoryStateToken: GitRepositoryStateToken?
 
   var selectedRepository: GitRepository?
   var recentRepositories: [GitRepository] = []
@@ -701,6 +705,10 @@ final class RepositoryStore {
   }
 
   func refreshAll() async {
+    await refreshAll(reportErrors: true)
+  }
+
+  private func refreshAll(reportErrors: Bool) async {
     guard let repository = selectedRepository else { return }
     isRefreshing = true
     defer { isRefreshing = false }
@@ -736,9 +744,54 @@ final class RepositoryStore {
         try await refreshCommitTreeEntries(resetPath: commitTreeEntries.isEmpty)
       }
       await refreshDiff()
+      await updateObservedRepositoryState(for: repository)
       errorMessage = nil
     } catch {
-      errorMessage = error.localizedDescription
+      if reportErrors {
+        errorMessage = error.localizedDescription
+      }
+    }
+  }
+
+  func runPeriodicRefreshChecks() async {
+    while !Task.isCancelled {
+      do {
+        try await Task.sleep(nanoseconds: Self.periodicRefreshCheckIntervalNanoseconds)
+      } catch {
+        return
+      }
+      await refreshIfRepositoryChanged()
+    }
+  }
+
+  func refreshIfRepositoryChanged() async {
+    guard autoRefreshEnabled else { return }
+    guard let repository = selectedRepository else {
+      lastObservedRepositoryPath = nil
+      lastObservedRepositoryStateToken = nil
+      return
+    }
+    guard !isRefreshing else { return }
+
+    do {
+      let stateToken = try await gitClient.repositoryStateToken(
+        for: repository,
+        includeIgnoredFiles: showIgnoredFiles
+      )
+      guard lastObservedRepositoryPath == repository.path else {
+        lastObservedRepositoryPath = repository.path
+        lastObservedRepositoryStateToken = stateToken
+        return
+      }
+      guard let lastObservedRepositoryStateToken else {
+        self.lastObservedRepositoryStateToken = stateToken
+        return
+      }
+      guard stateToken != lastObservedRepositoryStateToken else { return }
+
+      await refreshAll(reportErrors: false)
+    } catch {
+      // Background checks should not interrupt the user; manual refresh still surfaces errors.
     }
   }
 
@@ -2614,7 +2667,7 @@ final class RepositoryStore {
     do {
       let output = try await operation()
       commandResult = CommandResult(title: title, output: output.isEmpty ? CommandResult.completedOutput : output, isError: false)
-      if autoRefreshAfterMutations {
+      if autoRefreshEnabled {
         await refreshAll()
       }
       return true
@@ -2625,11 +2678,22 @@ final class RepositoryStore {
     }
   }
 
-  private var autoRefreshAfterMutations: Bool {
+  private var autoRefreshEnabled: Bool {
     guard UserDefaults.standard.object(forKey: autoRefreshKey) != nil else {
       return true
     }
     return UserDefaults.standard.bool(forKey: autoRefreshKey)
+  }
+
+  private func updateObservedRepositoryState(for repository: GitRepository) async {
+    guard let stateToken = try? await gitClient.repositoryStateToken(
+      for: repository,
+      includeIgnoredFiles: showIgnoredFiles
+    ) else {
+      return
+    }
+    lastObservedRepositoryPath = repository.path
+    lastObservedRepositoryStateToken = stateToken
   }
 
   private func runReadOnlyCommand(title: String, operation: () async throws -> String) async {
@@ -2677,6 +2741,8 @@ final class RepositoryStore {
     commitChangedFilesCache.removeAll()
     commitDiffCache.removeAll()
     selectedRepository = repository
+    lastObservedRepositoryPath = nil
+    lastObservedRepositoryStateToken = nil
     snapshot = RepositorySnapshot()
     selectedCommit = nil
     selectedStatusEntry = nil

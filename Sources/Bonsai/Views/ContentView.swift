@@ -454,6 +454,7 @@ struct ContentView: View {
     }
     .task {
       await store.refreshAll()
+      await store.runPeriodicRefreshChecks()
     }
     .alert("Bonsai", isPresented: Binding(
       get: { store.errorMessage != nil },
