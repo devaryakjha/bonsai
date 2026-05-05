@@ -7,6 +7,11 @@ struct GitRepository: Identifiable, Hashable, Codable {
   var name: String { URL(filePath: path).lastPathComponent }
 }
 
+struct GitRepositoryStateToken: Equatable {
+  var head: String
+  var status: String
+}
+
 struct WorkspaceGroup: Identifiable, Hashable {
   var name: String
   var path: String

@@ -254,6 +254,58 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertEqual(staleUnstagedChanges.first?.path, "tracked.txt")
   }
 
+  func testPeriodicRefreshDetectsExternalCommit() async throws {
+    let hadAutoRefreshPreference = UserDefaults.standard.object(forKey: "bonsai.autoRefresh") != nil
+    let previousAutoRefreshPreference = UserDefaults.standard.bool(forKey: "bonsai.autoRefresh")
+    UserDefaults.standard.set(true, forKey: "bonsai.autoRefresh")
+    defer {
+      if hadAutoRefreshPreference {
+        UserDefaults.standard.set(previousAutoRefreshPreference, forKey: "bonsai.autoRefresh")
+      } else {
+        UserDefaults.standard.removeObject(forKey: "bonsai.autoRefresh")
+      }
+    }
+
+    let repo = try await makeRepository()
+    try write("initial\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Initial")
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    var firstSubject = await store.snapshot.commits.first?.subject
+    XCTAssertEqual(firstSubject, "Initial")
+
+    try write("initial\nexternal\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "External commit")
+
+    await store.refreshIfRepositoryChanged()
+
+    firstSubject = await store.snapshot.commits.first?.subject
+    XCTAssertEqual(firstSubject, "External commit")
+  }
+
+  func testPeriodicRefreshHonorsAutoRefreshPreference() async throws {
+    UserDefaults.standard.set(false, forKey: "bonsai.autoRefresh")
+    defer { UserDefaults.standard.removeObject(forKey: "bonsai.autoRefresh") }
+
+    let repo = try await makeRepository()
+    try write("initial\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "Initial")
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    var firstSubject = await store.snapshot.commits.first?.subject
+    XCTAssertEqual(firstSubject, "Initial")
+
+    try write("initial\nexternal\n", to: repo.appending(path: "README.md"))
+    try await commitAll(in: repo, message: "External commit")
+
+    await store.refreshIfRepositoryChanged()
+
+    firstSubject = await store.snapshot.commits.first?.subject
+    XCTAssertEqual(firstSubject, "Initial")
+  }
+
   func testStoreTogglesRepositorySigningConfigAndRefreshesStatus() async throws {
     let hadAutoRefreshPreference = UserDefaults.standard.object(forKey: "bonsai.autoRefresh") != nil
     let previousAutoRefreshPreference = UserDefaults.standard.bool(forKey: "bonsai.autoRefresh")

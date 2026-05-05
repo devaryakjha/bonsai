@@ -259,6 +259,30 @@ struct GitClient {
     )
   }
 
+  func repositoryStateToken(
+    for repository: GitRepository,
+    includeIgnoredFiles: Bool = false
+  ) async throws -> GitRepositoryStateToken {
+    async let head = headStateToken(in: repository)
+    async let statusOutput = git(
+      Self.repositoryStateStatusArguments(includeIgnoredFiles: includeIgnoredFiles),
+      in: repository.url
+    )
+
+    let resolvedHead = await head
+    let resolvedStatusOutput = try await statusOutput
+    return GitRepositoryStateToken(
+      head: resolvedHead.trimmingCharacters(in: .whitespacesAndNewlines),
+      status: resolvedStatusOutput.stdout
+    )
+  }
+
+  static func repositoryStateStatusArguments(includeIgnoredFiles: Bool = false) -> [String] {
+    var arguments = statusArguments(includeIgnoredFiles: includeIgnoredFiles)
+    arguments.insert("--branch", at: 1)
+    return arguments
+  }
+
   func status(in repository: GitRepository, includeIgnoredFiles: Bool = false) async throws -> [GitStatusEntry] {
     let output = try await git(Self.statusArguments(includeIgnoredFiles: includeIgnoredFiles), in: repository.url)
     return GitParsers.parseStatus(output.stdout)
@@ -1754,6 +1778,13 @@ struct GitClient {
 
   private func commandSucceeds(_ arguments: [String], in repository: GitRepository) async -> Bool {
     (try? await git(arguments, in: repository.url)) != nil
+  }
+
+  private func headStateToken(in repository: GitRepository) async -> String {
+    guard let output = try? await git(Self.headVerificationArguments(), in: repository.url) else {
+      return ""
+    }
+    return output.stdout
   }
 
   private func configValue(_ key: String, in repository: GitRepository) async -> String? {

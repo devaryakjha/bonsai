@@ -16,6 +16,14 @@ final class GitClientCommandArgumentsTests: XCTestCase {
       GitClient.statusArguments(includeIgnoredFiles: true),
       ["status", "--porcelain=v1", "--untracked-files=all", "--ignored=matching"]
     )
+    XCTAssertEqual(
+      GitClient.repositoryStateStatusArguments(),
+      ["status", "--branch", "--porcelain=v1", "--untracked-files=all"]
+    )
+    XCTAssertEqual(
+      GitClient.repositoryStateStatusArguments(includeIgnoredFiles: true),
+      ["status", "--branch", "--porcelain=v1", "--untracked-files=all", "--ignored=matching"]
+    )
     XCTAssertEqual(GitClient.repositoryBenchmarkStatusArguments(), ["status", "--porcelain=v1", "--untracked-files=all"])
     XCTAssertEqual(GitClient.repositoryBenchmarkCommitCountArguments(), ["rev-list", "--count", "--all"])
     XCTAssertEqual(GitClient.repositoryBenchmarkRefsArguments(), ["for-each-ref", "--format=%(refname)"])
