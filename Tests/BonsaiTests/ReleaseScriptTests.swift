@@ -69,6 +69,10 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(makefile.contains("release-dry-run:"), makefile)
     XCTAssertTrue(makefile.contains("gh workflow run Release --repo devaryakjha/bonsai --ref main -f dry_run=true"), makefile)
     XCTAssertTrue(script.contains("verify_release_artifacts()"))
+    XCTAssertTrue(script.contains("DMG_STAGING_DIR="))
+    XCTAssertTrue(script.contains("hdiutil create"))
+    XCTAssertTrue(script.contains("ln -s /Applications"))
+    XCTAssertTrue(script.contains("missing Applications shortcut in disk image"))
     XCTAssertTrue(script.contains("APP_ICON_DOCUMENT_SOURCE="))
     XCTAssertTrue(script.contains("Bonsai.icon/icon.json"))
     XCTAssertTrue(script.contains("github_release_doctor()"))
@@ -231,6 +235,10 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(metadata.contains(#""appearance": "tinted""#), metadata)
     XCTAssertTrue(exportScript.contains("The source .icon package is never modified."), exportScript)
     XCTAssertFalse(exportScript.contains("rm -rf \"$ICON_DOCUMENT\""), exportScript)
+    XCTAssertTrue(exportScript.contains("MACOS_ICON_LIVE_AREA_NUMERATOR=55"), exportScript)
+    XCTAssertTrue(exportScript.contains("MACOS_ICON_LIVE_AREA_DENOMINATOR=64"), exportScript)
+    XCTAssertTrue(exportScript.contains("pad_icon_canvas"), exportScript)
+    XCTAssertTrue(exportScript.contains("rendered inner icon"), exportScript)
   }
 
   func testGitHubSecretConfiguratorUploadsOnlyEnvironmentSecretsWithMockedGh() throws {
@@ -336,7 +344,7 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(workflow.contains("default: true"), workflow)
     XCTAssertTrue(workflow.contains("uses: actions/checkout@v6"))
     XCTAssertTrue(workflow.contains("run: make validate"))
-    XCTAssertTrue(workflow.contains("dist/release/Bonsai.zip"))
+    XCTAssertTrue(workflow.contains("dist/release/Bonsai.dmg"))
     XCTAssertTrue(workflow.contains("dist/release/Bonsai.release.plist"))
 
     XCTAssertTrue(dryRunJob.contains("if: ${{ inputs.dry_run == true }}"), dryRunJob)
@@ -397,7 +405,7 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(logText.contains("GET|https://api.github.com/repos/devaryakjha/bonsai/releases/tags/v9.8.7"), logText)
     XCTAssertTrue(logText.contains("GET|https://api.github.com/repos/devaryakjha/bonsai/git/ref/tags/v9.8.7"), logText)
     XCTAssertTrue(logText.contains("POST|https://api.github.com/repos/devaryakjha/bonsai/releases"), logText)
-    XCTAssertTrue(logText.contains("POST|https://uploads.github.com/repos/devaryakjha/bonsai/releases/42/assets?name=Bonsai.zip"), logText)
+    XCTAssertTrue(logText.contains("POST|https://uploads.github.com/repos/devaryakjha/bonsai/releases/42/assets?name=Bonsai.dmg"), logText)
     XCTAssertTrue(logText.contains("POST|https://uploads.github.com/repos/devaryakjha/bonsai/releases/42/assets?name=Bonsai.release.plist"), logText)
     XCTAssertFalse(logText.contains("DELETE|"), logText)
   }
@@ -423,7 +431,7 @@ final class ReleaseScriptTests: XCTestCase {
     XCTAssertTrue(logText.contains("GET|https://api.github.com/repos/devaryakjha/bonsai/releases?per_page=100"), logText)
     XCTAssertTrue(logText.contains("DELETE|https://api.github.com/repos/devaryakjha/bonsai/releases/41"), logText)
     XCTAssertTrue(logText.contains("POST|https://api.github.com/repos/devaryakjha/bonsai/releases"), logText)
-    XCTAssertTrue(logText.contains("POST|https://uploads.github.com/repos/devaryakjha/bonsai/releases/42/assets?name=Bonsai.zip"), logText)
+    XCTAssertTrue(logText.contains("POST|https://uploads.github.com/repos/devaryakjha/bonsai/releases/42/assets?name=Bonsai.dmg"), logText)
     XCTAssertTrue(logText.contains("POST|https://uploads.github.com/repos/devaryakjha/bonsai/releases/42/assets?name=Bonsai.release.plist"), logText)
   }
 
@@ -559,10 +567,10 @@ final class ReleaseScriptTests: XCTestCase {
     try FileManager.default.createDirectory(at: fakeBin, withIntermediateDirectories: true)
     try FileManager.default.createDirectory(at: runnerTemp, withIntermediateDirectories: true)
 
-    let archive = directory.appending(path: "Bonsai.zip")
+    let archive = directory.appending(path: "Bonsai.dmg")
     let manifest = directory.appending(path: "Bonsai.release.plist")
     let log = directory.appending(path: "curl.log")
-    try "zip-bytes".write(to: archive, atomically: true, encoding: .utf8)
+    try "dmg-bytes".write(to: archive, atomically: true, encoding: .utf8)
     try "manifest-bytes".write(to: manifest, atomically: true, encoding: .utf8)
 
     let curl = fakeBin.appending(path: "curl")
@@ -630,9 +638,9 @@ final class ReleaseScriptTests: XCTestCase {
         status="201"
         body='{"id":42}'
         ;;
-      "POST|https://uploads.github.com/repos/devaryakjha/bonsai/releases/42/assets?name=Bonsai.zip")
+      "POST|https://uploads.github.com/repos/devaryakjha/bonsai/releases/42/assets?name=Bonsai.dmg")
         status="201"
-        body='{"name":"Bonsai.zip"}'
+        body='{"name":"Bonsai.dmg"}'
         ;;
       "POST|https://uploads.github.com/repos/devaryakjha/bonsai/releases/42/assets?name=Bonsai.release.plist")
         status="\(manifestStatus)"

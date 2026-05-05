@@ -4,7 +4,7 @@ set -euo pipefail
 MODE="${1:-}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist/release"
-ARCHIVE_PATH="${BONSAI_RELEASE_ARCHIVE:-$DIST_DIR/Bonsai.zip}"
+ARCHIVE_PATH="${BONSAI_RELEASE_ARCHIVE:-$DIST_DIR/Bonsai.dmg}"
 MANIFEST_PATH="${BONSAI_RELEASE_MANIFEST:-$DIST_DIR/Bonsai.release.plist}"
 REPOSITORY="${BONSAI_GITHUB_REPOSITORY:-${GITHUB_REPOSITORY:-devaryakjha/bonsai}}"
 VERSION="${BONSAI_VERSION:-$(tr -d '[:space:]' <"$ROOT_DIR/VERSION")}"
@@ -31,7 +31,7 @@ Environment:
   BONSAI_VERSION              Release version, defaults to VERSION.
   BONSAI_BUILD_NUMBER         Build number, defaults to git commit count.
   BONSAI_RELEASE_TAG          Release tag, defaults to v\$BONSAI_VERSION.
-  BONSAI_RELEASE_ARCHIVE      Archive path, defaults to dist/release/Bonsai.zip.
+  BONSAI_RELEASE_ARCHIVE      Archive path, defaults to dist/release/Bonsai.dmg.
   BONSAI_RELEASE_MANIFEST     Manifest path, defaults to dist/release/Bonsai.release.plist.
 USAGE
 }
@@ -207,7 +207,7 @@ Evidence:
 - Release checklist: Documentation/ReleaseChecklist.md
 
 Attachments:
-- Bonsai.zip
+- Bonsai.dmg
 - Bonsai.release.plist
 
 Keep this release as a draft until the downloaded artifact passes the post-release Gatekeeper and smoke checks.

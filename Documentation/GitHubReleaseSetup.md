@@ -207,7 +207,7 @@ credentials, runs the release doctor and credential preflight, builds the
 notarized archive, uploads the artifact pair to the workflow run, and creates a
 draft GitHub Release tagged from the audited commit with:
 
-- `Bonsai.zip`
+- `Bonsai.dmg`
 - `Bonsai.release.plist`
 
 Keep the GitHub Release as a draft until the downloaded asset pair passes local
@@ -217,7 +217,7 @@ After downloading the asset pair, verify it locally:
 
 ```sh
 mkdir -p dist/release
-cp Bonsai.zip Bonsai.release.plist dist/release/
+cp Bonsai.dmg Bonsai.release.plist dist/release/
 make release-verify-artifacts
 ```
 

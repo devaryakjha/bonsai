@@ -40,12 +40,13 @@ Git LFS, GPG signing, and provider notifications.
 
 ## Install
 
-Download the latest notarized macOS archive from
+Download the latest notarized macOS disk image from
 [GitHub Releases](https://github.com/devaryakjha/bonsai/releases/latest).
+Open the DMG, then drag `Bonsai.app` to the Applications shortcut.
 
 For `v0.1.0`, the released assets are:
 
-- [`Bonsai.zip`](https://github.com/devaryakjha/bonsai/releases/download/v0.1.0/Bonsai.zip)
+- [`Bonsai.dmg`](https://github.com/devaryakjha/bonsai/releases/download/v0.1.0/Bonsai.dmg)
 - [`Bonsai.release.plist`](https://github.com/devaryakjha/bonsai/releases/download/v0.1.0/Bonsai.release.plist)
 
 The release manifest records the build number, source commit, archive size,

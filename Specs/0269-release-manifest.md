@@ -13,7 +13,7 @@ produced a public Bonsai artifact.
   archive file name, archive byte size, archive SHA-256, signing identity,
   signature kind, team identifier, and whether the archive was notarized.
 - Validate the manifest with native plist tooling before reporting success.
-- Upload the manifest alongside the zip from the manual GitHub release workflow.
+- Upload the manifest alongside the DMG from the manual GitHub release workflow.
 - Do not generate a manifest for credential-only modes.
 
 ## Acceptance
@@ -22,4 +22,4 @@ produced a public Bonsai artifact.
   `dist/release/Bonsai.release.plist`.
 - `./script/package_release.sh --notarize` writes the manifest after the final
   post-stapling archive is recreated.
-- The GitHub `Release` workflow uploads both `Bonsai.zip` and the manifest.
+- The GitHub `Release` workflow uploads both `Bonsai.dmg` and the manifest.

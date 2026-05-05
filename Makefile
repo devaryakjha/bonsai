@@ -17,11 +17,11 @@ help:
 		'  make run                         Build and launch the app' \
 		'  make run-verify                  Build, launch, and verify process state' \
 		'  make release-verify              Build and validate an ad-hoc app bundle' \
-		'  make release-verify-archive      Build and validate an ad-hoc zip' \
-		'  make release-verify-artifacts    Verify dist/release zip and manifest' \
+		'  make release-verify-archive      Build and validate an ad-hoc DMG' \
+		'  make release-verify-artifacts    Verify dist/release DMG and manifest' \
 		'  make release-doctor              Check local release credentials' \
 		'  make release-github-doctor       Check GitHub release environment' \
-		'  make release-archive             Build a Developer ID signed zip' \
+		'  make release-archive             Build a Developer ID signed DMG' \
 		'  make release-dry-run             Dispatch Jarvis release dry run' \
 		'  make release                     Dispatch protected notarized release'
 

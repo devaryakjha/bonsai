@@ -20,7 +20,8 @@ writes `Info.plist`, ad-hoc signs the bundle, and verifies the code signature.
 This proves the bundle is structurally signable without requiring an Apple
 Developer account.
 
-To also create and validate a local test archive with an ad-hoc signature, run:
+To also create and validate a local test disk image with an ad-hoc signature,
+run:
 
 ```sh
 make release-verify-archive
@@ -84,14 +85,15 @@ export BONSAI_CODESIGN_IDENTITY="Developer ID Application: Example, Inc. (TEAMID
 make release-archive
 ```
 
-The script writes `dist/release/Bonsai.zip` using `ditto` after signing with the
-provided identity, timestamp, and hardened runtime option, then validates that
-the archive contains `Bonsai.app` with the expected bundle identifier, package
-type, marketing version, build number, and a strict-valid code signature.
+The script writes `dist/release/Bonsai.dmg` after signing with the provided
+identity, timestamp, and hardened runtime option. The disk image contains
+`Bonsai.app` and an `Applications` symlink pointing to `/Applications`, then the
+script mounts the DMG read-only and validates the app bundle metadata,
+Applications shortcut, and strict-valid code signature.
 
 ## Notarization
 
-Notarization requires a signed archive and an `xcrun notarytool` keychain
+Notarization requires a signed disk image and an `xcrun notarytool` keychain
 profile:
 
 ```sh
@@ -100,11 +102,12 @@ export BONSAI_NOTARY_PROFILE="bonsai-notary"
 make release-notarize
 ```
 
-The script submits the zip with `xcrun notarytool submit --wait`, staples and
-validates the ticket on the app bundle, runs Gatekeeper assessment, then
-recreates `dist/release/Bonsai.zip` so the published archive contains the
-stapled app. A local `--verify` run is not a substitute for this credentialed
-notarization path.
+The script first submits a temporary app zip with `xcrun notarytool submit
+--wait`, staples and validates the app bundle, runs Gatekeeper assessment, then
+creates `dist/release/Bonsai.dmg`. It submits the DMG, staples and validates the
+DMG ticket, runs Gatekeeper assessment on the disk image, and writes the release
+manifest against the final DMG. A local `--verify` run is not a substitute for
+this credentialed notarization path.
 
 You can validate the local signing identity and notarytool profile before
 running the full packaging workflow:
@@ -127,20 +130,21 @@ Doctor mode does not build, sign, submit, staple, or rewrite artifacts. It
 returns a non-zero status until Developer ID and notarytool credentials are
 ready.
 
-To verify an existing zip and manifest pair without rebuilding:
+To verify an existing DMG and manifest pair without rebuilding:
 
 ```sh
 make release-verify-artifacts
 ```
 
-This extracts `dist/release/Bonsai.zip`, validates the app bundle metadata and
-signature, validates `dist/release/Bonsai.release.plist`, and compares the
-manifest archive name, byte size, and SHA-256 to the actual zip.
+This mounts `dist/release/Bonsai.dmg`, validates the app bundle metadata,
+Applications shortcut, and signature, validates
+`dist/release/Bonsai.release.plist`, and compares the manifest archive name,
+byte size, and SHA-256 to the actual DMG.
 
 ## Outputs
 
 - `dist/release/Bonsai.app`
-- `dist/release/Bonsai.zip` for `--verify-archive`, `--archive`, and
+- `dist/release/Bonsai.dmg` for `--verify-archive`, `--archive`, and
   `--notarize`
 - `dist/release/Bonsai.release.plist` for archive-producing modes
 
