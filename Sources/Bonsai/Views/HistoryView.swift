@@ -13,8 +13,23 @@ struct HistoryView: View {
       HStack {
         Image(systemName: "magnifyingglass")
           .foregroundStyle(.secondary)
-        TextField("Search commits", text: $store.historySearchText)
-          .textFieldStyle(.plain)
+        TextField("Find commits", text: $store.historySearchText)
+          .textFieldStyle(.roundedBorder)
+          .accessibilityLabel("Find commits")
+
+        if !store.historySearchText.isEmpty {
+          Button {
+            store.historySearchText = ""
+          } label: {
+            Label("Clear find", systemImage: "xmark.circle.fill")
+              .labelStyle(.iconOnly)
+          }
+          .buttonStyle(.borderless)
+          .foregroundStyle(.secondary)
+          .help("Clear find")
+          .accessibilityLabel("Clear find")
+        }
+
         Menu {
           Toggle("Show commit details", isOn: $showCommitRowDetails)
         } label: {
@@ -260,12 +275,12 @@ private struct CommitRow: View {
           if let date = commit.date {
             Text(StaticDateText.relativeOrDate(date))
           }
-          ForEach(commit.decorations.prefix(3), id: \.self) { decoration in
-            Text(decoration)
-              .font(.caption2)
-              .padding(.horizontal, 6)
-              .padding(.vertical, 2)
-              .background(.quaternary, in: Capsule())
+          ForEach(visibleDecorations, id: \.self) { decoration in
+            decorationPill(decoration)
+          }
+          if hiddenDecorationCount > 0 {
+            decorationPill("+\(hiddenDecorationCount.formatted()) refs")
+              .help(commit.decorations.dropFirst(Self.visibleDecorationLimit).joined(separator: ", "))
           }
         }
         .font(.caption)
@@ -283,6 +298,27 @@ private struct CommitRow: View {
     }
     parts.append(contentsOf: commit.decorations)
     return parts.filter { !$0.isEmpty }.joined(separator: " - ")
+  }
+
+  private static let visibleDecorationLimit = 2
+
+  private var visibleDecorations: [String] {
+    Array(commit.decorations.prefix(Self.visibleDecorationLimit))
+  }
+
+  private var hiddenDecorationCount: Int {
+    max(0, commit.decorations.count - Self.visibleDecorationLimit)
+  }
+
+  private func decorationPill(_ text: String) -> some View {
+    Text(text)
+      .font(.caption2)
+      .lineLimit(1)
+      .truncationMode(.middle)
+      .frame(maxWidth: 112)
+      .padding(.horizontal, 6)
+      .padding(.vertical, 2)
+      .background(.quaternary, in: Capsule())
   }
 }
 
@@ -302,6 +338,14 @@ private struct ChangedFilesView: View {
           title: \.title
         )
         .frame(width: 190)
+        if let contextTitle {
+          Text(contextTitle)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .help(contextHelp)
+        }
         Spacer()
         Text(countText)
           .foregroundStyle(.secondary)
@@ -460,6 +504,26 @@ private struct ChangedFilesView: View {
     case .tree:
       return store.commitTreeEntries.count.formatted()
     }
+  }
+
+  private var contextTitle: String? {
+    if let stash = store.selectedStash {
+      return stash.index
+    }
+    if let commit = store.selectedCommit {
+      return "\(commit.shortHash) files"
+    }
+    return nil
+  }
+
+  private var contextHelp: String {
+    if let stash = store.selectedStash {
+      return stash.message
+    }
+    if let commit = store.selectedCommit {
+      return "\(commit.shortHash) \(commit.subject)"
+    }
+    return ""
   }
 }
 

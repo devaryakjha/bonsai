@@ -212,66 +212,8 @@ private struct DiffHeaderControls: View {
   var onNavigateSearch: (DiffSearch.NavigationDirection) -> Void
 
   var body: some View {
-    controls(searchFieldWidth: 150)
-  }
-
-  private func controls(searchFieldWidth: CGFloat) -> some View {
     HStack(spacing: 8) {
-      Button {
-        if isSearchVisible {
-          searchText = ""
-        }
-        isSearchVisible.toggle()
-      } label: {
-        Label("Find", systemImage: "magnifyingglass")
-          .labelStyle(.iconOnly)
-      }
-      .controlSize(.small)
-      .help(isSearchVisible ? "Hide find" : "Find in diff")
-      .accessibilityLabel(isSearchVisible ? "Hide find" : "Find in diff")
-      .disabled(!canFindDiff)
-
-      if isSearchVisible {
-        TextField("Find", text: $searchText)
-          .textFieldStyle(.roundedBorder)
-          .controlSize(.small)
-          .frame(width: searchFieldWidth)
-          .accessibilityLabel("Find in diff")
-          .onSubmit {
-            onNavigateSearch(.next)
-          }
-
-        if let matchLabel {
-          Text(matchLabel)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .monospacedDigit()
-            .lineLimit(1)
-            .frame(minWidth: 72, alignment: .leading)
-        }
-
-        ControlGroup {
-          Button {
-            onNavigateSearch(.previous)
-          } label: {
-            Label("Previous match", systemImage: "chevron.up")
-              .labelStyle(.iconOnly)
-          }
-          .help("Previous match")
-          .accessibilityLabel("Previous match")
-
-          Button {
-            onNavigateSearch(.next)
-          } label: {
-            Label("Next match", systemImage: "chevron.down")
-              .labelStyle(.iconOnly)
-          }
-          .help("Next match")
-          .accessibilityLabel("Next match")
-        }
-        .controlSize(.small)
-        .disabled(!hasSearchMatches)
-      }
+      findButton
 
       AppKitSegmentedControl(
         options: DiffDisplayMode.allCases,
@@ -357,7 +299,103 @@ private struct DiffHeaderControls: View {
       .disabled(!store.canCopyCurrentPatch)
     }
     .lineLimit(1)
-    .fixedSize(horizontal: true, vertical: false)
+  }
+
+  private var findPopover: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      HStack(spacing: 7) {
+        findTextField
+
+        Button {
+          searchText = ""
+        } label: {
+          Label("Clear find", systemImage: "xmark.circle.fill")
+            .labelStyle(.iconOnly)
+        }
+        .buttonStyle(.borderless)
+        .foregroundStyle(.secondary)
+        .help("Clear find")
+        .accessibilityLabel("Clear find")
+        .disabled(searchText.isEmpty)
+      }
+
+      HStack(spacing: 8) {
+        if let matchLabel {
+          Text(matchLabel)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .monospacedDigit()
+            .lineLimit(1)
+        } else {
+          Text("Find in diff")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+
+        Spacer(minLength: 16)
+
+        ControlGroup {
+          Button {
+            onNavigateSearch(.previous)
+          } label: {
+            Label("Previous match", systemImage: "chevron.up")
+              .labelStyle(.iconOnly)
+          }
+          .help("Previous match")
+          .accessibilityLabel("Previous match")
+
+          Button {
+            onNavigateSearch(.next)
+          } label: {
+            Label("Next match", systemImage: "chevron.down")
+              .labelStyle(.iconOnly)
+          }
+          .help("Next match")
+          .accessibilityLabel("Next match")
+        }
+        .controlSize(.small)
+        .disabled(!hasSearchMatches)
+      }
+    }
+    .padding(12)
+    .frame(width: 300)
+  }
+
+  private var findTextField: some View {
+    HStack(spacing: 6) {
+      Image(systemName: "magnifyingglass")
+        .foregroundStyle(.secondary)
+
+      TextField("Find in diff", text: $searchText)
+        .textFieldStyle(.plain)
+        .accessibilityLabel("Find in diff")
+        .onSubmit {
+          onNavigateSearch(.next)
+        }
+    }
+    .padding(.horizontal, 9)
+    .padding(.vertical, 5)
+    .background(.quaternary.opacity(0.7), in: RoundedRectangle(cornerRadius: 7))
+    .overlay {
+      RoundedRectangle(cornerRadius: 7)
+        .stroke(.quaternary)
+    }
+  }
+
+  private var findButton: some View {
+    Button {
+      isSearchVisible = true
+    } label: {
+      Label("Find", systemImage: "magnifyingglass")
+        .labelStyle(.iconOnly)
+    }
+    .controlSize(.small)
+    .help("Find in diff")
+    .accessibilityLabel("Find in diff")
+    .disabled(!canFindDiff)
+    .popover(isPresented: $isSearchVisible, arrowEdge: .bottom) {
+      findPopover
+    }
   }
 
   private var summary: DiffSummary? {

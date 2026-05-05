@@ -76,8 +76,7 @@ struct ContentView: View {
       }
 
       ToolbarItemGroup {
-        RepositoryToolbarActionsMenu(store: store, showToolbarLabels: showToolbarLabels)
-          .disabled(store.selectedRepository == nil)
+        RepositoryToolbarActionsGroup(store: store, showToolbarLabels: showToolbarLabels)
       }
     }
     .sheet(item: $store.operationRequest) { request in
@@ -841,6 +840,7 @@ private struct DiscardChangeSheet: View {
   var request: DiscardChangeRequest
   var onCancel: () -> Void
   var onDiscard: () -> Void
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
@@ -855,11 +855,14 @@ private struct DiscardChangeSheet: View {
       Text(request.entry.isUntracked ? "This will remove the untracked file." : "This will restore the file from Git and discard local edits.")
         .foregroundStyle(.secondary)
 
+      DestructiveConfirmationToggle(title: "Confirm discard", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Discard", role: .destructive, action: onDiscard)
           .buttonStyle(.borderedProminent)
+          .disabled(!confirmed)
       }
     }
     .padding(20)
@@ -871,6 +874,7 @@ private struct DiscardUnstagedChangesSheet: View {
   var request: DiscardUnstagedChangesRequest
   var onCancel: () -> Void
   var onDiscard: () -> Void
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
@@ -885,11 +889,14 @@ private struct DiscardUnstagedChangesSheet: View {
       Text(detail)
         .foregroundStyle(.secondary)
 
+      DestructiveConfirmationToggle(title: "Confirm discard", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Discard", role: .destructive, action: onDiscard)
           .buttonStyle(.borderedProminent)
+          .disabled(!confirmed)
       }
     }
     .padding(20)
@@ -914,6 +921,7 @@ private struct CleanIgnoredFilesSheet: View {
   var request: CleanIgnoredFilesRequest
   var onCancel: () -> Void
   var onClean: () -> Void
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
@@ -928,11 +936,14 @@ private struct CleanIgnoredFilesSheet: View {
       Text("This will remove ignored files and directories. Untracked files are not included.")
         .foregroundStyle(.secondary)
 
+      DestructiveConfirmationToggle(title: "Confirm clean", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Clean", role: .destructive, action: onClean)
           .buttonStyle(.borderedProminent)
+          .disabled(!confirmed)
       }
     }
     .padding(20)
@@ -1385,6 +1396,7 @@ private struct RemoveRemoteSheet: View {
   var request: RemoveRemoteRequest
   var onCancel: () -> Void
   var onRemove: () -> Void
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
@@ -1401,11 +1413,14 @@ private struct RemoveRemoteSheet: View {
         .lineLimit(3)
         .textSelection(.enabled)
 
+      DestructiveConfirmationToggle(title: "Confirm remove", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Remove", role: .destructive, action: onRemove)
           .buttonStyle(.borderedProminent)
+          .disabled(!confirmed)
       }
     }
     .padding(20)
@@ -1417,6 +1432,7 @@ private struct DeleteRemoteTagSheet: View {
   var request: RemoteTagDeleteRequest
   var onCancel: () -> Void
   var onDelete: () -> Void
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
@@ -1431,11 +1447,14 @@ private struct DeleteRemoteTagSheet: View {
       Text(request.detail)
         .foregroundStyle(.secondary)
 
+      DestructiveConfirmationToggle(title: "Confirm delete", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Delete", role: .destructive, action: onDelete)
           .buttonStyle(.borderedProminent)
+          .disabled(!confirmed)
       }
     }
     .padding(20)
@@ -1448,6 +1467,7 @@ private struct RemoveWorktreeSheet: View {
   @Binding var forceRemove: Bool
   var onCancel: () -> Void
   var onRemove: () -> Void
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
@@ -1466,11 +1486,14 @@ private struct RemoveWorktreeSheet: View {
 
       Toggle("Force remove dirty worktree", isOn: $forceRemove)
 
+      DestructiveConfirmationToggle(title: "Confirm remove", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Remove", role: .destructive, action: onRemove)
           .buttonStyle(.borderedProminent)
+          .disabled(!confirmed)
       }
     }
     .padding(20)
@@ -1533,6 +1556,7 @@ private struct ResetSheet: View {
   var onCancel: () -> Void
   var onConfirm: (ResetMode) -> Void
   @State private var mode: ResetMode = .mixed
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
@@ -1552,6 +1576,12 @@ private struct ResetSheet: View {
       .labelsHidden()
       .accessibilityLabel("Reset mode")
 
+      Text(mode.detail)
+        .font(.caption)
+        .foregroundStyle(mode == .hard ? .orange : .secondary)
+
+      DestructiveConfirmationToggle(title: "Confirm reset", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
@@ -1559,6 +1589,7 @@ private struct ResetSheet: View {
           onConfirm(mode)
         }
         .buttonStyle(.borderedProminent)
+        .disabled(!confirmed)
       }
     }
     .padding(20)
@@ -1571,6 +1602,7 @@ private struct ReflogResetSheet: View {
   var onCancel: () -> Void
   var onConfirm: (ResetMode) -> Void
   @State private var mode: ResetMode = .mixed
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
@@ -1593,6 +1625,12 @@ private struct ReflogResetSheet: View {
       .labelsHidden()
       .accessibilityLabel("Reset mode")
 
+      Text(mode.detail)
+        .font(.caption)
+        .foregroundStyle(mode == .hard ? .orange : .secondary)
+
+      DestructiveConfirmationToggle(title: "Confirm reset", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
@@ -1600,6 +1638,7 @@ private struct ReflogResetSheet: View {
           onConfirm(mode)
         }
         .buttonStyle(.borderedProminent)
+        .disabled(!confirmed)
       }
     }
     .padding(20)
@@ -1612,6 +1651,7 @@ private struct DeleteRefSheet: View {
   @Binding var forceDelete: Bool
   var onCancel: () -> Void
   var onDelete: () -> Void
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
@@ -1630,11 +1670,14 @@ private struct DeleteRefSheet: View {
         Toggle("Force delete unmerged branch", isOn: $forceDelete)
       }
 
+      DestructiveConfirmationToggle(title: "Confirm delete", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Delete", role: .destructive, action: onDelete)
           .buttonStyle(.borderedProminent)
+          .disabled(!confirmed)
       }
     }
     .padding(20)
@@ -1648,6 +1691,7 @@ private struct StaleLocalBranchesSheet: View {
   @Binding var forceDelete: Bool
   var onCancel: () -> Void
   var onDelete: () -> Void
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
@@ -1681,12 +1725,14 @@ private struct StaleLocalBranchesSheet: View {
       Text(request.detail)
         .foregroundStyle(.secondary)
 
+      DestructiveConfirmationToggle(title: "Confirm delete", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Delete Selected", role: .destructive, action: onDelete)
           .buttonStyle(.borderedProminent)
-          .disabled(selectedBranchIDs.isEmpty)
+          .disabled(selectedBranchIDs.isEmpty || !confirmed)
       }
     }
     .padding(20)
@@ -1713,6 +1759,7 @@ private struct ForcePushSheet: View {
   var request: ForcePushRequest
   var onCancel: () -> Void
   var onConfirm: () -> Void
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
@@ -1727,15 +1774,29 @@ private struct ForcePushSheet: View {
       Text(request.detail)
         .foregroundStyle(.secondary)
 
+      DestructiveConfirmationToggle(title: "Confirm force push", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Force push", role: .destructive, action: onConfirm)
           .buttonStyle(.borderedProminent)
+          .disabled(!confirmed)
       }
     }
     .padding(20)
     .frame(width: 480)
+  }
+}
+
+private struct DestructiveConfirmationToggle: View {
+  var title: String
+  @Binding var isOn: Bool
+
+  var body: some View {
+    Toggle(title, isOn: $isOn)
+      .toggleStyle(.checkbox)
+      .font(.caption)
   }
 }
 

@@ -274,9 +274,7 @@ struct SidebarView: View {
               .help("Remote branches and tags")
           }
         }
-      }
 
-      Section("Worktrees") {
         DisclosureGroup(isExpanded: $worktreesExpanded) {
           worktreeRows
         } label: {
@@ -292,9 +290,7 @@ struct SidebarView: View {
           }
           .disabled(store.selectedRepository == nil)
         }
-      }
 
-      Section("Remotes") {
         DisclosureGroup(isExpanded: $remotesExpanded) {
           remoteRows
         } label: {
@@ -825,6 +821,16 @@ private struct BranchRow: View {
       Text(branch.shortName)
         .lineLimit(1)
       Spacer(minLength: 8)
+      if let indicatorTitle {
+        Text(indicatorTitle)
+          .font(.caption2)
+          .foregroundStyle(indicatorTitleStyle)
+          .lineLimit(1)
+          .padding(.horizontal, 5)
+          .padding(.vertical, 2)
+          .background(.quaternary, in: Capsule())
+          .help(indicator.helpText ?? indicatorTitle)
+      }
       if let tracking = branch.trackingSummary {
         Text(tracking)
           .font(.caption2)
@@ -834,9 +840,32 @@ private struct BranchRow: View {
           .background(.quaternary, in: Capsule())
       }
     }
+    .help(indicator.helpText ?? branch.shortName)
   }
 
   private var iconStyle: Color {
+    switch indicator.kind {
+    case .current:
+      return .green
+    case .linkedWorktree:
+      return .accentColor
+    case .available:
+      return .secondary
+    }
+  }
+
+  private var indicatorTitle: String? {
+    switch indicator.kind {
+    case .current:
+      return "current"
+    case .linkedWorktree:
+      return "worktree"
+    case .available:
+      return nil
+    }
+  }
+
+  private var indicatorTitleStyle: Color {
     switch indicator.kind {
     case .current:
       return .green

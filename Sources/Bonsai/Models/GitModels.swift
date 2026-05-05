@@ -1346,6 +1346,16 @@ enum ResetMode: String, CaseIterable, Identifiable {
   var id: String { rawValue }
   var title: String { rawValue.capitalized }
   var flag: String { "--\(rawValue)" }
+  var detail: String {
+    switch self {
+    case .soft:
+      return "Moves HEAD and keeps index and working tree changes."
+    case .mixed:
+      return "Moves HEAD, resets the index, and keeps working tree changes."
+    case .hard:
+      return "Moves HEAD and discards index and working tree changes."
+    }
+  }
 }
 
 enum GitRevisionCommand: String, CaseIterable, Identifiable {

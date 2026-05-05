@@ -6,79 +6,113 @@ struct WorkingTreeView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      List {
-        if !store.conflictedChanges.isEmpty {
-          Section("Conflicts") {
-            ForEach(store.conflictedChanges) { entry in
-              StatusRow(entry: entry, store: store)
-            }
-          }
+      if showsCleanState {
+        CleanWorkingTreeView(showIgnoredFiles: store.showIgnoredFiles) {
+          store.toggleIgnoredFiles()
         }
-
-        Section {
-          if store.stagedChanges.isEmpty {
-            PlaceholderRow(title: "Nothing staged")
-          } else {
-            ForEach(store.stagedChanges) { entry in
-              StatusRow(entry: entry, store: store)
+      } else {
+        List {
+          if !store.conflictedChanges.isEmpty {
+            Section("Conflicts") {
+              ForEach(store.conflictedChanges) { entry in
+                StatusRow(entry: entry, store: store)
+              }
             }
           }
-        } header: {
-          WorkingTreeSectionHeader(
-            title: "Staged",
-            actionSystemImage: "minus.circle",
-            actionTitle: "Unstage all",
-            isActionAvailable: store.canUnstageAll
-          ) {
-            Task { await store.unstageAll() }
-          }
-        }
 
-        Section {
-          if store.unstagedChanges.isEmpty {
-            PlaceholderRow(title: "Nothing unstaged")
-          } else {
-            ForEach(store.unstagedChanges) { entry in
-              StatusRow(entry: entry, store: store)
-            }
-          }
-        } header: {
-          WorkingTreeSectionHeader(
-            title: "Unstaged",
-            actionSystemImage: "plus.circle",
-            actionTitle: "Stage all",
-            isActionAvailable: store.canStageAll,
-            action: {
-              Task { await store.stageAll() }
-            },
-            secondaryActionSystemImage: store.showIgnoredFiles ? "eye.slash" : "eye",
-            secondaryActionTitle: store.showIgnoredFiles ? "Hide ignored files" : "Show ignored files",
-            secondaryAction: {
-              store.toggleIgnoredFiles()
-            }
-          )
-        }
-
-        if store.showIgnoredFiles {
           Section {
-            if store.ignoredChanges.isEmpty {
-              PlaceholderRow(title: "No ignored files")
+            if store.stagedChanges.isEmpty {
+              PlaceholderRow(title: "Nothing staged")
             } else {
-              ForEach(store.ignoredChanges) { entry in
-                IgnoredStatusRow(entry: entry, store: store)
+              ForEach(store.stagedChanges) { entry in
+                StatusRow(entry: entry, store: store)
               }
             }
           } header: {
-            Text("Ignored")
+            WorkingTreeSectionHeader(
+              title: "Staged",
+              actionSystemImage: "minus.circle",
+              actionTitle: "Unstage all",
+              isActionAvailable: store.canUnstageAll
+            ) {
+              Task { await store.unstageAll() }
+            }
+          }
+
+          Section {
+            if store.unstagedChanges.isEmpty {
+              PlaceholderRow(title: "Nothing unstaged")
+            } else {
+              ForEach(store.unstagedChanges) { entry in
+                StatusRow(entry: entry, store: store)
+              }
+            }
+          } header: {
+            WorkingTreeSectionHeader(
+              title: "Unstaged",
+              actionSystemImage: "plus.circle",
+              actionTitle: "Stage all",
+              isActionAvailable: store.canStageAll,
+              action: {
+                Task { await store.stageAll() }
+              },
+              secondaryActionSystemImage: store.showIgnoredFiles ? "eye.slash" : "eye",
+              secondaryActionTitle: store.showIgnoredFiles ? "Hide ignored files" : "Show ignored files",
+              secondaryVisibleTitle: store.showIgnoredFiles ? "Hide ignored" : "Show ignored",
+              secondaryAction: {
+                store.toggleIgnoredFiles()
+              }
+            )
+          }
+
+          if store.showIgnoredFiles {
+            Section {
+              if store.ignoredChanges.isEmpty {
+                PlaceholderRow(title: "No ignored files")
+              } else {
+                ForEach(store.ignoredChanges) { entry in
+                  IgnoredStatusRow(entry: entry, store: store)
+                }
+              }
+            } header: {
+              Text("Ignored")
+            }
           }
         }
+        .listStyle(.inset)
       }
-      .listStyle(.inset)
 
       Divider()
 
       CommitComposerView(store: store)
     }
+  }
+
+  private var showsCleanState: Bool {
+    store.conflictedChanges.isEmpty
+      && store.stagedChanges.isEmpty
+      && store.unstagedChanges.isEmpty
+      && !store.showIgnoredFiles
+  }
+}
+
+private struct CleanWorkingTreeView: View {
+  var showIgnoredFiles: Bool
+  var onToggleIgnoredFiles: () -> Void
+
+  var body: some View {
+    VStack(spacing: 12) {
+      ContentUnavailableView("Working tree clean", systemImage: "checkmark.circle")
+
+      Button {
+        onToggleIgnoredFiles()
+      } label: {
+        Label(showIgnoredFiles ? "Hide ignored files" : "Show ignored files", systemImage: showIgnoredFiles ? "eye.slash" : "eye")
+      }
+      .buttonStyle(.borderless)
+      .help(showIgnoredFiles ? "Hide ignored files" : "Show ignored files")
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 }
 
@@ -90,6 +124,7 @@ private struct WorkingTreeSectionHeader: View {
   var action: () -> Void
   var secondaryActionSystemImage: String?
   var secondaryActionTitle: String?
+  var secondaryVisibleTitle: String?
   var secondaryAction: (() -> Void)?
 
   init(
@@ -100,6 +135,7 @@ private struct WorkingTreeSectionHeader: View {
     action: @escaping () -> Void,
     secondaryActionSystemImage: String? = nil,
     secondaryActionTitle: String? = nil,
+    secondaryVisibleTitle: String? = nil,
     secondaryAction: (() -> Void)? = nil
   ) {
     self.title = title
@@ -109,6 +145,7 @@ private struct WorkingTreeSectionHeader: View {
     self.action = action
     self.secondaryActionSystemImage = secondaryActionSystemImage
     self.secondaryActionTitle = secondaryActionTitle
+    self.secondaryVisibleTitle = secondaryVisibleTitle
     self.secondaryAction = secondaryAction
   }
 
@@ -119,24 +156,30 @@ private struct WorkingTreeSectionHeader: View {
 
       Spacer(minLength: 8)
 
-      if isActionAvailable {
-        Button(action: action) {
-          Image(systemName: actionSystemImage)
-            .imageScale(.medium)
-        }
-        .buttonStyle(.borderless)
-        .help(actionTitle)
-        .accessibilityLabel(actionTitle)
+      Button(action: action) {
+        Image(systemName: actionSystemImage)
+          .imageScale(.medium)
       }
+      .buttonStyle(.borderless)
+      .disabled(!isActionAvailable)
+      .help(actionTitle)
+      .accessibilityLabel(actionTitle)
 
       if let secondaryActionSystemImage,
          let secondaryActionTitle,
          let secondaryAction {
         Button(action: secondaryAction) {
-          Image(systemName: secondaryActionSystemImage)
-            .imageScale(.medium)
+          if let secondaryVisibleTitle {
+            Label(secondaryVisibleTitle, systemImage: secondaryActionSystemImage)
+              .labelStyle(.titleAndIcon)
+              .lineLimit(1)
+          } else {
+            Image(systemName: secondaryActionSystemImage)
+              .imageScale(.medium)
+          }
         }
         .buttonStyle(.borderless)
+        .font(.caption)
         .help(secondaryActionTitle)
         .accessibilityLabel(secondaryActionTitle)
       }
@@ -184,75 +227,7 @@ private struct StatusRow: View {
       .accessibilityLabel("\(entry.primaryRowAction.title) \(entry.path)")
 
       Menu {
-        if entry.isConflicted {
-          Button("Resolve Conflict") {
-            resolveConflict()
-          }
-        }
-        Button(entry.isStaged ? "Unstage" : "Stage") {
-          stageOrUnstage()
-        }
-        Divider()
-        Button("Blame") {
-          showBlame()
-        }
-        Button("File History") {
-          showFileHistory()
-        }
-        if store.snapshot.integrations.lfsAvailable {
-          Divider()
-          Button("Git LFS Lock") {
-            store.selectStatusEntry(entry)
-            Task { await store.lfsLockSelectedFile() }
-          }
-          Button("Git LFS Unlock") {
-            store.selectStatusEntry(entry)
-            Task { await store.lfsUnlockSelectedFile() }
-          }
-          Button("Git LFS Force Unlock") {
-            store.selectStatusEntry(entry)
-            Task { await store.lfsUnlockSelectedFile(force: true) }
-          }
-        }
-        Divider()
-        Button("Copy Path") {
-          copyPath()
-        }
-        Button("Copy Absolute Path") {
-          copyAbsolutePath()
-        }
-        Button("Open") {
-          openFile()
-        }
-        Menu("Open In") {
-          ForEach(ExternalEditor.allCases) { editor in
-            Button(editor.title) {
-              store.openFile(path: entry.path, in: editor)
-            }
-          }
-        }
-        Button("Reveal in Finder") {
-          revealInFinder()
-        }
-        if entry.isUntracked {
-          Divider()
-          Button("Ignore") {
-            ignoreFile()
-          }
-          if canIgnoreExtension {
-            Button("Ignore Extension") {
-              ignoreExtension()
-            }
-          }
-          if canIgnoreDirectory {
-            Button("Ignore Folder") {
-              ignoreDirectory()
-            }
-          }
-        }
-        Button("Discard Change", role: .destructive) {
-          store.presentDiscardChange(entry)
-        }
+        fileActionMenuContent(includeOpenIn: true)
       } label: {
         Image(systemName: "ellipsis.circle")
       }
@@ -265,6 +240,13 @@ private struct StatusRow: View {
       store.selectStatusEntry(entry)
     }
     .contextMenu {
+      fileActionMenuContent(includeOpenIn: false)
+    }
+  }
+
+  @ViewBuilder
+  private func fileActionMenuContent(includeOpenIn: Bool) -> some View {
+    Group {
       if entry.isConflicted {
         Button("Resolve Conflict") {
           resolveConflict()
@@ -273,28 +255,38 @@ private struct StatusRow: View {
       Button(entry.isStaged ? "Unstage" : "Stage") {
         stageOrUnstage()
       }
-      Divider()
+    }
+
+    Divider()
+
+    Group {
       Button("Blame") {
         showBlame()
       }
       Button("File History") {
         showFileHistory()
       }
-      if store.snapshot.integrations.lfsAvailable {
-        Button("Git LFS Lock") {
-          store.selectStatusEntry(entry)
-          Task { await store.lfsLockSelectedFile() }
-        }
-        Button("Git LFS Unlock") {
-          store.selectStatusEntry(entry)
-          Task { await store.lfsUnlockSelectedFile() }
-        }
-        Button("Git LFS Force Unlock") {
-          store.selectStatusEntry(entry)
-          Task { await store.lfsUnlockSelectedFile(force: true) }
-        }
-      }
+    }
+
+    if store.snapshot.integrations.lfsAvailable {
       Divider()
+      Button("Git LFS Lock") {
+        store.selectStatusEntry(entry)
+        Task { await store.lfsLockSelectedFile() }
+      }
+      Button("Git LFS Unlock") {
+        store.selectStatusEntry(entry)
+        Task { await store.lfsUnlockSelectedFile() }
+      }
+      Button("Git LFS Force Unlock") {
+        store.selectStatusEntry(entry)
+        Task { await store.lfsUnlockSelectedFile(force: true) }
+      }
+    }
+
+    Divider()
+
+    Group {
       Button("Copy Path") {
         copyPath()
       }
@@ -304,10 +296,23 @@ private struct StatusRow: View {
       Button("Open") {
         openFile()
       }
+      if includeOpenIn {
+        Menu("Open In") {
+          ForEach(ExternalEditor.allCases) { editor in
+            Button(editor.title) {
+              store.openFile(path: entry.path, in: editor)
+            }
+          }
+        }
+      }
       Button("Reveal in Finder") {
         revealInFinder()
       }
-      if entry.isUntracked {
+    }
+
+    if entry.isUntracked {
+      Divider()
+      Group {
         Button("Ignore") {
           ignoreFile()
         }
@@ -322,10 +327,12 @@ private struct StatusRow: View {
           }
         }
       }
-      Divider()
-      Button("Discard Change", role: .destructive) {
-        store.presentDiscardChange(entry)
-      }
+    }
+
+    Divider()
+
+    Button("Discard Change", role: .destructive) {
+      store.presentDiscardChange(entry)
     }
   }
 
@@ -524,7 +531,13 @@ private struct CommitComposerView: View {
         .help(store.generateCommitMessageWithCodeAgentHelp)
         .accessibilityLabel("Generate commit message")
 
-        if !store.commitOptionsSummary.isEmpty {
+        if let composerStatusText {
+          Text(composerStatusText)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .help(composerStatusHelp)
+        } else if !store.commitOptionsSummary.isEmpty {
           Text(store.commitOptionsSummary)
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -553,5 +566,22 @@ private struct CommitComposerView: View {
       return "Commit options"
     }
     return "Commit options: \(store.commitOptionsSummary)"
+  }
+
+  private var composerStatusText: String? {
+    if store.isGeneratingCommitMessage {
+      return "Generating commit message"
+    }
+    if store.stagedChanges.isEmpty {
+      return "Stage changes before committing"
+    }
+    return store.commitReadinessIssue
+  }
+
+  private var composerStatusHelp: String {
+    if store.stagedChanges.isEmpty {
+      return "Stage changes before committing or generating a commit message"
+    }
+    return store.commitReadinessIssue ?? "Commit composer status"
   }
 }

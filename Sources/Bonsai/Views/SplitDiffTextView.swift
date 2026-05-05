@@ -17,8 +17,8 @@ struct SplitDiffTextView: NSViewRepresentable {
     splitView.isVertical = true
     splitView.dividerStyle = .thin
 
-    let oldPane = Self.makePane(descriptor: paneContext.old)
-    let newPane = Self.makePane(descriptor: paneContext.new)
+    let oldPane = Self.makePane(descriptor: paneContext.old, sideTitle: "Old")
+    let newPane = Self.makePane(descriptor: paneContext.new, sideTitle: "New")
     splitView.addArrangedSubview(oldPane.container)
     splitView.addArrangedSubview(newPane.container)
 
@@ -307,7 +307,8 @@ struct SplitDiffTextView: NSViewRepresentable {
   }
 
   private static func makePane(
-    descriptor: SplitDiffPaneDescriptor
+    descriptor: SplitDiffPaneDescriptor,
+    sideTitle: String
   ) -> (
     container: NSStackView,
     scrollView: NSScrollView,
@@ -321,7 +322,7 @@ struct SplitDiffTextView: NSViewRepresentable {
     container.distribution = .fill
     container.spacing = 0
 
-    let header = makeHeader(descriptor: descriptor)
+    let header = makeHeader(descriptor: descriptor, sideTitle: sideTitle)
     header.view.heightAnchor.constraint(equalToConstant: 30).isActive = true
 
     let scrollView = NSScrollView()
@@ -358,7 +359,8 @@ struct SplitDiffTextView: NSViewRepresentable {
   }
 
   private static func makeHeader(
-    descriptor: SplitDiffPaneDescriptor
+    descriptor: SplitDiffPaneDescriptor,
+    sideTitle: String
   ) -> (view: NSView, titleLabel: NSTextField, detailLabel: NSTextField) {
     let material = NSVisualEffectView()
     material.material = .headerView
@@ -370,6 +372,12 @@ struct SplitDiffTextView: NSViewRepresentable {
     stack.alignment = .centerY
     stack.spacing = 6
     stack.translatesAutoresizingMaskIntoConstraints = false
+
+    let sideLabel = NSTextField(labelWithString: sideTitle)
+    sideLabel.font = .systemFont(ofSize: NSFont.smallSystemFontSize, weight: .semibold)
+    sideLabel.textColor = .labelColor
+    sideLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+    stack.addArrangedSubview(sideLabel)
 
     if let image = NSImage(systemSymbolName: descriptor.systemImage, accessibilityDescription: descriptor.title) {
       let imageView = NSImageView(image: image)
