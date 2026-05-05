@@ -63,16 +63,15 @@ private struct DetailHeaderView: View {
   var onNavigateSearch: (DiffSearch.NavigationDirection) -> Void
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: .leading, spacing: InterfaceSpacing.large) {
       horizontalHeader
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(.horizontal, 14)
-    .padding(.vertical, 12)
+    .bonsaiHeaderPadding()
   }
 
   private var horizontalHeader: some View {
-    HStack(alignment: .top, spacing: 12) {
+    HStack(alignment: .top, spacing: InterfaceSpacing.panelHorizontal) {
       titleColumn
 
       Spacer(minLength: 16)
@@ -82,7 +81,7 @@ private struct DetailHeaderView: View {
   }
 
   private var titleColumn: some View {
-    VStack(alignment: .leading, spacing: 5) {
+    VStack(alignment: .leading, spacing: InterfaceSpacing.xSmall) {
       titleView
     }
     .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
@@ -101,7 +100,7 @@ private struct DetailHeaderView: View {
   @ViewBuilder
   private var titleView: some View {
     if let file = store.selectedChangedFile, store.mainMode == .history {
-      HStack(alignment: .firstTextBaseline, spacing: 8) {
+      HStack(alignment: .firstTextBaseline, spacing: InterfaceSpacing.medium) {
         ChangeStatusBadge(changedFile: file)
         Text(file.path)
           .font(.headline)
@@ -111,14 +110,14 @@ private struct DetailHeaderView: View {
           .help(file.oldPath.map { "\($0) -> \(file.path)" } ?? file.path)
       }
       selectedChangedFileContext(file)
-        .font(.caption)
+        .font(.bonsaiMetadata)
         .foregroundStyle(.secondary)
     } else if let stash = store.selectedStash, store.mainMode == .history {
       Text(stash.index)
         .font(.headline)
         .lineLimit(1)
       Text(stash.message)
-        .font(.caption)
+        .font(.bonsaiMetadata)
         .foregroundStyle(.secondary)
         .lineLimit(2)
     } else if let entry = store.selectedTreeEntry, let commit = store.selectedCommit, store.mainMode == .history {
@@ -128,13 +127,13 @@ private struct DetailHeaderView: View {
         .truncationMode(.middle)
         .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         .help(entry.path)
-      HStack(spacing: 8) {
+      HStack(spacing: InterfaceSpacing.medium) {
         Text(commit.shortHash)
           .monospaced()
         Text(entry.kindTitle)
         Text(entry.mode)
       }
-      .font(.caption)
+      .font(.bonsaiMetadata)
       .foregroundStyle(.secondary)
     } else if let commit = store.selectedCommit, store.mainMode == .history {
       Text(commit.subject)
@@ -143,7 +142,7 @@ private struct DetailHeaderView: View {
         .truncationMode(.tail)
         .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         .help(commit.subject)
-      HStack(spacing: 8) {
+      HStack(spacing: InterfaceSpacing.medium) {
         Text(commit.shortHash)
           .monospaced()
         Text(commit.authorName)
@@ -151,7 +150,7 @@ private struct DetailHeaderView: View {
           Text(StaticDateText.timestamp(date))
         }
       }
-      .font(.caption)
+      .font(.bonsaiMetadata)
       .foregroundStyle(.secondary)
     } else if let entry = store.selectedStatusEntry {
       Text(entry.path)
@@ -160,16 +159,16 @@ private struct DetailHeaderView: View {
         .truncationMode(.middle)
         .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         .help(entry.path)
-      HStack(spacing: 8) {
+      HStack(spacing: InterfaceSpacing.medium) {
         ChangeStatusBadge(statusEntry: entry)
         if entry.isStaged && !entry.isConflicted {
           Text("Staged")
-            .font(.caption)
+            .font(.bonsaiMetadata)
             .foregroundStyle(.secondary)
         }
         if entry.isConflicted {
           Text("Compared with \(store.conflictDiffBase.title.lowercased())")
-            .font(.caption)
+            .font(.bonsaiMetadata)
             .foregroundStyle(.secondary)
         }
       }
@@ -182,7 +181,7 @@ private struct DetailHeaderView: View {
   @ViewBuilder
   private func selectedChangedFileContext(_ file: GitChangedFile) -> some View {
     if let stash = store.selectedStash {
-      HStack(spacing: 8) {
+      HStack(spacing: InterfaceSpacing.medium) {
         Text(stash.index)
           .monospaced()
         Text(stash.message)
@@ -190,7 +189,7 @@ private struct DetailHeaderView: View {
       }
       .help(file.oldPath.map { "Renamed from \($0)" } ?? stash.message)
     } else if let commit = store.selectedCommit {
-      HStack(spacing: 8) {
+      HStack(spacing: InterfaceSpacing.medium) {
         Text(commit.shortHash)
           .monospaced()
         Text(commit.subject)
@@ -212,66 +211,8 @@ private struct DiffHeaderControls: View {
   var onNavigateSearch: (DiffSearch.NavigationDirection) -> Void
 
   var body: some View {
-    controls(searchFieldWidth: 150)
-  }
-
-  private func controls(searchFieldWidth: CGFloat) -> some View {
-    HStack(spacing: 8) {
-      Button {
-        if isSearchVisible {
-          searchText = ""
-        }
-        isSearchVisible.toggle()
-      } label: {
-        Label("Find", systemImage: "magnifyingglass")
-          .labelStyle(.iconOnly)
-      }
-      .controlSize(.small)
-      .help(isSearchVisible ? "Hide find" : "Find in diff")
-      .accessibilityLabel(isSearchVisible ? "Hide find" : "Find in diff")
-      .disabled(!canFindDiff)
-
-      if isSearchVisible {
-        TextField("Find", text: $searchText)
-          .textFieldStyle(.roundedBorder)
-          .controlSize(.small)
-          .frame(width: searchFieldWidth)
-          .accessibilityLabel("Find in diff")
-          .onSubmit {
-            onNavigateSearch(.next)
-          }
-
-        if let matchLabel {
-          Text(matchLabel)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .monospacedDigit()
-            .lineLimit(1)
-            .frame(minWidth: 72, alignment: .leading)
-        }
-
-        ControlGroup {
-          Button {
-            onNavigateSearch(.previous)
-          } label: {
-            Label("Previous match", systemImage: "chevron.up")
-              .labelStyle(.iconOnly)
-          }
-          .help("Previous match")
-          .accessibilityLabel("Previous match")
-
-          Button {
-            onNavigateSearch(.next)
-          } label: {
-            Label("Next match", systemImage: "chevron.down")
-              .labelStyle(.iconOnly)
-          }
-          .help("Next match")
-          .accessibilityLabel("Next match")
-        }
-        .controlSize(.small)
-        .disabled(!hasSearchMatches)
-      }
+    HStack(alignment: .center, spacing: InterfaceSpacing.medium) {
+      findButton
 
       AppKitSegmentedControl(
         options: DiffDisplayMode.allCases,
@@ -280,10 +221,10 @@ private struct DiffHeaderControls: View {
           set: { store.diffDisplayMode = $0 }
         ),
         label: "Diff view",
-        controlSize: .small,
+        controlSize: .regular,
         title: \.title
       )
-      .frame(width: 150)
+      .frame(width: 156, height: InterfaceSize.headerControlHeight)
 
       Menu {
         if let summary {
@@ -341,7 +282,7 @@ private struct DiffHeaderControls: View {
         Label("Diff options", systemImage: "slider.horizontal.3")
           .labelStyle(.iconOnly)
       }
-      .controlSize(.small)
+      .bonsaiHeaderMenuButton()
       .help("Diff options")
       .accessibilityLabel("Diff options")
 
@@ -351,13 +292,110 @@ private struct DiffHeaderControls: View {
         Label("Copy patch", systemImage: "doc.on.doc")
           .labelStyle(.iconOnly)
       }
-      .controlSize(.small)
+      .bonsaiHeaderIconButton()
       .help("Copy patch")
       .accessibilityLabel("Copy patch")
       .disabled(!store.canCopyCurrentPatch)
     }
     .lineLimit(1)
-    .fixedSize(horizontal: true, vertical: false)
+  }
+
+  private var findPopover: some View {
+    VStack(alignment: .leading, spacing: InterfaceSpacing.large) {
+      HStack(spacing: InterfaceSpacing.medium) {
+        findTextField
+
+        Button {
+          searchText = ""
+        } label: {
+          Label("Clear find", systemImage: "xmark.circle.fill")
+            .labelStyle(.iconOnly)
+        }
+        .bonsaiCompactIconButton()
+        .foregroundStyle(.secondary)
+        .help("Clear find")
+        .accessibilityLabel("Clear find")
+        .disabled(searchText.isEmpty)
+      }
+
+      HStack(spacing: InterfaceSpacing.medium) {
+        if let matchLabel {
+          Text(matchLabel)
+            .font(.bonsaiMetadata)
+            .foregroundStyle(.secondary)
+            .monospacedDigit()
+            .lineLimit(1)
+        } else {
+          Text("Find in diff")
+            .font(.bonsaiMetadata)
+            .foregroundStyle(.secondary)
+        }
+
+        Spacer(minLength: 16)
+
+        ControlGroup {
+          Button {
+            onNavigateSearch(.previous)
+          } label: {
+            Label("Previous match", systemImage: "chevron.up")
+              .labelStyle(.iconOnly)
+          }
+          .help("Previous match")
+          .accessibilityLabel("Previous match")
+
+          Button {
+            onNavigateSearch(.next)
+          } label: {
+            Label("Next match", systemImage: "chevron.down")
+              .labelStyle(.iconOnly)
+          }
+          .help("Next match")
+          .accessibilityLabel("Next match")
+        }
+        .controlSize(.small)
+        .disabled(!hasSearchMatches)
+      }
+    }
+    .padding(InterfaceSpacing.panelHorizontal)
+    .frame(width: 300)
+  }
+
+  private var findTextField: some View {
+    HStack(spacing: InterfaceSpacing.small) {
+      Image(systemName: "magnifyingglass")
+        .foregroundStyle(.secondary)
+        .bonsaiSidebarIconFrame()
+
+      TextField("Find in diff", text: $searchText)
+        .textFieldStyle(.plain)
+        .accessibilityLabel("Find in diff")
+        .onSubmit {
+          onNavigateSearch(.next)
+        }
+    }
+    .padding(.horizontal, InterfaceSpacing.medium)
+    .padding(.vertical, InterfaceSpacing.small)
+    .background(.quaternary.opacity(0.7), in: RoundedRectangle(cornerRadius: 7))
+    .overlay {
+      RoundedRectangle(cornerRadius: 7)
+        .stroke(.quaternary)
+    }
+  }
+
+  private var findButton: some View {
+    Button {
+      isSearchVisible = true
+    } label: {
+      Label("Find", systemImage: "magnifyingglass")
+        .labelStyle(.iconOnly)
+    }
+    .bonsaiHeaderIconButton()
+    .help("Find in diff")
+    .accessibilityLabel("Find in diff")
+    .disabled(!canFindDiff)
+    .popover(isPresented: $isSearchVisible, arrowEdge: .bottom) {
+      findPopover
+    }
   }
 
   private var summary: DiffSummary? {
@@ -522,16 +560,16 @@ private struct TreeBlobPreview: View {
     VStack(alignment: .leading, spacing: 0) {
       HStack {
         Image(systemName: "doc.text")
+          .bonsaiSidebarIconFrame()
         Text(path)
           .lineLimit(1)
           .truncationMode(.middle)
           .help(path)
         Spacer()
       }
-      .font(.caption)
+      .font(.bonsaiMetadata)
       .foregroundStyle(.secondary)
-      .padding(.horizontal, 12)
-      .padding(.vertical, 8)
+      .bonsaiPanelHeaderPadding()
 
       RichDiffTextView(text: text)
     }
@@ -546,8 +584,7 @@ private struct BinaryPreviewView: View {
     VStack(spacing: 0) {
       if let snapshot = store.imageDiffSnapshot {
         BinaryPreviewHeader(store: store)
-          .padding(.horizontal, 14)
-          .padding(.vertical, 10)
+          .bonsaiHeaderPadding()
         Divider()
         HStack(spacing: 0) {
           ImageDiffPane(side: .before, data: snapshot.oldData)
@@ -561,15 +598,14 @@ private struct BinaryPreviewView: View {
             .foregroundStyle(.secondary)
 
           Text(previewCopy.title)
-            .font(.title3)
-            .fontWeight(.semibold)
+            .font(.bonsaiSheetTitle)
 
           BinaryPreviewHeader(store: store)
             .frame(maxWidth: 520)
 
           if !store.diffText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             Text(store.diffText)
-              .font(.caption.monospaced())
+              .font(.bonsaiMonospacedMetadata)
               .foregroundStyle(.secondary)
               .textSelection(.enabled)
               .padding()
@@ -591,18 +627,18 @@ private struct BinaryPreviewHeader: View {
   let store: RepositoryStore
 
   var body: some View {
-    VStack(spacing: 5) {
-      HStack(spacing: 8) {
+    VStack(spacing: InterfaceSpacing.xSmall) {
+      HStack(spacing: InterfaceSpacing.medium) {
         statusBadge
         Text(previewCopy.statusLine)
-          .font(.caption)
+          .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
           .lineLimit(1)
       }
       .frame(maxWidth: .infinity, alignment: .center)
 
       Text(previewPath)
-        .font(.caption)
+        .font(.bonsaiMetadata)
         .foregroundStyle(.secondary)
         .lineLimit(2)
         .truncationMode(.middle)
@@ -634,7 +670,7 @@ private struct ImageDiffPane: View {
   var data: Data?
 
   var body: some View {
-    VStack(spacing: 10) {
+    VStack(spacing: InterfaceSpacing.large) {
       Text(side.title)
         .font(.headline)
       if let data, let image = NSImage(data: data) {
@@ -644,7 +680,7 @@ private struct ImageDiffPane: View {
           .frame(maxWidth: .infinity, maxHeight: .infinity)
           .padding()
         Text(ImageDiffMetadata.metadata(for: image, data: data))
-          .font(.caption.monospacedDigit())
+          .font(.bonsaiMetadata.monospacedDigit())
           .foregroundStyle(.secondary)
       } else {
         ContentUnavailableView(
@@ -670,7 +706,7 @@ private struct HunkActionStrip: View {
 
   var body: some View {
     ScrollView(.horizontal) {
-      HStack(spacing: 8) {
+      HStack(spacing: InterfaceSpacing.medium) {
         hunkActions
 
         if !lineChanges.isEmpty {
@@ -745,8 +781,8 @@ private struct HunkActionStrip: View {
           .help("Discard part of this change")
         }
       }
-      .padding(.horizontal, 10)
-      .padding(.vertical, 7)
+      .padding(.horizontal, InterfaceSpacing.large)
+      .padding(.vertical, InterfaceSpacing.medium)
     }
   }
 
@@ -806,12 +842,12 @@ private struct CommandResultView: View {
   }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      HStack(spacing: 8) {
+    VStack(alignment: .leading, spacing: InterfaceSpacing.medium) {
+      HStack(spacing: InterfaceSpacing.medium) {
         statusIcon
         DisclosureGroup(isExpanded: $isExpanded) {
           Text(result.output)
-            .font(.caption.monospaced())
+            .font(.bonsaiMonospacedMetadata)
             .foregroundStyle(.secondary)
             .lineLimit(8)
             .textSelection(.enabled)
@@ -825,7 +861,7 @@ private struct CommandResultView: View {
               .help(result.title)
               .accessibilityLabel(result.title)
             Text(result.summary)
-              .font(.caption)
+              .font(.bonsaiMetadata)
               .foregroundStyle(.secondary)
               .lineLimit(1)
               .truncationMode(.tail)
@@ -841,20 +877,18 @@ private struct CommandResultView: View {
         } label: {
           Image(systemName: "xmark")
         }
-        .buttonStyle(.borderless)
-        .controlSize(.small)
+        .bonsaiCompactIconButton()
         .help("Dismiss output")
         .accessibilityLabel("Dismiss command output")
       }
     }
-    .padding(.horizontal, 12)
-    .padding(.vertical, 8)
+    .bonsaiPanelHeaderPadding()
     .background(.bar)
   }
 
   private var statusIcon: some View {
     Image(systemName: result.isError ? "exclamationmark.triangle" : "checkmark.circle")
       .foregroundStyle(result.isError ? .orange : .green)
-      .frame(width: 16)
+      .bonsaiSidebarIconFrame()
   }
 }

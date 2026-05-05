@@ -130,6 +130,7 @@ final class RepositoryStore {
   var repositorySetupRemoteURL = ""
   var repositorySetupDestinationPath = ""
   var isRefreshing = false
+  var lastRefreshDate: Date?
   var showIgnoredFiles = UserDefaults.standard.bool(forKey: "bonsai.showIgnoredFiles") {
     didSet {
       UserDefaults.standard.set(showIgnoredFiles, forKey: showIgnoredFilesKey)
@@ -745,6 +746,7 @@ final class RepositoryStore {
       }
       await refreshDiff()
       await updateObservedRepositoryState(for: repository)
+      lastRefreshDate = Date()
       errorMessage = nil
     } catch {
       if reportErrors {

@@ -76,8 +76,7 @@ struct ContentView: View {
       }
 
       ToolbarItemGroup {
-        RepositoryToolbarActionsMenu(store: store, showToolbarLabels: showToolbarLabels)
-          .disabled(store.selectedRepository == nil)
+        RepositoryToolbarActionsGroup(store: store, showToolbarLabels: showToolbarLabels)
       }
     }
     .sheet(item: $store.operationRequest) { request in
@@ -479,11 +478,10 @@ private struct CodeAgentBranchReviewSheet: View {
       HStack(alignment: .firstTextBaseline) {
         VStack(alignment: .leading, spacing: 3) {
           Text("\(document.providerName) branch review")
-            .font(.title3)
-            .fontWeight(.semibold)
+            .font(.bonsaiSheetTitle)
             .lineLimit(1)
           Text("\(document.branchName) against \(document.baseReference)")
-            .font(.caption.monospaced())
+            .font(.bonsaiMonospacedMetadata)
             .foregroundStyle(.secondary)
             .lineLimit(1)
             .truncationMode(.middle)
@@ -531,10 +529,9 @@ private struct FileHistorySheet: View {
       HStack {
         VStack(alignment: .leading, spacing: 3) {
           Text(title)
-            .font(.title3)
-            .fontWeight(.semibold)
+            .font(.bonsaiSheetTitle)
           Text(path)
-            .font(.caption.monospaced())
+            .font(.bonsaiMonospacedMetadata)
             .foregroundStyle(.secondary)
             .lineLimit(1)
         }
@@ -573,28 +570,28 @@ private struct FileHistoryRow: View {
   var onSelectCommit: (GitFileHistoryEntry) -> Void
 
   var body: some View {
-    HStack(alignment: .top, spacing: 12) {
+    HStack(alignment: .top, spacing: InterfaceSpacing.panelHorizontal) {
       Button {
         onSelectCommit(entry)
       } label: {
         Image(systemName: "arrow.right.circle")
       }
-      .buttonStyle(.borderless)
+      .bonsaiCompactIconButton()
       .help("Show commit")
       .accessibilityLabel("Show commit \(entry.shortHash)")
 
       Text(entry.shortHash)
-        .font(.caption.monospaced())
+        .font(.bonsaiMonospacedMetadata)
         .foregroundStyle(.secondary)
         .frame(width: 72, alignment: .leading)
         .textSelection(.enabled)
 
-      VStack(alignment: .leading, spacing: 6) {
+      VStack(alignment: .leading, spacing: InterfaceSpacing.small) {
         Text(entry.subject)
           .lineLimit(1)
           .textSelection(.enabled)
 
-        HStack(spacing: 8) {
+        HStack(spacing: InterfaceSpacing.medium) {
           Text(entry.authorName)
             .lineLimit(1)
             .help(entry.authorEmail)
@@ -602,12 +599,12 @@ private struct FileHistoryRow: View {
             Text(StaticDateText.date(date))
           }
         }
-        .font(.caption)
+        .font(.bonsaiMetadata)
         .foregroundStyle(.secondary)
 
         if !entry.changes.isEmpty {
           ScrollView(.horizontal) {
-            HStack(spacing: 6) {
+            HStack(spacing: InterfaceSpacing.small) {
               ForEach(entry.changes) { change in
                 FileChangePill(change: change)
               }
@@ -617,7 +614,7 @@ private struct FileHistoryRow: View {
         }
       }
     }
-    .padding(.vertical, 5)
+    .padding(.vertical, InterfaceSpacing.small)
     .contextMenu {
       Button("Show Commit") {
         onSelectCommit(entry)
@@ -654,15 +651,15 @@ private struct FileChangePill: View {
   var change: GitChangedFile
 
   var body: some View {
-    HStack(spacing: 5) {
+    HStack(spacing: InterfaceSpacing.small) {
       ChangeStatusBadge(changedFile: change)
       Text(change.oldPath.map { "\($0) -> \(change.path)" } ?? change.path)
-        .font(.caption.monospaced())
+        .font(.bonsaiMonospacedMetadata)
         .lineLimit(1)
         .truncationMode(.middle)
     }
     .help(change.oldPath.map { "\($0) -> \(change.path)" } ?? change.path)
-    .padding(.horizontal, 7)
+    .padding(.horizontal, InterfaceSpacing.medium)
     .padding(.vertical, 3)
     .background(.quaternary, in: RoundedRectangle(cornerRadius: 5))
   }
@@ -680,10 +677,9 @@ private struct BlameSheet: View {
       HStack {
         VStack(alignment: .leading, spacing: 3) {
           Text("Blame")
-            .font(.title3)
-            .fontWeight(.semibold)
+            .font(.bonsaiSheetTitle)
           Text(document.path)
-            .font(.caption.monospaced())
+            .font(.bonsaiMonospacedMetadata)
             .foregroundStyle(.secondary)
             .lineLimit(1)
         }
@@ -697,7 +693,7 @@ private struct BlameSheet: View {
           Section {
             if filteredLines.isEmpty {
               Text(emptyTitle)
-                .font(.caption)
+                .font(.bonsaiMetadata)
                 .foregroundStyle(.secondary)
                 .frame(minWidth: 820, minHeight: 360)
             }
@@ -745,9 +741,9 @@ private struct InspectionSearchField: View {
 
 private struct BlameHeaderRow: View {
   var body: some View {
-    HStack(spacing: 12) {
-      Color.clear
-        .frame(width: 22)
+      HStack(spacing: InterfaceSpacing.panelHorizontal) {
+        Color.clear
+        .frame(width: InterfaceSize.compactIconButton)
         .accessibilityHidden(true)
       Text("Line")
         .frame(width: 52, alignment: .trailing)
@@ -760,10 +756,10 @@ private struct BlameHeaderRow: View {
       Text("Content")
         .frame(minWidth: 360, alignment: .leading)
     }
-    .font(.caption.weight(.semibold))
+    .font(.bonsaiMetadata.weight(.semibold))
     .foregroundStyle(.secondary)
-    .padding(.horizontal, 10)
-    .padding(.vertical, 7)
+    .padding(.horizontal, InterfaceSpacing.large)
+    .padding(.vertical, InterfaceSpacing.medium)
   }
 }
 
@@ -779,10 +775,9 @@ private struct BlameRow: View {
       } label: {
         Image(systemName: "arrow.right.circle")
       }
-      .buttonStyle(.borderless)
+      .bonsaiCompactIconButton()
       .help("Show commit")
       .accessibilityLabel("Show commit \(line.shortHash)")
-      .frame(width: 22)
 
       Text("\(line.finalLine)")
         .foregroundStyle(.secondary)
@@ -808,9 +803,9 @@ private struct BlameRow: View {
         .fixedSize(horizontal: true, vertical: false)
         .textSelection(.enabled)
     }
-    .font(.caption.monospaced())
-    .padding(.horizontal, 10)
-    .padding(.vertical, 5)
+    .font(.bonsaiMonospacedMetadata)
+    .padding(.horizontal, InterfaceSpacing.large)
+    .padding(.vertical, InterfaceSpacing.small)
     .contextMenu {
       Button("Show Commit") {
         onSelectCommit(line)
@@ -841,12 +836,12 @@ private struct DiscardChangeSheet: View {
   var request: DiscardChangeRequest
   var onCancel: () -> Void
   var onDiscard: () -> Void
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text("Discard change")
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       Text(request.entry.path)
         .font(.body.monospaced())
@@ -855,11 +850,14 @@ private struct DiscardChangeSheet: View {
       Text(request.entry.isUntracked ? "This will remove the untracked file." : "This will restore the file from Git and discard local edits.")
         .foregroundStyle(.secondary)
 
+      DestructiveConfirmationToggle(title: "Confirm discard", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Discard", role: .destructive, action: onDiscard)
           .buttonStyle(.borderedProminent)
+          .disabled(!confirmed)
       }
     }
     .padding(20)
@@ -871,12 +869,12 @@ private struct DiscardUnstagedChangesSheet: View {
   var request: DiscardUnstagedChangesRequest
   var onCancel: () -> Void
   var onDiscard: () -> Void
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text("Discard unstaged changes")
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       Text("\(request.changeCount.formatted()) changes")
         .font(.body.monospaced())
@@ -885,11 +883,14 @@ private struct DiscardUnstagedChangesSheet: View {
       Text(detail)
         .foregroundStyle(.secondary)
 
+      DestructiveConfirmationToggle(title: "Confirm discard", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Discard", role: .destructive, action: onDiscard)
           .buttonStyle(.borderedProminent)
+          .disabled(!confirmed)
       }
     }
     .padding(20)
@@ -914,12 +915,12 @@ private struct CleanIgnoredFilesSheet: View {
   var request: CleanIgnoredFilesRequest
   var onCancel: () -> Void
   var onClean: () -> Void
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text("Clean ignored files")
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       Text(fileCountTitle)
         .font(.body.monospaced())
@@ -928,11 +929,14 @@ private struct CleanIgnoredFilesSheet: View {
       Text("This will remove ignored files and directories. Untracked files are not included.")
         .foregroundStyle(.secondary)
 
+      DestructiveConfirmationToggle(title: "Confirm clean", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Clean", role: .destructive, action: onClean)
           .buttonStyle(.borderedProminent)
+          .disabled(!confirmed)
       }
     }
     .padding(20)
@@ -957,10 +961,9 @@ private struct GitIgnoreTemplateSheet: View {
       HStack {
         VStack(alignment: .leading, spacing: 3) {
           Text(request.title)
-            .font(.title3)
-            .fontWeight(.semibold)
+            .font(.bonsaiSheetTitle)
           Text(request.repositoryName)
-            .font(.caption)
+            .font(.bonsaiMetadata)
             .foregroundStyle(.secondary)
             .lineLimit(1)
         }
@@ -977,7 +980,7 @@ private struct GitIgnoreTemplateSheet: View {
             Text(template.name)
               .lineLimit(1)
             Text(template.summary)
-              .font(.caption)
+              .font(.bonsaiMetadata)
               .foregroundStyle(.secondary)
               .lineLimit(1)
           }
@@ -990,7 +993,7 @@ private struct GitIgnoreTemplateSheet: View {
 
       HStack {
         Text(selectedTemplate?.summary ?? "Choose a template to apply.")
-          .font(.caption)
+          .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
           .lineLimit(2)
         Spacer()
@@ -1041,8 +1044,7 @@ private struct DiscardPatchSheet: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text(request.title)
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       Text(request.message)
         .font(.body.monospaced())
@@ -1071,18 +1073,17 @@ private struct ApplyPatchSheet: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text(request.title)
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       Text(request.message)
 
       Text(request.detail)
-        .font(.caption)
+        .font(.bonsaiMetadata)
         .foregroundStyle(.secondary)
 
       ScrollView([.horizontal, .vertical]) {
         Text(request.previewText)
-          .font(.caption.monospaced())
+          .font(.bonsaiMonospacedMetadata)
           .textSelection(.enabled)
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(10)
@@ -1114,8 +1115,7 @@ private struct DropStashSheet: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text(request.title)
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       Text(request.message)
         .font(.body.monospaced())
@@ -1147,8 +1147,7 @@ private struct RevisionCommandSheet: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text(request.title)
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       Text(request.message)
         .font(.body.monospaced())
@@ -1186,7 +1185,7 @@ private struct RevisionCommandReadinessRow: View {
     HStack(alignment: .firstTextBaseline, spacing: 8) {
       Image(systemName: readiness.systemImage)
         .foregroundStyle(statusColor)
-        .frame(width: 18)
+        .bonsaiSidebarIconFrame()
 
       VStack(alignment: .leading, spacing: 2) {
         Text(readiness.title)
@@ -1194,13 +1193,13 @@ private struct RevisionCommandReadinessRow: View {
           .fontWeight(.medium)
           .lineLimit(1)
         Text(readiness.detail)
-          .font(.caption)
+          .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
           .lineLimit(2)
       }
     }
-    .padding(.vertical, 8)
-    .padding(.horizontal, 10)
+    .padding(.vertical, InterfaceSpacing.panelVertical)
+    .padding(.horizontal, InterfaceSpacing.large)
     .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 8))
   }
 
@@ -1243,8 +1242,7 @@ private struct GitHubRepositorySheet: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text(request.operation.title)
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       if request.operation == .delete {
         Text("Deletion is permanent and requires a token with repository deletion permissions.")
@@ -1254,7 +1252,7 @@ private struct GitHubRepositorySheet: View {
       if request.operation == .delete {
         VStack(alignment: .leading, spacing: 6) {
           Text("Owner")
-            .font(.caption)
+            .font(.bonsaiMetadata)
             .foregroundStyle(.secondary)
           TextField("owner", text: $owner)
             .textFieldStyle(.roundedBorder)
@@ -1263,7 +1261,7 @@ private struct GitHubRepositorySheet: View {
 
       VStack(alignment: .leading, spacing: 6) {
         Text("Repository name")
-          .font(.caption)
+          .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
         TextField("repository", text: $name)
           .textFieldStyle(.roundedBorder)
@@ -1272,7 +1270,7 @@ private struct GitHubRepositorySheet: View {
       if request.operation == .create {
         VStack(alignment: .leading, spacing: 6) {
           Text("Description")
-            .font(.caption)
+            .font(.bonsaiMetadata)
             .foregroundStyle(.secondary)
           TextField("Optional", text: $description)
             .textFieldStyle(.roundedBorder)
@@ -1283,10 +1281,10 @@ private struct GitHubRepositorySheet: View {
       if request.operation == .delete {
         VStack(alignment: .leading, spacing: 6) {
           Text("Confirmation")
-            .font(.caption)
+            .font(.bonsaiMetadata)
             .foregroundStyle(.secondary)
           Text(deleteTarget)
-            .font(.caption.monospaced())
+            .font(.bonsaiMonospacedMetadata)
             .foregroundStyle(.secondary)
             .lineLimit(1)
             .truncationMode(.middle)
@@ -1357,8 +1355,7 @@ private struct RemoteEditorSheet: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text(request.mode.title)
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       TextField("Name", text: $name)
         .textFieldStyle(.roundedBorder)
@@ -1385,12 +1382,12 @@ private struct RemoveRemoteSheet: View {
   var request: RemoveRemoteRequest
   var onCancel: () -> Void
   var onRemove: () -> Void
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text(request.title)
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       Text(request.message)
         .font(.body.monospaced())
@@ -1401,11 +1398,14 @@ private struct RemoveRemoteSheet: View {
         .lineLimit(3)
         .textSelection(.enabled)
 
+      DestructiveConfirmationToggle(title: "Confirm remove", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Remove", role: .destructive, action: onRemove)
           .buttonStyle(.borderedProminent)
+          .disabled(!confirmed)
       }
     }
     .padding(20)
@@ -1417,12 +1417,12 @@ private struct DeleteRemoteTagSheet: View {
   var request: RemoteTagDeleteRequest
   var onCancel: () -> Void
   var onDelete: () -> Void
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text(request.title)
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       Text(request.message)
         .font(.body.monospaced())
@@ -1431,11 +1431,14 @@ private struct DeleteRemoteTagSheet: View {
       Text(request.detail)
         .foregroundStyle(.secondary)
 
+      DestructiveConfirmationToggle(title: "Confirm delete", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Delete", role: .destructive, action: onDelete)
           .buttonStyle(.borderedProminent)
+          .disabled(!confirmed)
       }
     }
     .padding(20)
@@ -1448,12 +1451,12 @@ private struct RemoveWorktreeSheet: View {
   @Binding var forceRemove: Bool
   var onCancel: () -> Void
   var onRemove: () -> Void
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text(request.title)
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       Text(request.message)
         .font(.body.monospaced())
@@ -1466,11 +1469,14 @@ private struct RemoveWorktreeSheet: View {
 
       Toggle("Force remove dirty worktree", isOn: $forceRemove)
 
+      DestructiveConfirmationToggle(title: "Confirm remove", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Remove", role: .destructive, action: onRemove)
           .buttonStyle(.borderedProminent)
+          .disabled(!confirmed)
       }
     }
     .padding(20)
@@ -1488,15 +1494,14 @@ private struct CreateWorktreeSheet: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text(request.title)
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       Text(request.message)
         .foregroundStyle(.secondary)
 
       VStack(alignment: .leading, spacing: 6) {
         Text("Destination")
-          .font(.caption)
+          .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
         TextField("~/projects/repository-worktree", text: $destinationPath)
           .textFieldStyle(.roundedBorder)
@@ -1504,7 +1509,7 @@ private struct CreateWorktreeSheet: View {
 
       VStack(alignment: .leading, spacing: 6) {
         Text("New branch")
-          .font(.caption)
+          .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
         TextField("Optional branch name", text: $branchName)
           .textFieldStyle(.roundedBorder)
@@ -1533,12 +1538,12 @@ private struct ResetSheet: View {
   var onCancel: () -> Void
   var onConfirm: (ResetMode) -> Void
   @State private var mode: ResetMode = .mixed
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text("Reset branch")
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       Text("Reset the current branch to \(request.commit.shortHash). Hard reset discards working tree changes.")
         .foregroundStyle(.secondary)
@@ -1552,6 +1557,12 @@ private struct ResetSheet: View {
       .labelsHidden()
       .accessibilityLabel("Reset mode")
 
+      Text(mode.detail)
+        .font(.bonsaiMetadata)
+        .foregroundStyle(mode == .hard ? .orange : .secondary)
+
+      DestructiveConfirmationToggle(title: "Confirm reset", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
@@ -1559,6 +1570,7 @@ private struct ResetSheet: View {
           onConfirm(mode)
         }
         .buttonStyle(.borderedProminent)
+        .disabled(!confirmed)
       }
     }
     .padding(20)
@@ -1571,12 +1583,12 @@ private struct ReflogResetSheet: View {
   var onCancel: () -> Void
   var onConfirm: (ResetMode) -> Void
   @State private var mode: ResetMode = .mixed
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text("Reset to reflog entry")
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       Text("\(request.entry.selector) \(request.entry.shortHash)")
         .font(.body.monospaced())
@@ -1593,6 +1605,12 @@ private struct ReflogResetSheet: View {
       .labelsHidden()
       .accessibilityLabel("Reset mode")
 
+      Text(mode.detail)
+        .font(.bonsaiMetadata)
+        .foregroundStyle(mode == .hard ? .orange : .secondary)
+
+      DestructiveConfirmationToggle(title: "Confirm reset", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
@@ -1600,6 +1618,7 @@ private struct ReflogResetSheet: View {
           onConfirm(mode)
         }
         .buttonStyle(.borderedProminent)
+        .disabled(!confirmed)
       }
     }
     .padding(20)
@@ -1612,12 +1631,12 @@ private struct DeleteRefSheet: View {
   @Binding var forceDelete: Bool
   var onCancel: () -> Void
   var onDelete: () -> Void
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text(request.title)
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       Text(request.message)
         .font(.body.monospaced())
@@ -1630,11 +1649,14 @@ private struct DeleteRefSheet: View {
         Toggle("Force delete unmerged branch", isOn: $forceDelete)
       }
 
+      DestructiveConfirmationToggle(title: "Confirm delete", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Delete", role: .destructive, action: onDelete)
           .buttonStyle(.borderedProminent)
+          .disabled(!confirmed)
       }
     }
     .padding(20)
@@ -1648,12 +1670,12 @@ private struct StaleLocalBranchesSheet: View {
   @Binding var forceDelete: Bool
   var onCancel: () -> Void
   var onDelete: () -> Void
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text(request.title)
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       Text(request.message)
         .foregroundStyle(.secondary)
@@ -1666,7 +1688,7 @@ private struct StaleLocalBranchesSheet: View {
                 .fontWeight(.medium)
                 .lineLimit(1)
               Text(branch.upstream ?? "Upstream gone")
-                .font(.caption)
+                .font(.bonsaiMetadata)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
             }
@@ -1681,12 +1703,14 @@ private struct StaleLocalBranchesSheet: View {
       Text(request.detail)
         .foregroundStyle(.secondary)
 
+      DestructiveConfirmationToggle(title: "Confirm delete", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Delete Selected", role: .destructive, action: onDelete)
           .buttonStyle(.borderedProminent)
-          .disabled(selectedBranchIDs.isEmpty)
+          .disabled(selectedBranchIDs.isEmpty || !confirmed)
       }
     }
     .padding(20)
@@ -1713,12 +1737,12 @@ private struct ForcePushSheet: View {
   var request: ForcePushRequest
   var onCancel: () -> Void
   var onConfirm: () -> Void
+  @State private var confirmed = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text(request.title)
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       Text(request.message)
         .font(.body.monospaced())
@@ -1727,15 +1751,29 @@ private struct ForcePushSheet: View {
       Text(request.detail)
         .foregroundStyle(.secondary)
 
+      DestructiveConfirmationToggle(title: "Confirm force push", isOn: $confirmed)
+
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
         Button("Force push", role: .destructive, action: onConfirm)
           .buttonStyle(.borderedProminent)
+          .disabled(!confirmed)
       }
     }
     .padding(20)
     .frame(width: 480)
+  }
+}
+
+private struct DestructiveConfirmationToggle: View {
+  var title: String
+  @Binding var isOn: Bool
+
+  var body: some View {
+    Toggle(title, isOn: $isOn)
+      .toggleStyle(.checkbox)
+      .font(.bonsaiMetadata)
   }
 }
 
@@ -1749,8 +1787,7 @@ private struct ReflogSheet: View {
     VStack(alignment: .leading, spacing: 12) {
       HStack {
         Text("Reflog")
-          .font(.title3)
-          .fontWeight(.semibold)
+          .font(.bonsaiSheetTitle)
         Spacer()
         Button("Close", action: onCancel)
       }
@@ -1759,21 +1796,21 @@ private struct ReflogSheet: View {
         .foregroundStyle(.secondary)
 
       List(entries) { entry in
-        HStack(spacing: 10) {
+        HStack(spacing: InterfaceSpacing.large) {
           VStack(alignment: .leading, spacing: 4) {
             HStack {
               Text(entry.selector)
-                .font(.caption.monospaced())
+                .font(.bonsaiMonospacedMetadata)
                 .foregroundStyle(.secondary)
               Text(entry.shortHash)
-                .font(.caption.monospaced())
+                .font(.bonsaiMonospacedMetadata)
                 .foregroundStyle(.secondary)
             }
             Text(entry.subject)
               .lineLimit(1)
             if let date = entry.date {
               Text(StaticDateText.date(date))
-                .font(.caption)
+                .font(.bonsaiMetadata)
                 .foregroundStyle(.secondary)
             }
           }
@@ -1784,13 +1821,15 @@ private struct ReflogSheet: View {
             onCheckout(entry)
           }
           .buttonStyle(.borderless)
+          .controlSize(.small)
 
           Button("Reset…") {
             onReset(entry)
           }
           .buttonStyle(.borderless)
+          .controlSize(.small)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, InterfaceSpacing.xSmall)
       }
       .frame(minHeight: 360)
     }
@@ -1808,8 +1847,7 @@ private struct InteractiveRebaseSheet: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       Text("Interactive rebase")
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       if let plan = store.interactiveRebasePlan {
         HStack(spacing: 8) {
@@ -1817,7 +1855,7 @@ private struct InteractiveRebaseSheet: View {
           Text(plan.upstream)
             .monospaced()
         }
-        .font(.caption)
+        .font(.bonsaiMetadata)
         .foregroundStyle(.secondary)
 
         Toggle("Update refs", isOn: Binding(
@@ -1853,17 +1891,17 @@ private struct InteractiveRebaseSheet: View {
 
         DisclosureGroup("Todo file", isExpanded: $showsTodoText) {
           Text(plan.todoText)
-            .font(.caption.monospaced())
+            .font(.bonsaiMonospacedMetadata)
             .foregroundStyle(.secondary)
             .lineLimit(8)
             .textSelection(.enabled)
             .padding(.top, 4)
         }
-        .font(.caption)
+        .font(.bonsaiMetadata)
 
         if let validationMessage = plan.validationMessage {
           Label(validationMessage, systemImage: "exclamationmark.triangle")
-            .font(.caption)
+            .font(.bonsaiMetadata)
             .foregroundStyle(.orange)
         }
       }
@@ -1891,7 +1929,7 @@ private struct InteractiveRebaseRow: View {
   var onMoveDown: () -> Void
 
   var body: some View {
-    HStack(spacing: 10) {
+    HStack(spacing: InterfaceSpacing.large) {
       Picker("Action", selection: Binding(
         get: { item.action },
         set: onActionChanged
@@ -1904,7 +1942,7 @@ private struct InteractiveRebaseRow: View {
       .frame(width: 116)
 
       Text(item.shortHash)
-        .font(.caption.monospaced())
+        .font(.bonsaiMonospacedMetadata)
         .foregroundStyle(.secondary)
         .frame(width: 72, alignment: .leading)
 
@@ -1919,7 +1957,7 @@ private struct InteractiveRebaseRow: View {
         Image(systemName: "chevron.up")
       }
       .disabled(!canMoveUp)
-      .buttonStyle(.borderless)
+      .bonsaiCompactIconButton()
       .help("Move up")
       .accessibilityLabel("Move \(item.shortHash) up")
 
@@ -1929,12 +1967,12 @@ private struct InteractiveRebaseRow: View {
         Image(systemName: "chevron.down")
       }
       .disabled(!canMoveDown)
-      .buttonStyle(.borderless)
+      .bonsaiCompactIconButton()
       .help("Move down")
       .accessibilityLabel("Move \(item.shortHash) down")
     }
-    .padding(.horizontal, 10)
-    .padding(.vertical, 8)
+    .padding(.horizontal, InterfaceSpacing.large)
+    .padding(.vertical, InterfaceSpacing.panelVertical)
   }
 }
 
@@ -1947,8 +1985,7 @@ private struct ConflictResolutionSheet: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       Text("Resolve conflict")
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       Text(request.entry.path)
         .foregroundStyle(.secondary)
@@ -2007,21 +2044,20 @@ private struct RepositorySetupSheet: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
-      HStack(spacing: 10) {
+      HStack(spacing: InterfaceSpacing.large) {
         BonsaiLogoMark()
-          .frame(width: 24, height: 24)
+          .frame(width: InterfaceSize.compactIconButton, height: InterfaceSize.compactIconButton)
           .accessibilityHidden(true)
 
         Text(mode.title)
-          .font(.title3)
-          .fontWeight(.semibold)
+          .font(.bonsaiSheetTitle)
           .lineLimit(1)
       }
 
       if mode == .clone {
         VStack(alignment: .leading, spacing: 6) {
           Text("Remote URL")
-            .font(.caption)
+            .font(.bonsaiMetadata)
             .foregroundStyle(.secondary)
           TextField("git@github.com:owner/repository.git", text: $remoteURL)
             .textFieldStyle(.roundedBorder)
@@ -2032,7 +2068,7 @@ private struct RepositorySetupSheet: View {
 
       VStack(alignment: .leading, spacing: 6) {
         Text(mode == .clone ? "Destination" : "Repository folder")
-          .font(.caption)
+          .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
         HStack {
           TextField("~/projects/repository", text: $destinationPath)
@@ -2077,8 +2113,7 @@ private struct OperationSheet: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text(request.title)
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       Text(request.message)
         .foregroundStyle(.secondary)
@@ -2112,8 +2147,7 @@ private struct AnnotatedTagSheet: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text(request.title)
-        .font(.title3)
-        .fontWeight(.semibold)
+        .font(.bonsaiSheetTitle)
 
       Text(request.message)
         .foregroundStyle(.secondary)

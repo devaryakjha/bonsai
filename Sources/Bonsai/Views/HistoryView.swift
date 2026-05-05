@@ -10,23 +10,38 @@ struct HistoryView: View {
     let graphColumnWidth = CGFloat(HistoryGraphColumn.pointWidth(for: store.filteredCommits))
 
     VStack(spacing: 0) {
-      HStack {
+      HStack(alignment: .center, spacing: InterfaceSpacing.medium) {
         Image(systemName: "magnifyingglass")
           .foregroundStyle(.secondary)
-        TextField("Search commits", text: $store.historySearchText)
-          .textFieldStyle(.plain)
+          .bonsaiSidebarIconFrame()
+        TextField("Find commits", text: $store.historySearchText)
+          .textFieldStyle(.roundedBorder)
+          .accessibilityLabel("Find commits")
+
+        if !store.historySearchText.isEmpty {
+          Button {
+            store.historySearchText = ""
+          } label: {
+          Label("Clear find", systemImage: "xmark.circle.fill")
+            .labelStyle(.iconOnly)
+        }
+          .bonsaiHeaderIconButton()
+          .foregroundStyle(.secondary)
+          .help("Clear find")
+          .accessibilityLabel("Clear find")
+        }
+
         Menu {
           Toggle("Show commit details", isOn: $showCommitRowDetails)
         } label: {
           Label("History options", systemImage: "slider.horizontal.3")
             .labelStyle(.iconOnly)
         }
-        .menuStyle(.borderlessButton)
+        .bonsaiHeaderMenuButton()
         .help("History options")
         .accessibilityLabel("History options")
       }
-      .padding(.horizontal, 12)
-      .padding(.vertical, 8)
+      .bonsaiPanelHeaderPadding()
 
       Divider()
 
@@ -210,18 +225,18 @@ private struct StashRow: View {
   var stash: GitStash
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 6) {
-      HStack(spacing: 8) {
+    VStack(alignment: .leading, spacing: InterfaceSpacing.small) {
+      HStack(spacing: InterfaceSpacing.medium) {
         Label(stash.index, systemImage: "tray.full")
           .fontWeight(.medium)
         Spacer()
         Text("Stash")
-          .font(.caption)
+          .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
       }
 
       Text(stash.message)
-        .font(.caption)
+        .font(.bonsaiMetadata)
         .foregroundStyle(.secondary)
         .lineLimit(1)
     }
@@ -235,10 +250,10 @@ private struct CommitRow: View {
   var graphColumnWidth: CGFloat
 
   var body: some View {
-    VStack(alignment: .leading, spacing: showsDetails ? 6 : 0) {
-      HStack(spacing: 8) {
+    VStack(alignment: .leading, spacing: showsDetails ? InterfaceSpacing.small : 0) {
+      HStack(spacing: InterfaceSpacing.medium) {
         Text(commit.graph.isEmpty ? "*" : commit.graph)
-          .font(.caption.monospaced())
+          .font(.bonsaiMonospacedMetadata)
           .foregroundStyle(.secondary)
           .lineLimit(1)
           .frame(width: graphColumnWidth, alignment: .leading)
@@ -247,28 +262,28 @@ private struct CommitRow: View {
           .fontWeight(.medium)
         Spacer()
         Text(commit.shortHash)
-          .font(.caption)
+          .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
           .monospaced()
       }
 
       if showsDetails {
-        HStack(spacing: 8) {
+        HStack(spacing: InterfaceSpacing.medium) {
           Spacer()
             .frame(width: graphColumnWidth)
           Text(commit.authorName)
           if let date = commit.date {
             Text(StaticDateText.relativeOrDate(date))
           }
-          ForEach(commit.decorations.prefix(3), id: \.self) { decoration in
-            Text(decoration)
-              .font(.caption2)
-              .padding(.horizontal, 6)
-              .padding(.vertical, 2)
-              .background(.quaternary, in: Capsule())
+          ForEach(visibleDecorations, id: \.self) { decoration in
+            decorationPill(decoration)
+          }
+          if hiddenDecorationCount > 0 {
+            decorationPill("+\(hiddenDecorationCount.formatted()) refs")
+              .help(commit.decorations.dropFirst(Self.visibleDecorationLimit).joined(separator: ", "))
           }
         }
-        .font(.caption)
+        .font(.bonsaiMetadata)
         .foregroundStyle(.secondary)
       }
     }
@@ -283,6 +298,27 @@ private struct CommitRow: View {
     }
     parts.append(contentsOf: commit.decorations)
     return parts.filter { !$0.isEmpty }.joined(separator: " - ")
+  }
+
+  private static let visibleDecorationLimit = 2
+
+  private var visibleDecorations: [String] {
+    Array(commit.decorations.prefix(Self.visibleDecorationLimit))
+  }
+
+  private var hiddenDecorationCount: Int {
+    max(0, commit.decorations.count - Self.visibleDecorationLimit)
+  }
+
+  private func decorationPill(_ text: String) -> some View {
+    Text(text)
+      .font(.bonsaiTinyMetadata)
+      .lineLimit(1)
+      .truncationMode(.middle)
+      .frame(maxWidth: 112)
+      .padding(.horizontal, InterfaceSpacing.small)
+      .padding(.vertical, 2)
+      .background(.quaternary, in: Capsule())
   }
 }
 
@@ -302,13 +338,20 @@ private struct ChangedFilesView: View {
           title: \.title
         )
         .frame(width: 190)
+        if let contextTitle {
+          Text(contextTitle)
+            .font(.bonsaiMetadata)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .help(contextHelp)
+        }
         Spacer()
         Text(countText)
           .foregroundStyle(.secondary)
           .monospacedDigit()
       }
-      .padding(.horizontal, 12)
-      .padding(.vertical, 8)
+      .bonsaiPanelHeaderPadding()
 
       switch mode {
       case .changed:
@@ -319,7 +362,7 @@ private struct ChangedFilesView: View {
           }
         )) {
           ForEach(store.displayedChangedFiles) { file in
-            HStack(spacing: 8) {
+            HStack(spacing: InterfaceSpacing.medium) {
               ChangeStatusBadge(changedFile: file)
               Text(file.path)
                 .lineLimit(1)
@@ -368,25 +411,25 @@ private struct ChangedFilesView: View {
         .listStyle(.plain)
       case .tree:
         VStack(spacing: 0) {
-          HStack(spacing: 8) {
+          HStack(spacing: InterfaceSpacing.medium) {
             Button {
               store.navigateTreeUp()
             } label: {
               Label("Up", systemImage: "chevron.up")
             }
-            .buttonStyle(.borderless)
+            .bonsaiCompactIconButton()
             .disabled(store.commitTreePath.isEmpty)
 
             Text(store.commitTreePath.isEmpty ? "/" : store.commitTreePath)
-              .font(.caption)
+              .font(.bonsaiMetadata)
               .foregroundStyle(.secondary)
               .lineLimit(1)
               .truncationMode(.middle)
               .help(store.commitTreePath.isEmpty ? "/" : store.commitTreePath)
             Spacer()
           }
-          .padding(.horizontal, 12)
-          .padding(.bottom, 6)
+          .padding(.horizontal, InterfaceSpacing.panelHorizontal)
+          .padding(.bottom, InterfaceSpacing.small)
 
           List(selection: Binding(
             get: { store.selectedTreeEntry?.id },
@@ -396,10 +439,10 @@ private struct ChangedFilesView: View {
             }
           )) {
             ForEach(store.commitTreeEntries) { entry in
-              HStack(spacing: 8) {
+              HStack(spacing: InterfaceSpacing.medium) {
                 Image(systemName: entry.isDirectory ? "folder" : "doc.text")
                   .foregroundStyle(entry.isDirectory ? .blue : .secondary)
-                  .frame(width: 16)
+                  .bonsaiSidebarIconFrame()
                 Text(entry.name)
                   .lineLimit(1)
                 Spacer()
@@ -460,6 +503,26 @@ private struct ChangedFilesView: View {
     case .tree:
       return store.commitTreeEntries.count.formatted()
     }
+  }
+
+  private var contextTitle: String? {
+    if let stash = store.selectedStash {
+      return stash.index
+    }
+    if let commit = store.selectedCommit {
+      return "\(commit.shortHash) files"
+    }
+    return nil
+  }
+
+  private var contextHelp: String {
+    if let stash = store.selectedStash {
+      return stash.message
+    }
+    if let commit = store.selectedCommit {
+      return "\(commit.shortHash) \(commit.subject)"
+    }
+    return ""
   }
 }
 

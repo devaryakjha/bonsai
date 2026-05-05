@@ -24,7 +24,7 @@ struct RepositoryBenchmarkSheet: View {
 
       HStack {
         Text("Measured \(report.totalMeasuredMilliseconds.formatted()) ms total")
-          .font(.caption)
+          .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
           .lineLimit(1)
         Spacer()
@@ -40,24 +40,24 @@ struct RepositoryBenchmarkSheet: View {
   }
 
   private var header: some View {
-    HStack(spacing: 12) {
+    HStack(spacing: InterfaceSpacing.panelHorizontal) {
       Image(systemName: "speedometer")
         .font(.title2)
         .foregroundStyle(.secondary)
         .frame(width: 28)
 
-      VStack(alignment: .leading, spacing: 3) {
+      VStack(alignment: .leading, spacing: InterfaceSpacing.xSmall) {
         Text("Repository benchmark")
           .font(.headline)
           .lineLimit(1)
-        HStack(spacing: 8) {
+        HStack(spacing: InterfaceSpacing.medium) {
           Text(report.repositoryName)
             .lineLimit(1)
           Text(StaticDateText.time(report.generatedAt))
             .foregroundStyle(.tertiary)
             .lineLimit(1)
         }
-        .font(.caption)
+        .font(.bonsaiMetadata)
         .foregroundStyle(.secondary)
       }
 
@@ -66,9 +66,9 @@ struct RepositoryBenchmarkSheet: View {
   }
 
   private func benchmarkSection(title: String, rows: [BenchmarkRow]) -> some View {
-    VStack(alignment: .leading, spacing: 8) {
+    VStack(alignment: .leading, spacing: InterfaceSpacing.medium) {
       Text(title)
-        .font(.caption)
+        .font(.bonsaiMetadata)
         .fontWeight(.semibold)
         .foregroundStyle(.secondary)
         .textCase(.uppercase)
@@ -90,17 +90,17 @@ private struct BenchmarkDataRow: View {
   var row: BenchmarkRow
 
   var body: some View {
-    HStack(alignment: .firstTextBaseline, spacing: 12) {
+    HStack(alignment: .firstTextBaseline, spacing: InterfaceSpacing.panelHorizontal) {
       Image(systemName: row.systemImage)
         .foregroundStyle(.secondary)
-        .frame(width: 20)
+        .bonsaiSidebarIconFrame()
 
       VStack(alignment: .leading, spacing: 2) {
         Text(row.title)
           .lineLimit(1)
         if let detail = row.detail {
           Text(detail)
-            .font(.caption)
+            .font(.bonsaiMetadata)
             .foregroundStyle(.secondary)
             .lineLimit(1)
         }
@@ -113,7 +113,7 @@ private struct BenchmarkDataRow: View {
         .foregroundStyle(.primary)
         .lineLimit(1)
     }
-    .padding(.vertical, 8)
+    .padding(.vertical, InterfaceSpacing.panelVertical)
   }
 }
 

@@ -38,7 +38,7 @@ struct RepositoryTreemapSheet: View {
 
       HStack {
         Text("\(report.totalSizeLabel) across \(fileCountLabel)")
-          .font(.caption)
+          .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
           .lineLimit(1)
         Spacer()
@@ -54,24 +54,24 @@ struct RepositoryTreemapSheet: View {
   }
 
   private var header: some View {
-    HStack(spacing: 12) {
+    HStack(spacing: InterfaceSpacing.panelHorizontal) {
       Image(systemName: "square.grid.3x3.fill")
         .font(.title2)
         .foregroundStyle(.secondary)
         .frame(width: 28)
 
-      VStack(alignment: .leading, spacing: 3) {
+      VStack(alignment: .leading, spacing: InterfaceSpacing.xSmall) {
         Text("Repository treemap")
           .font(.headline)
           .lineLimit(1)
-        HStack(spacing: 8) {
+        HStack(spacing: InterfaceSpacing.medium) {
           Text(report.repositoryName)
             .lineLimit(1)
           Text(StaticDateText.time(report.generatedAt))
             .foregroundStyle(.tertiary)
             .lineLimit(1)
         }
-        .font(.caption)
+        .font(.bonsaiMetadata)
         .foregroundStyle(.secondary)
       }
 
@@ -137,11 +137,11 @@ private struct RepositoryTreemapTileView: View {
         if rect.width >= 92, rect.height >= 58 {
           VStack(alignment: .leading, spacing: 3) {
             Text(tile.title)
-              .font(.caption)
+              .font(.bonsaiMetadata)
               .fontWeight(.semibold)
               .lineLimit(1)
             Text("\(tile.sizeLabel), \(share)")
-              .font(.caption2)
+              .font(.bonsaiTinyMetadata)
               .lineLimit(1)
           }
           .foregroundStyle(.white)
@@ -161,7 +161,7 @@ private struct RepositoryTreemapDetailRow: View {
   var color: Color
 
   var body: some View {
-    HStack(alignment: .firstTextBaseline, spacing: 12) {
+    HStack(alignment: .firstTextBaseline, spacing: InterfaceSpacing.panelHorizontal) {
       RoundedRectangle(cornerRadius: 3)
         .fill(color)
         .frame(width: 14, height: 14)
@@ -170,7 +170,7 @@ private struct RepositoryTreemapDetailRow: View {
         Text(tile.title)
           .lineLimit(1)
         Text(tile.path)
-          .font(.caption)
+          .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
           .lineLimit(1)
       }
@@ -182,12 +182,12 @@ private struct RepositoryTreemapDetailRow: View {
           .font(.body.monospacedDigit())
           .lineLimit(1)
         Text("\(share), \(tile.fileCountLabel)")
-          .font(.caption)
+          .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
           .lineLimit(1)
       }
     }
-    .padding(.vertical, 8)
+    .padding(.vertical, InterfaceSpacing.panelVertical)
   }
 }
 
