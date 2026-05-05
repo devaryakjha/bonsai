@@ -10,9 +10,10 @@ struct HistoryView: View {
     let graphColumnWidth = CGFloat(HistoryGraphColumn.pointWidth(for: store.filteredCommits))
 
     VStack(spacing: 0) {
-      HStack {
+      HStack(alignment: .center, spacing: InterfaceSpacing.medium) {
         Image(systemName: "magnifyingglass")
           .foregroundStyle(.secondary)
+          .bonsaiSidebarIconFrame()
         TextField("Find commits", text: $store.historySearchText)
           .textFieldStyle(.roundedBorder)
           .accessibilityLabel("Find commits")
@@ -21,10 +22,10 @@ struct HistoryView: View {
           Button {
             store.historySearchText = ""
           } label: {
-            Label("Clear find", systemImage: "xmark.circle.fill")
-              .labelStyle(.iconOnly)
-          }
-          .buttonStyle(.borderless)
+          Label("Clear find", systemImage: "xmark.circle.fill")
+            .labelStyle(.iconOnly)
+        }
+          .bonsaiHeaderIconButton()
           .foregroundStyle(.secondary)
           .help("Clear find")
           .accessibilityLabel("Clear find")
@@ -36,12 +37,11 @@ struct HistoryView: View {
           Label("History options", systemImage: "slider.horizontal.3")
             .labelStyle(.iconOnly)
         }
-        .menuStyle(.borderlessButton)
+        .bonsaiHeaderMenuButton()
         .help("History options")
         .accessibilityLabel("History options")
       }
-      .padding(.horizontal, 12)
-      .padding(.vertical, 8)
+      .bonsaiPanelHeaderPadding()
 
       Divider()
 
@@ -225,18 +225,18 @@ private struct StashRow: View {
   var stash: GitStash
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 6) {
-      HStack(spacing: 8) {
+    VStack(alignment: .leading, spacing: InterfaceSpacing.small) {
+      HStack(spacing: InterfaceSpacing.medium) {
         Label(stash.index, systemImage: "tray.full")
           .fontWeight(.medium)
         Spacer()
         Text("Stash")
-          .font(.caption)
+          .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
       }
 
       Text(stash.message)
-        .font(.caption)
+        .font(.bonsaiMetadata)
         .foregroundStyle(.secondary)
         .lineLimit(1)
     }
@@ -250,10 +250,10 @@ private struct CommitRow: View {
   var graphColumnWidth: CGFloat
 
   var body: some View {
-    VStack(alignment: .leading, spacing: showsDetails ? 6 : 0) {
-      HStack(spacing: 8) {
+    VStack(alignment: .leading, spacing: showsDetails ? InterfaceSpacing.small : 0) {
+      HStack(spacing: InterfaceSpacing.medium) {
         Text(commit.graph.isEmpty ? "*" : commit.graph)
-          .font(.caption.monospaced())
+          .font(.bonsaiMonospacedMetadata)
           .foregroundStyle(.secondary)
           .lineLimit(1)
           .frame(width: graphColumnWidth, alignment: .leading)
@@ -262,13 +262,13 @@ private struct CommitRow: View {
           .fontWeight(.medium)
         Spacer()
         Text(commit.shortHash)
-          .font(.caption)
+          .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
           .monospaced()
       }
 
       if showsDetails {
-        HStack(spacing: 8) {
+        HStack(spacing: InterfaceSpacing.medium) {
           Spacer()
             .frame(width: graphColumnWidth)
           Text(commit.authorName)
@@ -283,7 +283,7 @@ private struct CommitRow: View {
               .help(commit.decorations.dropFirst(Self.visibleDecorationLimit).joined(separator: ", "))
           }
         }
-        .font(.caption)
+        .font(.bonsaiMetadata)
         .foregroundStyle(.secondary)
       }
     }
@@ -312,11 +312,11 @@ private struct CommitRow: View {
 
   private func decorationPill(_ text: String) -> some View {
     Text(text)
-      .font(.caption2)
+      .font(.bonsaiTinyMetadata)
       .lineLimit(1)
       .truncationMode(.middle)
       .frame(maxWidth: 112)
-      .padding(.horizontal, 6)
+      .padding(.horizontal, InterfaceSpacing.small)
       .padding(.vertical, 2)
       .background(.quaternary, in: Capsule())
   }
@@ -340,7 +340,7 @@ private struct ChangedFilesView: View {
         .frame(width: 190)
         if let contextTitle {
           Text(contextTitle)
-            .font(.caption)
+            .font(.bonsaiMetadata)
             .foregroundStyle(.secondary)
             .lineLimit(1)
             .truncationMode(.tail)
@@ -351,8 +351,7 @@ private struct ChangedFilesView: View {
           .foregroundStyle(.secondary)
           .monospacedDigit()
       }
-      .padding(.horizontal, 12)
-      .padding(.vertical, 8)
+      .bonsaiPanelHeaderPadding()
 
       switch mode {
       case .changed:
@@ -363,7 +362,7 @@ private struct ChangedFilesView: View {
           }
         )) {
           ForEach(store.displayedChangedFiles) { file in
-            HStack(spacing: 8) {
+            HStack(spacing: InterfaceSpacing.medium) {
               ChangeStatusBadge(changedFile: file)
               Text(file.path)
                 .lineLimit(1)
@@ -412,25 +411,25 @@ private struct ChangedFilesView: View {
         .listStyle(.plain)
       case .tree:
         VStack(spacing: 0) {
-          HStack(spacing: 8) {
+          HStack(spacing: InterfaceSpacing.medium) {
             Button {
               store.navigateTreeUp()
             } label: {
               Label("Up", systemImage: "chevron.up")
             }
-            .buttonStyle(.borderless)
+            .bonsaiCompactIconButton()
             .disabled(store.commitTreePath.isEmpty)
 
             Text(store.commitTreePath.isEmpty ? "/" : store.commitTreePath)
-              .font(.caption)
+              .font(.bonsaiMetadata)
               .foregroundStyle(.secondary)
               .lineLimit(1)
               .truncationMode(.middle)
               .help(store.commitTreePath.isEmpty ? "/" : store.commitTreePath)
             Spacer()
           }
-          .padding(.horizontal, 12)
-          .padding(.bottom, 6)
+          .padding(.horizontal, InterfaceSpacing.panelHorizontal)
+          .padding(.bottom, InterfaceSpacing.small)
 
           List(selection: Binding(
             get: { store.selectedTreeEntry?.id },
@@ -440,10 +439,10 @@ private struct ChangedFilesView: View {
             }
           )) {
             ForEach(store.commitTreeEntries) { entry in
-              HStack(spacing: 8) {
+              HStack(spacing: InterfaceSpacing.medium) {
                 Image(systemName: entry.isDirectory ? "folder" : "doc.text")
                   .foregroundStyle(entry.isDirectory ? .blue : .secondary)
-                  .frame(width: 16)
+                  .bonsaiSidebarIconFrame()
                 Text(entry.name)
                   .lineLimit(1)
                 Spacer()

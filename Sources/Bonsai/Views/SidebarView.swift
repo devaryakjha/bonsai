@@ -39,7 +39,7 @@ struct SidebarView: View {
           Button {
             store.presentOpenRepositoryPanel()
           } label: {
-            Label("Open repository", systemImage: "folder.badge.plus")
+            SidebarLeadingLabel(title: "Open repository", systemImage: "folder.badge.plus")
           }
           .tag(SidebarNavigationSelection.openRepository)
         }
@@ -51,7 +51,7 @@ struct SidebarView: View {
             Button {
               store.openRecent(repository)
             } label: {
-              Label(repository.name, systemImage: "clock")
+              SidebarLeadingLabel(title: repository.name, systemImage: "clock")
             }
             .buttonStyle(.plain)
             .help(repository.path)
@@ -83,7 +83,7 @@ struct SidebarView: View {
                 Button {
                   store.openRecent(repository)
                 } label: {
-                  Label(repository.name, systemImage: "folder")
+                  SidebarLeadingLabel(title: repository.name, systemImage: "folder")
                 }
                 .buttonStyle(.plain)
                 .help(repository.path)
@@ -101,13 +101,11 @@ struct SidebarView: View {
                 }
               }
             } label: {
-              HStack {
-                Label(group.name, systemImage: "folder")
-                Spacer()
-                Text(group.repositories.count.formatted())
-                  .foregroundStyle(.secondary)
-                  .monospacedDigit()
-              }
+              SidebarDisclosureLabel(
+                title: group.name,
+                count: group.repositories.count,
+                systemImage: "folder"
+              )
             }
             .help(group.path)
             .contextMenu {
@@ -131,7 +129,7 @@ struct SidebarView: View {
             } label: {
               Image(systemName: "arrow.clockwise")
             }
-            .buttonStyle(.borderless)
+            .bonsaiCompactIconButton()
             .help("Rescan source directories")
             .accessibilityLabel("Rescan source directories")
           }
@@ -146,22 +144,25 @@ struct SidebarView: View {
             systemImage: "exclamationmark.triangle",
             isEnabled: true
           )
-          HStack {
+          HStack(spacing: InterfaceSpacing.medium) {
             Button("Continue") {
               Task { await store.runInProgressOperation(.continueOperation) }
             }
             .buttonStyle(.borderless)
+            .controlSize(.small)
             Button("Skip") {
               Task { await store.runInProgressOperation(.skip) }
             }
             .disabled(!(store.snapshot.inProgressOperation.kind?.canSkip ?? false))
             .buttonStyle(.borderless)
+            .controlSize(.small)
             Button("Abort") {
               Task { await store.runInProgressOperation(.abort) }
             }
             .buttonStyle(.borderless)
+            .controlSize(.small)
           }
-          .font(.caption)
+          .font(.bonsaiMetadata)
         }
       }
 
@@ -249,7 +250,7 @@ struct SidebarView: View {
               } label: {
                 Image(systemName: "line.3.horizontal.decrease.circle")
               }
-              .buttonStyle(.borderless)
+              .bonsaiCompactIconButton()
               .help("Review stale local branches")
               .accessibilityLabel("Review stale local branches")
             }
@@ -263,7 +264,7 @@ struct SidebarView: View {
           integrationRows
           lfsRows
         } label: {
-          Label("Repository details", systemImage: "info.circle")
+          SidebarDisclosureLabel(title: "Repository details", systemImage: "info.circle")
         }
 
         if !store.remoteBranches.isEmpty || !store.tags.isEmpty {
@@ -374,19 +375,21 @@ struct SidebarView: View {
       isEnabled: store.snapshot.integrations.bisect.active
     )
     if store.snapshot.integrations.bisect.active {
-      HStack {
+      HStack(spacing: InterfaceSpacing.medium) {
         ForEach(GitBisectMark.allCases) { mark in
           Button(mark.title) {
             Task { await store.markBisect(mark) }
           }
           .buttonStyle(.borderless)
+          .controlSize(.small)
         }
         Button("Reset") {
           Task { await store.resetBisect() }
         }
         .buttonStyle(.borderless)
+        .controlSize(.small)
       }
-      .font(.caption)
+      .font(.bonsaiMetadata)
     }
     IntegrationRow(
       title: "GitHub",
@@ -424,7 +427,7 @@ struct SidebarView: View {
       Button {
         Task { await store.markGitHubNotificationsRead() }
       } label: {
-        Label("Mark read", systemImage: "checkmark.circle")
+        SidebarInlineAction(title: "Mark read", systemImage: "checkmark.circle", iconStyle: .accentColor)
       }
       .buttonStyle(.plain)
     }
@@ -475,8 +478,7 @@ struct SidebarView: View {
   @ViewBuilder
   private var referenceRows: some View {
     ForEach(ReferenceDisplayPolicy.visibleItems(store.remoteBranches, showAll: showAllReferences)) { branch in
-      Label(branch.shortName, systemImage: "network")
-        .lineLimit(1)
+      SidebarLeadingLabel(title: branch.shortName, systemImage: "network")
         .contextMenu {
           if branch.isConcreteRemoteBranch {
             Button("Checkout as Local Branch") {
@@ -529,8 +531,7 @@ struct SidebarView: View {
     }
 
     ForEach(ReferenceDisplayPolicy.visibleItems(store.tags, showAll: showAllReferences)) { tag in
-      Label(tag.shortName, systemImage: "tag")
-        .lineLimit(1)
+      SidebarLeadingLabel(title: tag.shortName, systemImage: "tag")
         .contextMenu {
           Button("Checkout") {
             Task { await store.checkout(tag) }
@@ -789,9 +790,10 @@ private struct RepositoryHeaderRow: View {
   var path: String
 
   var body: some View {
-    HStack(alignment: .top, spacing: 10) {
+    HStack(alignment: .top, spacing: InterfaceSpacing.sidebarIconText) {
       BonsaiLogoMark()
-        .frame(width: 17, height: 17)
+        .frame(width: InterfaceSize.sidebarIcon, height: InterfaceSize.sidebarIcon)
+        .frame(width: InterfaceSize.sidebarIconColumn, alignment: .center)
         .padding(.top, 1)
         .accessibilityHidden(true)
 
@@ -800,7 +802,7 @@ private struct RepositoryHeaderRow: View {
           .fontWeight(.semibold)
           .lineLimit(1)
         Text(detail)
-          .font(.caption)
+          .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
           .lineLimit(1)
       }
@@ -814,30 +816,24 @@ private struct BranchRow: View {
   var indicator: BranchWorktreeIndicator
 
   var body: some View {
-    HStack(spacing: 8) {
+    HStack(alignment: .firstTextBaseline, spacing: InterfaceSpacing.sidebarIconText) {
       Image(systemName: indicator.systemImage)
         .foregroundStyle(iconStyle)
-        .frame(width: 16)
+        .bonsaiSidebarIconFrame()
+        .alignmentGuide(.firstTextBaseline) { dimensions in
+          dimensions[VerticalAlignment.center]
+        }
       Text(branch.shortName)
         .lineLimit(1)
       Spacer(minLength: 8)
       if let indicatorTitle {
         Text(indicatorTitle)
-          .font(.caption2)
-          .foregroundStyle(indicatorTitleStyle)
-          .lineLimit(1)
-          .padding(.horizontal, 5)
-          .padding(.vertical, 2)
-          .background(.quaternary, in: Capsule())
+          .metadataPillStyle(foregroundStyle: indicatorTitleStyle)
           .help(indicator.helpText ?? indicatorTitle)
       }
       if let tracking = branch.trackingSummary {
         Text(tracking)
-          .font(.caption2)
-          .foregroundStyle(branch.upstreamGone ? .orange : .secondary)
-          .padding(.horizontal, 5)
-          .padding(.vertical, 2)
-          .background(.quaternary, in: Capsule())
+          .metadataPillStyle(foregroundStyle: branch.upstreamGone ? .orange : .secondary)
       }
     }
     .help(indicator.helpText ?? branch.shortName)
@@ -893,18 +889,40 @@ private struct ReferenceCopyMenu: View {
   }
 }
 
+private struct SidebarLeadingLabel: View {
+  var title: String
+  var systemImage: String
+  var iconStyle: Color = .secondary
+  var truncationMode: Text.TruncationMode = .tail
+
+  var body: some View {
+    HStack(alignment: .firstTextBaseline, spacing: InterfaceSpacing.sidebarIconText) {
+      Image(systemName: systemImage)
+        .foregroundStyle(iconStyle)
+        .bonsaiSidebarIconFrame()
+        .alignmentGuide(.firstTextBaseline) { dimensions in
+          dimensions[VerticalAlignment.center]
+        }
+
+      Text(title)
+        .lineLimit(1)
+        .truncationMode(truncationMode)
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+    }
+    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+  }
+}
+
 private struct SidebarMetricRow: View {
   var title: String
   var value: Int
   var systemImage: String
 
   var body: some View {
-    HStack(spacing: 8) {
-      Label(title, systemImage: systemImage)
-        .lineLimit(1)
-        .truncationMode(.tail)
+    HStack(alignment: .firstTextBaseline, spacing: InterfaceSpacing.medium) {
+      SidebarLeadingLabel(title: title, systemImage: systemImage)
         .layoutPriority(1)
-      Spacer()
+      Spacer(minLength: InterfaceSpacing.medium)
       Text(value.formatted())
         .foregroundStyle(.secondary)
         .monospacedDigit()
@@ -916,21 +934,38 @@ private struct SidebarMetricRow: View {
 
 private struct SidebarDisclosureLabel: View {
   var title: String
-  var count: Int
+  var count: Int?
   var systemImage: String
 
+  init(title: String, count: Int? = nil, systemImage: String) {
+    self.title = title
+    self.count = count
+    self.systemImage = systemImage
+  }
+
   var body: some View {
-    HStack(spacing: 8) {
-      Label(title, systemImage: systemImage)
-        .lineLimit(1)
-        .truncationMode(.tail)
-        .layoutPriority(1)
-      Spacer()
-      Text(count.formatted())
-        .foregroundStyle(.secondary)
-        .monospacedDigit()
-        .lineLimit(1)
-        .frame(minWidth: 28, alignment: .trailing)
+    HStack(alignment: .center, spacing: InterfaceSpacing.medium) {
+      HStack(alignment: .center, spacing: InterfaceSpacing.sidebarIconText) {
+        Image(systemName: systemImage)
+          .foregroundStyle(.secondary)
+          .bonsaiSidebarIconFrame()
+
+        Text(title)
+          .lineLimit(1)
+          .truncationMode(.tail)
+          .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+      }
+      .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+      .layoutPriority(1)
+
+      if let count {
+        Spacer(minLength: InterfaceSpacing.medium)
+        Text(count.formatted())
+          .foregroundStyle(.secondary)
+          .monospacedDigit()
+          .lineLimit(1)
+          .frame(minWidth: 28, alignment: .trailing)
+      }
     }
   }
 }
@@ -1060,10 +1095,13 @@ private struct AdvancedSidebarRow: View {
   var iconStyle: Color
 
   var body: some View {
-    HStack(alignment: .top, spacing: 10) {
+    HStack(alignment: .firstTextBaseline, spacing: InterfaceSpacing.sidebarIconText) {
       Image(systemName: systemImage)
         .foregroundStyle(iconStyle)
-        .frame(width: 16)
+        .bonsaiSidebarIconFrame()
+        .alignmentGuide(.firstTextBaseline) { dimensions in
+          dimensions[VerticalAlignment.center]
+        }
 
       VStack(alignment: .leading, spacing: 2) {
         Text(title)
@@ -1071,14 +1109,14 @@ private struct AdvancedSidebarRow: View {
           .truncationMode(.middle)
           .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         Text(detail)
-          .font(.caption)
+          .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
           .lineLimit(1)
           .truncationMode(.middle)
           .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         if let tertiary {
           Text(tertiary)
-            .font(.caption2)
+            .font(.bonsaiTinyMetadata)
             .foregroundStyle(.tertiary)
             .lineLimit(1)
             .truncationMode(.middle)
@@ -1097,16 +1135,7 @@ private struct SidebarInlineAction: View {
   var iconStyle: Color = .secondary
 
   var body: some View {
-    HStack(spacing: 10) {
-      Image(systemName: systemImage)
-        .foregroundStyle(iconStyle)
-        .frame(width: 16)
-      Text(title)
-        .lineLimit(1)
-        .truncationMode(.tail)
-        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-    }
-    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+    SidebarLeadingLabel(title: title, systemImage: systemImage, iconStyle: iconStyle)
   }
 }
 
@@ -1117,17 +1146,20 @@ private struct IntegrationRow: View {
   var isEnabled: Bool
 
   var body: some View {
-    HStack(spacing: 10) {
+    HStack(alignment: .firstTextBaseline, spacing: InterfaceSpacing.sidebarIconText) {
       Image(systemName: systemImage)
         .foregroundStyle(isEnabled ? .green : .secondary)
-        .frame(width: 16)
+        .bonsaiSidebarIconFrame()
+        .alignmentGuide(.firstTextBaseline) { dimensions in
+          dimensions[VerticalAlignment.center]
+        }
       VStack(alignment: .leading, spacing: 2) {
         Text(title)
           .lineLimit(1)
           .truncationMode(.tail)
           .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         Text(detail)
-          .font(.caption)
+          .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
           .lineLimit(1)
           .truncationMode(.middle)

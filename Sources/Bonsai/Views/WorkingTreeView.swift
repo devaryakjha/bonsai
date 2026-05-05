@@ -101,7 +101,7 @@ private struct CleanWorkingTreeView: View {
   var onToggleIgnoredFiles: () -> Void
 
   var body: some View {
-    VStack(spacing: 12) {
+    VStack(spacing: InterfaceSpacing.panelHorizontal) {
       ContentUnavailableView("Working tree clean", systemImage: "checkmark.circle")
 
       Button {
@@ -150,17 +150,16 @@ private struct WorkingTreeSectionHeader: View {
   }
 
   var body: some View {
-    HStack(spacing: 8) {
+    HStack(spacing: InterfaceSpacing.medium) {
       Text(title)
         .lineLimit(1)
 
-      Spacer(minLength: 8)
+      Spacer(minLength: InterfaceSpacing.medium)
 
       Button(action: action) {
         Image(systemName: actionSystemImage)
-          .imageScale(.medium)
       }
-      .buttonStyle(.borderless)
+      .bonsaiCompactIconButton()
       .disabled(!isActionAvailable)
       .help(actionTitle)
       .accessibilityLabel(actionTitle)
@@ -168,20 +167,27 @@ private struct WorkingTreeSectionHeader: View {
       if let secondaryActionSystemImage,
          let secondaryActionTitle,
          let secondaryAction {
-        Button(action: secondaryAction) {
+        let button = Button(action: secondaryAction) {
           if let secondaryVisibleTitle {
             Label(secondaryVisibleTitle, systemImage: secondaryActionSystemImage)
               .labelStyle(.titleAndIcon)
               .lineLimit(1)
           } else {
             Image(systemName: secondaryActionSystemImage)
-              .imageScale(.medium)
           }
         }
-        .buttonStyle(.borderless)
-        .font(.caption)
+        .font(.bonsaiMetadata)
         .help(secondaryActionTitle)
         .accessibilityLabel(secondaryActionTitle)
+
+        if secondaryVisibleTitle == nil {
+          button
+            .bonsaiCompactIconButton()
+        } else {
+          button
+            .buttonStyle(.borderless)
+            .controlSize(.small)
+        }
       }
     }
   }
@@ -193,7 +199,7 @@ private struct StatusRow: View {
   let store: RepositoryStore
 
   var body: some View {
-    HStack(spacing: 10) {
+    HStack(spacing: InterfaceSpacing.large) {
       ChangeStatusBadge(statusEntry: entry)
 
       VStack(alignment: .leading, spacing: 2) {
@@ -203,11 +209,11 @@ private struct StatusRow: View {
           .help(entry.path)
         if entry.isConflicted {
           Text("Conflict needs resolution")
-            .font(.caption)
+            .font(.bonsaiMetadata)
             .foregroundStyle(.secondary)
         } else if let originalPath = entry.originalPath {
           Text(originalPath)
-            .font(.caption.monospaced())
+            .font(.bonsaiMonospacedMetadata)
             .foregroundStyle(.secondary)
             .lineLimit(1)
             .truncationMode(.middle)
@@ -222,7 +228,7 @@ private struct StatusRow: View {
       } label: {
         Image(systemName: entry.primaryRowAction.systemImage)
       }
-      .buttonStyle(.borderless)
+      .bonsaiCompactIconButton()
       .help(entry.primaryRowAction.title)
       .accessibilityLabel("\(entry.primaryRowAction.title) \(entry.path)")
 
@@ -231,7 +237,7 @@ private struct StatusRow: View {
       } label: {
         Image(systemName: "ellipsis.circle")
       }
-      .menuStyle(.borderlessButton)
+      .bonsaiCompactMenuButton()
       .help("File actions")
       .accessibilityLabel("File actions for \(entry.path)")
     }
@@ -412,7 +418,7 @@ private struct IgnoredStatusRow: View {
   let store: RepositoryStore
 
   var body: some View {
-    HStack(spacing: 10) {
+    HStack(spacing: InterfaceSpacing.large) {
       ChangeStatusBadge(statusEntry: entry)
 
       Text(entry.path)
@@ -461,7 +467,7 @@ private struct CommitComposerView: View {
   @Bindable var store: RepositoryStore
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: .leading, spacing: InterfaceSpacing.large) {
       ZStack(alignment: .topLeading) {
         TextEditor(text: $store.commitMessage)
           .font(.body.monospaced())
@@ -470,8 +476,8 @@ private struct CommitComposerView: View {
         if store.commitMessage.isEmpty {
           Text("Commit message")
             .foregroundStyle(.tertiary)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 8)
+            .padding(.horizontal, InterfaceSpacing.small)
+            .padding(.vertical, InterfaceSpacing.medium)
             .allowsHitTesting(false)
         }
       }
@@ -480,7 +486,7 @@ private struct CommitComposerView: View {
           .stroke(.quaternary)
       }
 
-      HStack(spacing: 8) {
+      HStack(alignment: .center, spacing: InterfaceSpacing.medium) {
         if !store.recentCommitMessages.isEmpty {
           Menu {
             ForEach(store.recentCommitMessages, id: \.self) { message in
@@ -493,11 +499,11 @@ private struct CommitComposerView: View {
               store.clearRecentCommitMessages()
             }
           } label: {
-            Label("Recent messages", systemImage: "clock")
-              .labelStyle(.iconOnly)
-              .lineLimit(1)
-          }
-          .menuStyle(.borderlessButton)
+          Label("Recent messages", systemImage: "clock")
+            .labelStyle(.iconOnly)
+            .lineLimit(1)
+        }
+          .bonsaiHeaderMenuButton()
           .help("Recent commit messages")
           .accessibilityLabel("Recent commit messages")
         }
@@ -510,7 +516,7 @@ private struct CommitComposerView: View {
             .labelStyle(.iconOnly)
             .lineLimit(1)
         }
-        .menuStyle(.borderlessButton)
+        .bonsaiHeaderMenuButton()
         .help(commitOptionsHelp)
         .accessibilityLabel("Commit settings")
 
@@ -526,20 +532,20 @@ private struct CommitComposerView: View {
             .labelStyle(.iconOnly)
             .lineLimit(1)
         }
-        .menuStyle(.borderlessButton)
+        .bonsaiHeaderMenuButton()
         .disabled(!store.canGenerateCommitMessageWithCodeAgent)
         .help(store.generateCommitMessageWithCodeAgentHelp)
         .accessibilityLabel("Generate commit message")
 
         if let composerStatusText {
           Text(composerStatusText)
-            .font(.caption)
+            .font(.bonsaiMetadata)
             .foregroundStyle(.secondary)
             .lineLimit(1)
             .help(composerStatusHelp)
         } else if !store.commitOptionsSummary.isEmpty {
           Text(store.commitOptionsSummary)
-            .font(.caption)
+            .font(.bonsaiMetadata)
             .foregroundStyle(.secondary)
             .lineLimit(1)
             .help(commitOptionsHelp)

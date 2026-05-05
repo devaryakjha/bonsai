@@ -6,7 +6,7 @@ struct MainContentView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      VStack(alignment: .leading, spacing: 8) {
+      VStack(alignment: .leading, spacing: InterfaceSpacing.medium) {
         RepositoryStatusStrip(store: store)
 
         AppKitSegmentedControl(
@@ -16,8 +16,8 @@ struct MainContentView: View {
           title: \.rawValue
         )
       }
-      .padding([.horizontal, .top], 12)
-      .padding(.bottom, 8)
+      .padding([.horizontal, .top], InterfaceSpacing.panelHorizontal)
+      .padding(.bottom, InterfaceSpacing.panelVertical)
 
       Divider()
 
@@ -40,7 +40,7 @@ private struct RepositoryStatusStrip: View {
   let store: RepositoryStore
 
   var body: some View {
-    HStack(spacing: 8) {
+    HStack(spacing: InterfaceSpacing.medium) {
       statusItem(
         systemImage: "arrow.triangle.branch",
         title: branchTitle,
@@ -61,7 +61,7 @@ private struct RepositoryStatusStrip: View {
         )
       }
 
-      Spacer(minLength: 8)
+      Spacer(minLength: InterfaceSpacing.medium)
 
       statusItem(
         systemImage: store.isRefreshing ? "arrow.clockwise" : "checkmark.circle",
@@ -69,7 +69,7 @@ private struct RepositoryStatusStrip: View {
         help: refreshHelp
       )
     }
-    .font(.caption)
+    .font(.bonsaiMetadata)
     .foregroundStyle(.secondary)
     .lineLimit(1)
   }
@@ -77,7 +77,7 @@ private struct RepositoryStatusStrip: View {
   private func statusItem(systemImage: String, title: String, help: String) -> some View {
     Label(title, systemImage: systemImage)
       .labelStyle(.titleAndIcon)
-      .padding(.horizontal, 7)
+      .padding(.horizontal, InterfaceSpacing.medium)
       .padding(.vertical, 3)
       .background(.quaternary.opacity(0.55), in: Capsule())
       .help(help)

@@ -82,7 +82,7 @@ struct SettingsView: View {
             SecureField("GitHub token", text: $githubToken)
               .textFieldStyle(.roundedBorder)
             Text(gitHubTokenStatus)
-              .font(.caption)
+              .font(.bonsaiMetadata)
               .foregroundStyle(gitHubTokenStatusColor)
           }
         }
@@ -149,19 +149,20 @@ private struct SourceDirectoryEditor: View {
   var onAddFolder: () -> Void
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 8) {
+    VStack(alignment: .leading, spacing: InterfaceSpacing.medium) {
       VStack(spacing: 0) {
         if sourceDirectoryLines.isEmpty {
           Text("No source directories")
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
+            .padding(.horizontal, InterfaceSpacing.large)
+            .padding(.vertical, InterfaceSpacing.panelVertical)
         } else {
           ForEach(Array(sourceDirectoryLines.enumerated()), id: \.offset) { index, path in
-            HStack(spacing: 8) {
+            HStack(spacing: InterfaceSpacing.medium) {
               Image(systemName: "folder")
                 .foregroundStyle(.secondary)
+                .bonsaiSidebarIconFrame()
               Text(path)
                 .font(.body.monospaced())
                 .lineLimit(1)
@@ -173,12 +174,12 @@ private struct SourceDirectoryEditor: View {
               } label: {
                 Image(systemName: "minus.circle")
               }
-              .buttonStyle(.borderless)
+              .bonsaiCompactIconButton()
               .help("Remove source directory")
               .accessibilityLabel("Remove source directory")
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
+            .padding(.horizontal, InterfaceSpacing.large)
+            .padding(.vertical, InterfaceSpacing.medium)
 
             if index < sourceDirectoryLines.count - 1 {
               Divider()
@@ -192,7 +193,7 @@ private struct SourceDirectoryEditor: View {
           .stroke(Color(nsColor: .separatorColor).opacity(0.8))
       }
 
-      HStack(spacing: 8) {
+      HStack(spacing: InterfaceSpacing.medium) {
         Button {
           onAddFolder()
         } label: {
@@ -200,7 +201,7 @@ private struct SourceDirectoryEditor: View {
         }
         .controlSize(.small)
         Text("Saved automatically.")
-          .font(.caption)
+          .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
       }
     }
@@ -227,22 +228,21 @@ private struct PromptPreferenceEditor: View {
   var onReset: () -> Void
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 6) {
+    VStack(alignment: .leading, spacing: InterfaceSpacing.small) {
       ZStack(alignment: .topTrailing) {
         FramedTextEditor(text: $text, minHeight: 76, maxHeight: 104)
           .padding(.trailing, 32)
         Button(action: onReset) {
           Image(systemName: "arrow.counterclockwise")
         }
-        .buttonStyle(.borderless)
-        .controlSize(.small)
+        .bonsaiCompactIconButton()
         .padding(.top, 8)
         .padding(.trailing, 8)
         .help(resetHelp)
         .accessibilityLabel(resetHelp)
       }
       Text("Saved automatically.")
-        .font(.caption)
+        .font(.bonsaiMetadata)
         .foregroundStyle(.secondary)
     }
   }
@@ -258,8 +258,8 @@ private struct FramedTextEditor: View {
       .font(.body.monospaced())
       .frame(minHeight: minHeight, maxHeight: maxHeight)
       .scrollContentBackground(.hidden)
-      .padding(.horizontal, 8)
-      .padding(.vertical, 6)
+      .padding(.horizontal, InterfaceSpacing.medium)
+      .padding(.vertical, InterfaceSpacing.small)
       .background(Color(nsColor: .textBackgroundColor).opacity(0.72), in: RoundedRectangle(cornerRadius: 7))
       .overlay {
         RoundedRectangle(cornerRadius: 7)

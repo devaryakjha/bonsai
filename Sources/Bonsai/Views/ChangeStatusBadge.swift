@@ -20,11 +20,11 @@ struct ChangeStatusBadge: View {
 
   var body: some View {
     Text(code)
-      .font(.caption2.monospaced().weight(.semibold))
+      .font(.bonsaiTinyMetadata.monospaced().weight(.semibold))
       .lineLimit(1)
       .minimumScaleFactor(0.85)
       .foregroundStyle(style.foreground)
-      .frame(width: 24, height: 18)
+      .frame(width: InterfaceSize.statusBadgeWidth, height: InterfaceSize.statusBadgeHeight)
       .background {
         RoundedRectangle(cornerRadius: 5, style: .continuous)
           .fill(style.background)

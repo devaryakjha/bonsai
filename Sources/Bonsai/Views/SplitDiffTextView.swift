@@ -16,6 +16,7 @@ struct SplitDiffTextView: NSViewRepresentable {
     let splitView = NSSplitView()
     splitView.isVertical = true
     splitView.dividerStyle = .thin
+    splitView.delegate = context.coordinator
 
     let oldPane = Self.makePane(descriptor: paneContext.old, sideTitle: "Old")
     let newPane = Self.makePane(descriptor: paneContext.new, sideTitle: "New")
@@ -83,7 +84,7 @@ struct SplitDiffTextView: NSViewRepresentable {
     context.coordinator.navigateSearch(query: searchText, request: searchNavigationRequest)
   }
 
-  final class Coordinator {
+  final class Coordinator: NSObject, NSSplitViewDelegate {
     weak var oldTextView: NSTextView?
     weak var newTextView: NSTextView?
     weak var oldScrollView: NSScrollView?
@@ -144,7 +145,6 @@ struct SplitDiffTextView: NSViewRepresentable {
     }
 
     func setDividerPositionIfNeeded(in splitView: NSSplitView) {
-      guard !didSetInitialDividerPosition else { return }
       let length = splitView.isVertical ? splitView.bounds.width : splitView.bounds.height
       guard length > 0 else {
         DispatchQueue.main.async { [weak self, weak splitView] in
@@ -154,8 +154,61 @@ struct SplitDiffTextView: NSViewRepresentable {
         }
         return
       }
-      splitView.setPosition(length / 2, ofDividerAt: 0)
+      splitView.layoutSubtreeIfNeeded()
+      let proposedPosition = didSetInitialDividerPosition
+        ? currentDividerPosition(in: splitView)
+        : length / 2
+      let dividerPosition = SplitDiffLayoutPolicy.clampedDividerPosition(
+        length: length,
+        proposedPosition: proposedPosition,
+        isSideBySide: splitView.isVertical
+      )
+      guard !didSetInitialDividerPosition
+        || SplitDiffLayoutPolicy.dividerPositionNeedsRepair(
+          length: length,
+          position: proposedPosition,
+          isSideBySide: splitView.isVertical
+        )
+      else { return }
+      splitView.setPosition(dividerPosition, ofDividerAt: 0)
       didSetInitialDividerPosition = true
+    }
+
+    private func currentDividerPosition(in splitView: NSSplitView) -> CGFloat {
+      guard let firstPane = splitView.arrangedSubviews.first ?? splitView.subviews.first else {
+        return 0
+      }
+      return splitView.isVertical ? firstPane.frame.width : firstPane.frame.height
+    }
+
+    func splitView(
+      _ splitView: NSSplitView,
+      constrainMinCoordinate proposedMinimumPosition: CGFloat,
+      ofSubviewAt dividerIndex: Int
+    ) -> CGFloat {
+      SplitDiffLayoutPolicy.minimumPaneLength(isSideBySide: splitView.isVertical)
+    }
+
+    func splitView(
+      _ splitView: NSSplitView,
+      constrainMaxCoordinate proposedMaximumPosition: CGFloat,
+      ofSubviewAt dividerIndex: Int
+    ) -> CGFloat {
+      let length = splitView.isVertical ? splitView.bounds.width : splitView.bounds.height
+      let minimumLength = SplitDiffLayoutPolicy.minimumPaneLength(isSideBySide: splitView.isVertical)
+      return max(0, length - minimumLength)
+    }
+
+    func splitView(_ splitView: NSSplitView, canCollapseSubview subview: NSView) -> Bool {
+      false
+    }
+
+    func splitView(
+      _ splitView: NSSplitView,
+      shouldCollapseSubview subview: NSView,
+      forDoubleClickOnDividerAt dividerIndex: Int
+    ) -> Bool {
+      false
     }
 
     func installScrollSync() {
