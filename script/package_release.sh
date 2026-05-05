@@ -202,6 +202,8 @@ validate_app_bundle() {
 }
 
 create_archive() {
+  local archive_identity="${1:-}"
+
   rm -rf "$DMG_STAGING_DIR"
   rm -f "$ARCHIVE_PATH"
   mkdir -p "$DMG_STAGING_DIR"
@@ -215,8 +217,21 @@ create_archive() {
     "$ARCHIVE_PATH" \
     >/dev/null
   require_file "$ARCHIVE_PATH"
+  if [[ -n "$archive_identity" ]]; then
+    sign_archive "$archive_identity"
+  fi
   validate_archive
   rm -rf "$DMG_STAGING_DIR"
+}
+
+sign_archive() {
+  local identity="$1"
+  codesign \
+    --force \
+    --timestamp \
+    --sign "$identity" \
+    "$ARCHIVE_PATH"
+  codesign --verify --strict --verbose=2 "$ARCHIVE_PATH"
 }
 
 create_notary_app_archive() {
@@ -734,7 +749,7 @@ case "$MODE" in
   --archive|archive)
     check_archive_credentials
     package_with_identity "$(developer_id_identity)"
-    create_archive
+    create_archive "$(developer_id_identity)"
     write_release_manifest "$(developer_id_identity)" false
     ;;
   --notarize|notarize)
@@ -750,7 +765,7 @@ case "$MODE" in
     xcrun stapler staple "$APP_BUNDLE"
     xcrun stapler validate "$APP_BUNDLE"
     spctl -a -vv -t exec "$APP_BUNDLE"
-    create_archive
+    create_archive "$(developer_id_identity)"
     xcrun notarytool submit "$ARCHIVE_PATH" "${notary_submit_args[@]}" --wait
     xcrun stapler staple "$ARCHIVE_PATH"
     xcrun stapler validate "$ARCHIVE_PATH"
