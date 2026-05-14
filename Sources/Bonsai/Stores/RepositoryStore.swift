@@ -1075,7 +1075,7 @@ final class RepositoryStore {
     guard removeFileFromHistoryRequest != nil else { return }
     let path = removeFileFromHistoryPath
     removeFileFromHistoryRequest = nil
-    await runMutation(title: "Remove file from history") {
+    await runMutation(title: "Purge file from Git history") {
       try await gitClient.removeFileFromHistory(path, in: requiredRepository())
     }
   }

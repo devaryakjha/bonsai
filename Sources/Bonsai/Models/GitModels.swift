@@ -1625,9 +1625,9 @@ struct RemoveFileFromHistoryRequest: Identifiable, Hashable {
   var id = UUID()
   var repositoryName: String
 
-  var title: String { "Remove file from history" }
-  var message: String { "Rewrite local history in \(repositoryName)." }
-  var detail: String { "Branches and tags will be rewritten for the selected path." }
+  var title: String { "Purge file from Git history" }
+  var message: String { "Rewrite local refs in \(repositoryName)." }
+  var detail: String { "Removes the path from reachable commits across local branches and tags." }
 }
 
 struct GitIgnoreTemplateRequest: Identifiable, Hashable {

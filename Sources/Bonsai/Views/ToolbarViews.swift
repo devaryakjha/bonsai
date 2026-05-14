@@ -205,7 +205,7 @@ struct RepositoryToolbarActionsGroup: View {
           Divider()
         }
         if store.canRemoveSelectedFileFromHistory {
-          Button("Remove Selected File from History…", role: .destructive) {
+          Button("Purge selected file from Git history…", role: .destructive) {
             store.presentRemoveFileFromHistory(path: store.selectedPreviewPath)
           }
         }
@@ -227,7 +227,7 @@ struct RepositoryToolbarActionsGroup: View {
             store.presentCleanIgnoredFiles()
           }
         }
-        Button("Remove File from History…", role: .destructive) {
+        Button("Purge file from Git history…", role: .destructive) {
           store.presentRemoveFileFromHistory()
         }
         Divider()

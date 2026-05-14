@@ -980,23 +980,23 @@ private struct RemoveFileFromHistorySheet: View {
         .foregroundStyle(.secondary)
 
       VStack(alignment: .leading, spacing: 6) {
-        Text("Repository path")
+        Text("Repository-relative path")
           .font(.bonsaiMetadata)
           .foregroundStyle(.secondary)
-        TextField("Path", text: $path)
+        TextField("path/to/file", text: $path)
           .textFieldStyle(.roundedBorder)
-          .help("Repository-relative path")
+          .help("Enter a path relative to the repository root")
       }
 
-      Text("Bonsai requires a clean working tree. Remote branches and tags must be updated separately.")
+      Text("Requires a clean working tree. Remote refs are not updated.")
         .foregroundStyle(.secondary)
 
-      DestructiveConfirmationToggle(title: "Confirm history rewrite", isOn: $confirmed)
+      DestructiveConfirmationToggle(title: "Confirm purge", isOn: $confirmed)
 
       HStack {
         Spacer()
         Button("Cancel", action: onCancel)
-        Button("Remove", role: .destructive, action: onRemove)
+        Button("Purge file", role: .destructive, action: onRemove)
           .buttonStyle(.borderedProminent)
           .disabled(!canRemove)
       }

@@ -144,7 +144,7 @@ struct BonsaiCommands: Commands {
       }
       .disabled(store.selectedRepository == nil || !store.canCleanIgnoredFiles)
 
-      Button("Remove File from History…", role: .destructive) {
+      Button("Purge file from Git history…", role: .destructive) {
         store.presentRemoveFileFromHistory()
       }
       .disabled(store.selectedRepository == nil)

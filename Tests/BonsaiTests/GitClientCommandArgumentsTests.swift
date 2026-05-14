@@ -372,7 +372,7 @@ final class GitClientCommandArgumentsTests: XCTestCase {
     XCTAssertEqual(GitClient.historyRewriteGarbageCollectArguments(), ["gc", "--prune=now"])
     XCTAssertEqual(
       GitClient.historyRewriteSuccessMessage(path: ".env", commitCount: 2),
-      "Removed .env from 2 commits. Local history was rewritten."
+      "Purged .env from 2 commits. Local refs were rewritten."
     )
   }
 

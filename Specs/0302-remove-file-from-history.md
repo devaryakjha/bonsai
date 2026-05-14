@@ -1,13 +1,14 @@
-# Spec 0302: Remove File from History
+# Spec 0302: Purge file from Git history
 
 ## Objective
 
-Let users remove a committed file from local repository history without opening
-a terminal.
+Let users purge a committed file from local Git history without opening a
+terminal.
 
 ## Requirements
 
-- Expose the operation as an opt-in destructive menu action.
+- Expose the operation as an opt-in destructive menu action named `Purge file
+  from Git history…`.
 - Accept a repository-relative path, with the selected file path prefilled when
   one is available.
 - Require explicit confirmation before rewriting history.

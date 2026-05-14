@@ -7,13 +7,15 @@ precise under inspection, and never playful with critical developer workflows.
 
 - Use Git's established vocabulary: commit, amend, stage, unstage, stash,
   rebase, remote, branch, tag, worktree, hunk, patch, blame.
-- Use sentence case for in-view labels, placeholders, buttons, empty states,
-  tooltips, and accessibility labels.
-- Use macOS menu-style title case only for menu commands and command menus.
+- Use sentence case for custom labels, placeholders, buttons, empty states,
+  tooltips, accessibility labels, and custom menu commands. Capitalize only
+  proper nouns, acronyms, and product terms such as Git, GitHub, and LFS.
+- Use macOS menu-style title case only for system-provided menu names or
+  platform-standard commands.
 - Prefer short noun labels for surfaces and settings: `Commit settings`,
   `Diff options`, `File actions`.
 - Prefer verb labels for actions: `Stage`, `Unstage`, `Commit`, `Abort`,
-  `Reveal in Finder`.
+  `Reveal in Finder`, `Purge file from Git history`.
 - Use conventional compact notation for Git tracking badges: `↑ 2`, `↓ 1`, or
   `↑ 2 ↓ 1`, not spelled-out `up` / `down` labels.
 - Use conventional semantic color for Git status-letter badges: `A` green, `D`

@@ -922,7 +922,7 @@ struct GitClient {
 
   static func historyRewriteSuccessMessage(path: String, commitCount: Int) -> String {
     let commitTitle = commitCount == 1 ? "1 commit" : "\(commitCount.formatted()) commits"
-    return "Removed \(path) from \(commitTitle). Local history was rewritten."
+    return "Purged \(path) from \(commitTitle). Local refs were rewritten."
   }
 
   static func historyRewriteEnvironment(path: String) -> [String: String] {
@@ -2024,7 +2024,7 @@ enum GitClientError: LocalizedError {
     case .historyRewritePathNotFound(let path):
       return "No commits reference \(path)."
     case .historyRewriteRequiresCleanWorkingTree:
-      return "Commit, stash, or discard working tree changes before rewriting history."
+      return "Clean working tree required. Commit, stash, or discard changes before purging history."
     }
   }
 }

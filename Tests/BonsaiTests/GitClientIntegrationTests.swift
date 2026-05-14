@@ -755,8 +755,8 @@ final class GitClientIntegrationTests: XCTestCase {
     await store.removeFileFromHistory()
 
     let commandResult = await store.commandResult
-    XCTAssertEqual(commandResult?.title, "Remove file from history")
-    XCTAssertEqual(commandResult?.output, "Removed .env from 2 commits. Local history was rewritten.")
+    XCTAssertEqual(commandResult?.title, "Purge file from Git history")
+    XCTAssertEqual(commandResult?.output, "Purged .env from 2 commits. Local refs were rewritten.")
     XCTAssertEqual(commandResult?.isError, false)
     XCTAssertTrue(FileManager.default.fileExists(atPath: secret.path(percentEncoded: false)))
     XCTAssertEqual(try String(contentsOf: secret, encoding: .utf8), "TOKEN=secret\n")
