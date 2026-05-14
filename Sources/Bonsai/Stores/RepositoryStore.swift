@@ -99,6 +99,8 @@ final class RepositoryStore {
   var discardChangeRequest: DiscardChangeRequest?
   var discardUnstagedChangesRequest: DiscardUnstagedChangesRequest?
   var cleanIgnoredFilesRequest: CleanIgnoredFilesRequest?
+  var removeFileFromHistoryRequest: RemoveFileFromHistoryRequest?
+  var removeFileFromHistoryPath = ""
   var gitIgnoreTemplateRequest: GitIgnoreTemplateRequest?
   var selectedGitIgnoreTemplateID = GitIgnoreTemplateCatalog.defaultTemplateID
   var discardPatchRequest: DiscardPatchRequest?
@@ -222,6 +224,10 @@ final class RepositoryStore {
   }
 
   var canCopySelectedFileAbsolutePath: Bool {
+    selectedRepository != nil && selectedPreviewPath != nil
+  }
+
+  var canRemoveSelectedFileFromHistory: Bool {
     selectedRepository != nil && selectedPreviewPath != nil
   }
 
@@ -1056,6 +1062,21 @@ final class RepositoryStore {
     cleanIgnoredFilesRequest = nil
     await runMutation(title: "Clean ignored files") {
       try await gitClient.cleanIgnored(request.entries, in: requiredRepository())
+    }
+  }
+
+  func presentRemoveFileFromHistory(path: String? = nil) {
+    guard let selectedRepository else { return }
+    removeFileFromHistoryPath = path ?? selectedPreviewPath ?? ""
+    removeFileFromHistoryRequest = RemoveFileFromHistoryRequest(repositoryName: selectedRepository.name)
+  }
+
+  func removeFileFromHistory() async {
+    guard removeFileFromHistoryRequest != nil else { return }
+    let path = removeFileFromHistoryPath
+    removeFileFromHistoryRequest = nil
+    await runMutation(title: "Remove file from history") {
+      try await gitClient.removeFileFromHistory(path, in: requiredRepository())
     }
   }
 

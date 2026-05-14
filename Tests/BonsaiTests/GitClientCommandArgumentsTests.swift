@@ -331,6 +331,51 @@ final class GitClientCommandArgumentsTests: XCTestCase {
     XCTAssertEqual(GitClient.startInteractiveRebaseArguments(updateRefsPlan), ["rebase", "-i", "--update-refs", "abc123^"])
   }
 
+  func testHistoryRewriteArgumentsAndPathValidationAreStable() throws {
+    XCTAssertEqual(try GitClient.normalizedHistoryRewritePath(" ./Secrets/.env \n"), "Secrets/.env")
+    XCTAssertThrowsError(try GitClient.normalizedHistoryRewritePath(""))
+    XCTAssertThrowsError(try GitClient.normalizedHistoryRewritePath("/tmp/.env"))
+    XCTAssertThrowsError(try GitClient.normalizedHistoryRewritePath("../.env"))
+    XCTAssertThrowsError(try GitClient.normalizedHistoryRewritePath("Secrets//.env"))
+
+    XCTAssertEqual(
+      GitClient.historyFileCommitListArguments(path: "Secrets/.env"),
+      ["log", "--all", "--format=%H", "--", "Secrets/.env"]
+    )
+    XCTAssertEqual(GitClient.historyRewriteStatusArguments(), ["status", "--porcelain"])
+    XCTAssertEqual(
+      GitClient.removeFileFromHistoryFilterBranchArguments(),
+      [
+        "filter-branch",
+        "--force",
+        "--index-filter",
+        "git rm -r --cached --ignore-unmatch -- \"$BONSAI_HISTORY_REWRITE_PATH\"",
+        "--prune-empty",
+        "--tag-name-filter",
+        "cat",
+        "--",
+        "--all"
+      ]
+    )
+    XCTAssertEqual(
+      GitClient.historyRewriteOriginalRefsArguments(),
+      ["for-each-ref", "refs/original", "--format=%(refname)"]
+    )
+    XCTAssertEqual(
+      GitClient.deleteHistoryRewriteBackupRefArguments("refs/original/refs/heads/main"),
+      ["update-ref", "-d", "refs/original/refs/heads/main"]
+    )
+    XCTAssertEqual(
+      GitClient.historyRewriteReflogExpireArguments(),
+      ["reflog", "expire", "--expire=now", "--all"]
+    )
+    XCTAssertEqual(GitClient.historyRewriteGarbageCollectArguments(), ["gc", "--prune=now"])
+    XCTAssertEqual(
+      GitClient.historyRewriteSuccessMessage(path: ".env", commitCount: 2),
+      "Removed .env from 2 commits. Local history was rewritten."
+    )
+  }
+
   func testBranchPublishAndForcePushArgumentsPreserveRefs() throws {
     let branch = GitRef(
       name: "refs/heads/feature/local branch",

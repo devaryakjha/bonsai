@@ -727,6 +727,48 @@ final class GitClientIntegrationTests: XCTestCase {
     XCTAssertTrue(status.contains { $0.path == "scratch.txt" && $0.isUntracked })
   }
 
+  func testStoreRemovesFileFromHistoryAfterConfirmation() async throws {
+    let repo = try await makeRepository()
+    let secret = repo.appending(path: ".env")
+    try write("TOKEN=secret\n", to: secret)
+    try await commitAll(in: repo, message: "Commit secret")
+    try write(".env\n", to: repo.appending(path: ".gitignore"))
+    _ = try await client.git(["add", ".gitignore"], in: repo)
+    _ = try await client.git(["rm", "--cached", ".env"], in: repo)
+    _ = try await client.git(["commit", "-m", "Stop tracking env"], in: repo)
+
+    let repository = GitRepository(path: repo.path(percentEncoded: false))
+    let matchingCommitCount = try await client.historyCommitCount(referencing: ".env", in: repository)
+    XCTAssertEqual(matchingCommitCount, 2)
+    XCTAssertTrue(FileManager.default.fileExists(atPath: secret.path(percentEncoded: false)))
+
+    let store = await RepositoryStore()
+    await store.openRepository(at: repo)
+    await MainActor.run {
+      store.presentRemoveFileFromHistory(path: ".env")
+    }
+    let requestedPath = await store.removeFileFromHistoryPath
+    let request = await store.removeFileFromHistoryRequest
+    XCTAssertEqual(requestedPath, ".env")
+    XCTAssertNotNil(request)
+
+    await store.removeFileFromHistory()
+
+    let commandResult = await store.commandResult
+    XCTAssertEqual(commandResult?.title, "Remove file from history")
+    XCTAssertEqual(commandResult?.output, "Removed .env from 2 commits. Local history was rewritten.")
+    XCTAssertEqual(commandResult?.isError, false)
+    XCTAssertTrue(FileManager.default.fileExists(atPath: secret.path(percentEncoded: false)))
+    XCTAssertEqual(try String(contentsOf: secret, encoding: .utf8), "TOKEN=secret\n")
+
+    let history = try await client.git(["log", "--all", "--format=%H", "--", ".env"], in: repo).stdout
+    XCTAssertTrue(history.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    let objects = try await client.git(["rev-list", "--objects", "--all"], in: repo).stdout
+    XCTAssertFalse(objects.contains(".env"))
+    let originalRefs = try await client.git(["for-each-ref", "refs/original", "--format=%(refname)"], in: repo).stdout
+    XCTAssertTrue(originalRefs.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+  }
+
   func testStoreCommitRequiresStagedChangesUnlessAmending() async throws {
     let repo = try await makeRepository()
     try write("initial\n", to: repo.appending(path: "file.txt"))
