@@ -201,8 +201,15 @@ struct RepositoryToolbarActionsGroup: View {
           }
         }
 
-        if store.canDiscardUnstagedChanges {
+        if store.canRemoveSelectedFileFromHistory || store.canDiscardUnstagedChanges {
           Divider()
+        }
+        if store.canRemoveSelectedFileFromHistory {
+          Button("Purge selected file from Git history…", role: .destructive) {
+            store.presentRemoveFileFromHistory(path: store.selectedPreviewPath)
+          }
+        }
+        if store.canDiscardUnstagedChanges {
           Button("Discard Unstaged Changes…", role: .destructive) {
             store.presentDiscardUnstagedChanges()
           }
@@ -219,6 +226,9 @@ struct RepositoryToolbarActionsGroup: View {
           Button("Clean Ignored Files…", role: .destructive) {
             store.presentCleanIgnoredFiles()
           }
+        }
+        Button("Purge file from Git history…", role: .destructive) {
+          store.presentRemoveFileFromHistory()
         }
         Divider()
         Button("Create Worktree…") {

@@ -822,6 +822,117 @@ struct GitClient {
     ["clean", "-f", "-X", "-d", "--"] + entries.map(\.path)
   }
 
+  func historyCommitCount(referencing path: String, in repository: GitRepository) async throws -> Int {
+    let normalizedPath = try Self.normalizedHistoryRewritePath(path)
+    let output = try await git(
+      Self.historyFileCommitListArguments(path: normalizedPath),
+      in: repository.url,
+      environment: Self.historyRewriteEnvironment(path: normalizedPath)
+    )
+    return output.stdout.split(separator: "\n", omittingEmptySubsequences: true).count
+  }
+
+  func removeFileFromHistory(_ path: String, in repository: GitRepository) async throws -> String {
+    let normalizedPath = try Self.normalizedHistoryRewritePath(path)
+    let status = try await git(Self.historyRewriteStatusArguments(), in: repository.url)
+    guard status.stdout.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+      throw GitClientError.historyRewriteRequiresCleanWorkingTree
+    }
+
+    let matchingCommitCount = try await historyCommitCount(referencing: normalizedPath, in: repository)
+    guard matchingCommitCount > 0 else {
+      throw GitClientError.historyRewritePathNotFound(normalizedPath)
+    }
+
+    let environment = Self.historyRewriteEnvironment(path: normalizedPath)
+    _ = try await git(
+      Self.removeFileFromHistoryFilterBranchArguments(),
+      in: repository.url,
+      environment: environment
+    )
+
+    let originalRefs = try await git(Self.historyRewriteOriginalRefsArguments(), in: repository.url)
+    for ref in originalRefs.stdout.split(separator: "\n", omittingEmptySubsequences: true).map(String.init) {
+      _ = try await git(Self.deleteHistoryRewriteBackupRefArguments(ref), in: repository.url)
+    }
+
+    _ = try await git(Self.historyRewriteReflogExpireArguments(), in: repository.url)
+    _ = try await git(Self.historyRewriteGarbageCollectArguments(), in: repository.url)
+
+    return Self.historyRewriteSuccessMessage(path: normalizedPath, commitCount: matchingCommitCount)
+  }
+
+  static func normalizedHistoryRewritePath(_ path: String) throws -> String {
+    var normalized = path.trimmingCharacters(in: .whitespacesAndNewlines)
+    while normalized.hasPrefix("./") {
+      normalized.removeFirst(2)
+    }
+
+    guard !normalized.isEmpty else {
+      throw GitClientError.emptyHistoryRewritePath
+    }
+    guard !normalized.hasPrefix("/") else {
+      throw GitClientError.invalidHistoryRewritePath(normalized)
+    }
+    let components = normalized.split(separator: "/", omittingEmptySubsequences: false)
+    let hasUnsafeComponent = components.contains { $0 == ".." || $0.isEmpty }
+    guard normalized != "." && normalized != ".." && !hasUnsafeComponent else {
+      throw GitClientError.invalidHistoryRewritePath(normalized)
+    }
+    return normalized
+  }
+
+  static func historyFileCommitListArguments(path: String) -> [String] {
+    ["log", "--all", "--format=%H", "--", path]
+  }
+
+  static func historyRewriteStatusArguments() -> [String] {
+    ["status", "--porcelain"]
+  }
+
+  static func removeFileFromHistoryFilterBranchArguments() -> [String] {
+    [
+      "filter-branch",
+      "--force",
+      "--index-filter",
+      "git rm -r --cached --ignore-unmatch -- \"$BONSAI_HISTORY_REWRITE_PATH\"",
+      "--prune-empty",
+      "--tag-name-filter",
+      "cat",
+      "--",
+      "--all"
+    ]
+  }
+
+  static func historyRewriteOriginalRefsArguments() -> [String] {
+    ["for-each-ref", "refs/original", "--format=%(refname)"]
+  }
+
+  static func deleteHistoryRewriteBackupRefArguments(_ ref: String) -> [String] {
+    ["update-ref", "-d", ref]
+  }
+
+  static func historyRewriteReflogExpireArguments() -> [String] {
+    ["reflog", "expire", "--expire=now", "--all"]
+  }
+
+  static func historyRewriteGarbageCollectArguments() -> [String] {
+    ["gc", "--prune=now"]
+  }
+
+  static func historyRewriteSuccessMessage(path: String, commitCount: Int) -> String {
+    let commitTitle = commitCount == 1 ? "1 commit" : "\(commitCount.formatted()) commits"
+    return "Purged \(path) from \(commitTitle). Local refs were rewritten."
+  }
+
+  static func historyRewriteEnvironment(path: String) -> [String: String] {
+    [
+      "BONSAI_HISTORY_REWRITE_PATH": path,
+      "FILTER_BRANCH_SQUELCH_WARNING": "1",
+      "GIT_LITERAL_PATHSPECS": "1"
+    ]
+  }
+
   func ignorePath(_ path: String, in repository: GitRepository) throws -> String {
     let pattern = GitIgnorePattern.repositoryRootPattern(for: path)
     return try ignorePattern(pattern, label: path, in: repository)
@@ -1891,6 +2002,10 @@ enum GitClientError: LocalizedError {
   case commitNotFound(String)
   case invalidRemoteBranch(String)
   case invalidBranchUpstream(String)
+  case emptyHistoryRewritePath
+  case invalidHistoryRewritePath(String)
+  case historyRewritePathNotFound(String)
+  case historyRewriteRequiresCleanWorkingTree
 
   var errorDescription: String? {
     switch self {
@@ -1902,6 +2017,14 @@ enum GitClientError: LocalizedError {
       return "\(branch) is not a remote branch."
     case .invalidBranchUpstream(let branch):
       return "\(branch) does not have a usable upstream."
+    case .emptyHistoryRewritePath:
+      return "Enter a repository-relative file path."
+    case .invalidHistoryRewritePath(let path):
+      return "\(path) must be a repository-relative file path."
+    case .historyRewritePathNotFound(let path):
+      return "No commits reference \(path)."
+    case .historyRewriteRequiresCleanWorkingTree:
+      return "Clean working tree required. Commit, stash, or discard changes before purging history."
     }
   }
 }

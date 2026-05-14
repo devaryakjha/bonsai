@@ -1621,6 +1621,15 @@ struct CleanIgnoredFilesRequest: Identifiable, Hashable {
   }
 }
 
+struct RemoveFileFromHistoryRequest: Identifiable, Hashable {
+  var id = UUID()
+  var repositoryName: String
+
+  var title: String { "Purge file from Git history" }
+  var message: String { "Rewrite local refs in \(repositoryName)." }
+  var detail: String { "Removes the path from reachable commits across local branches and tags." }
+}
+
 struct GitIgnoreTemplateRequest: Identifiable, Hashable {
   var repositoryName: String
   var templates: [GitIgnoreTemplate]

@@ -190,6 +190,18 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $store.removeFileFromHistoryRequest) { request in
+      RemoveFileFromHistorySheet(
+        request: request,
+        path: $store.removeFileFromHistoryPath,
+        onCancel: {
+          store.removeFileFromHistoryRequest = nil
+        },
+        onRemove: {
+          Task { await store.removeFileFromHistory() }
+        }
+      )
+    }
     .sheet(item: $store.gitIgnoreTemplateRequest) { request in
       GitIgnoreTemplateSheet(
         request: request,
@@ -945,6 +957,56 @@ private struct CleanIgnoredFilesSheet: View {
 
   private var fileCountTitle: String {
     request.fileCount == 1 ? "1 ignored file" : "\(request.fileCount.formatted()) ignored files"
+  }
+}
+
+private struct RemoveFileFromHistorySheet: View {
+  var request: RemoveFileFromHistoryRequest
+  @Binding var path: String
+  var onCancel: () -> Void
+  var onRemove: () -> Void
+  @State private var confirmed = false
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text(request.title)
+        .font(.bonsaiSheetTitle)
+
+      Text(request.message)
+        .font(.body.monospaced())
+        .lineLimit(2)
+
+      Text(request.detail)
+        .foregroundStyle(.secondary)
+
+      VStack(alignment: .leading, spacing: 6) {
+        Text("Repository-relative path")
+          .font(.bonsaiMetadata)
+          .foregroundStyle(.secondary)
+        TextField("path/to/file", text: $path)
+          .textFieldStyle(.roundedBorder)
+          .help("Enter a path relative to the repository root")
+      }
+
+      Text("Requires a clean working tree. Remote refs are not updated.")
+        .foregroundStyle(.secondary)
+
+      DestructiveConfirmationToggle(title: "Confirm purge", isOn: $confirmed)
+
+      HStack {
+        Spacer()
+        Button("Cancel", action: onCancel)
+        Button("Purge file", role: .destructive, action: onRemove)
+          .buttonStyle(.borderedProminent)
+          .disabled(!canRemove)
+      }
+    }
+    .padding(20)
+    .frame(width: 500)
+  }
+
+  private var canRemove: Bool {
+    confirmed && !path.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
   }
 }
 
