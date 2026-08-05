@@ -1,0 +1,17 @@
+[package]
+name = "bonsai"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "A native Git client for macOS"
+license = "MIT"
+
+[dependencies]
+gpui = "0.2"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "deny", priority = -1 }

@@ -1,8 +1,4 @@
+/target
+/.build
+/dist
 .DS_Store
-/.build/
-/dist/
-/DerivedData/
-*.xcuserdata/
-*.xcuserstate
-*.swp
-*.tmp
