@@ -1,11 +1,28 @@
-use gpui::{App, Application, Context, IntoElement, Render, Window, WindowOptions, div, px, rgb};
+use gpui::{
+    App, AppContext as _, Context, IntoElement, ParentElement as _, Render, Styled as _, Window,
+    WindowOptions, div,
+};
+use gpui_component::{
+    Root, StyledExt as _,
+    button::{Button, ButtonVariants as _},
+};
 
 fn main() {
-    Application::new().run(|cx: &mut App| {
-        if let Err(error) = cx.open_window(WindowOptions::default(), |_, cx| cx.new(|_| Bonsai)) {
-            eprintln!("Bonsai could not open its first window: {error}");
-        }
-    });
+    gpui_platform::application()
+        .with_assets(gpui_component_assets::Assets)
+        .run(|cx: &mut App| {
+            gpui_component::init(cx);
+
+            cx.spawn(async move |cx| {
+                if let Err(error) = cx.open_window(WindowOptions::default(), |window, cx| {
+                    let view = cx.new(|_| Bonsai);
+                    cx.new(|cx| Root::new(view, window, cx))
+                }) {
+                    eprintln!("Bonsai could not open its first window: {error}");
+                }
+            })
+            .detach();
+        });
 }
 
 struct Bonsai;
@@ -14,19 +31,16 @@ impl Render for Bonsai {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         div()
             .size_full()
-            .bg(rgb(0x171717))
-            .text_color(rgb(0xf5f5f5))
-            .flex()
-            .flex_col()
+            .v_flex()
             .items_center()
             .justify_center()
-            .gap(px(8.0))
-            .child(div().text_size(px(28.0)).child("Bonsai"))
+            .gap_3()
+            .child(div().text_2xl().font_bold().child("Bonsai"))
+            .child(div().text_sm().child("No repository open"))
             .child(
-                div()
-                    .text_size(px(14.0))
-                    .text_color(rgb(0xa3a3a3))
-                    .child("No repository open"),
+                Button::new("open-repository")
+                    .primary()
+                    .label("Open repository"),
             )
     }
 }

@@ -7,7 +7,8 @@ behavior.
 
 ## Scope
 
-- Use GPUI for the application and root view.
+- Use the `create-gpui-app` GPUI dependency model.
+- Use GPUI Component for the root view and primary button.
 - Keep the package name as `bonsai`.
 - Show the application name and a neutral empty state.
 

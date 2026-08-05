@@ -7,8 +7,11 @@ spec and lands as a testable vertical slice.
 
 ## Run
 
-Install the Rust toolchain for macOS. Then run:
+Install the Rust toolchain and Xcode Metal Toolchain for macOS. Then run:
 
 ```sh
-cargo run
+./script/build_and_run.sh
 ```
+
+Use `./script/build_and_run.sh --verify` to build, launch, and verify the
+foreground app process.
